@@ -1,0 +1,59 @@
+@import url('https://fonts.googleapis.com/css?family=Inter:wght@400;600;800&display=swap');
+@import "tailwindcss";
+
+@layer base {
+  :root {
+    --theme-bg: #e7dfcf;
+    --theme-surface: #ddd4c5;
+    --theme-text: #000000;
+    --theme-text-white: #ffffff;
+    --theme-accent: #000000;
+    --theme-border: #3b82f6;
+    --theme-border-red: #3b82f6;
+    --theme-button-red: #d63c3c;
+    --theme-button-red-hover: #b73232;
+    --theme-button-gray: #6b7280;
+    --theme-button: #000000;
+    --theme-button-blue: #3b82f6;
+    --theme-button-blue-hover: #2563eb;
+    --theme-card: #555555;
+    --theme-card-hover: #4c4c4c;
+    --theme-hover: #2E2E2E;
+    --theme-focus: #ef4444;
+    --theme-shadow: rgba(59, 130, 246, 0.9);
+  }
+
+  @media (prefers-color-scheme: dark) {
+    :root {
+      --theme-bg: #000000;
+      --theme-surface: #000000;
+      --theme-text: #ffffff;
+      --theme-text-white: #000000;
+      --theme-accent: #ffffff;
+      --theme-border: #000000;
+      --theme-border-red: #ef4444;
+      --theme-button-red: #d63c3c;
+      --theme-button-red-hover: #b73232;
+      --theme-button-blue: #3b82f6;
+      --theme-button-blue-hover: #2563eb;
+      --theme-button-gray: #6b7280;
+      --theme-button: #e7dfcf;
+      --theme-hover: #c4b8a0;
+      --theme-card: #555555;
+      --theme-card-hover: #4c4c4c;
+      --theme-focus: #ef4444;
+      --theme-shadow: rgba(239, 68, 68, 0.6);
+    }
+  }
+
+  body {
+    font-family: 'Inter', sans-serif;
+    background: var(--theme-bg);
+    color: var(--theme-text);
+  }
+
+  .custom-scrollbar {
+    scrollbar-width: thin;
+    scrollbar-color: var(--theme-accent) var(--theme-surface);
+  }
+}
