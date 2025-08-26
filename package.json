@@ -1,0 +1,18 @@
+{
+  "name": "friday-bible-study",
+  "private": true,
+  "scripts": {
+    "install": "if [ -d './Server' ] ; then cd Server && npm i ; cd .. ; fi && cd Client && npm i",
+    "dev": "concurrently \"npm run dev --prefix Client\" \"npm run dev --prefix Server\"",
+    "build": "npm run build --prefix Server && npm run build --prefix Client",
+    "start": "npm run start --prefix Server",
+    "migrate": "cd Server && NODE_ENV=production npx sequelize-cli db:migrate --config src/config/sequelize.cjs --migrations-path src/migrations --models-path src/models --seeders-path src/seeders",
+    "migrate:undo": "cd Server && NODE_ENV=production npx sequelize-cli db:migrate:undo --config src/config/sequelize.cjs",
+    "migrate:reset": "cd Server && NODE_ENV=production npx sequelize-cli db:migrate:undo:all --config src/config/sequelize.cjs && NODE_ENV=production npx sequelize-cli db:migrate --config src/config/sequelize.cjs",
+    "seed": "cd Server && NODE_ENV=production npx sequelize-cli db:seed:all --config src/config/sequelize.cjs --seeders-path src/seeders",
+    "seed:undo": "cd Server && NODE_ENV=production npx sequelize-cli db:seed:undo:all --config src/config/sequelize.cjs --seeders-path src/seeders"
+  },
+  "devDependencies": {
+    "concurrently": "^9.2.1"
+  }
+}
