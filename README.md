@@ -1,1 +1,1 @@
-# FridayNightBibleStudy
+# FridayBibleStudy
