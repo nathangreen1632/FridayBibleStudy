@@ -37,15 +37,17 @@ export function createApp(): Express {
     })
   );
 
-  // API
+
   app.use('/api', apiRouter);
 
-  // Static client in prod (no CORS)
   const clientDist = path.resolve(__dirname, '../../Client/dist');
   app.use('/assets', express.static(path.join(clientDist, 'assets')));
-  app.get('*', (_req, res) => {
+
+  app.use((req, res, next) => {
+    if (req.path.startsWith('/api') || req.path.startsWith('/assets')) return next();
     res.sendFile(path.join(clientDist, 'index.html'));
   });
+
 
   app.use(errorHandler);
   return app;
