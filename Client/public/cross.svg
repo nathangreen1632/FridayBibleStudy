@@ -1,11 +1,11 @@
 <svg xmlns="http://www.w3.org/2000/svg"
      viewBox="0 0 256 256"
-     width="256" height="256"
+     width="512" height="512"
      role="img" aria-labelledby="title">
     <title id="title">White Latin Cross (3D)</title>
 
     <!-- Background -->
-    <rect width="256" height="256" fill="#000000"/>
+    <rect width="512" height="512" fill="#000000"/>
 
     <defs>
         <!-- Continuous diagonal bevel across the whole cross -->
@@ -36,9 +36,9 @@
         <!-- Cross shape as a clipPath so gradients are continuous across both arms -->
         <clipPath id="clipCross">
             <!-- Vertical bar (Latin cross) -->
-            <rect x="100" y="10" width="56" height="208" rx="6" ry="6"/>
+            <rect x="105" y="35" width="48" height="212" rx="6" ry="6"/>
             <!-- Horizontal bar (slightly above center) -->
-            <rect x="24" y="70" width="208" height="50" rx="6" ry="6"/>
+            <rect x="24" y="90" width="208" height="40" rx="6" ry="6"/>
         </clipPath>
     </defs>
 
@@ -51,7 +51,7 @@
 
     <!-- Hairline highlight outline to crisp the edges on dark bg -->
     <g fill="none" stroke="#FFFFFF" stroke-opacity=".18" stroke-width="1">
-        <rect x="100" y="10" width="56" height="208" rx="6" ry="6"/>
-        <rect x="24"  y="70" width="208" height="50"  rx="6" ry="6"/>
+        <rect x="105" y="35" width="48" height="212" rx="6" ry="6"/>
+        <rect x="24"  y="90" width="208" height="40"  rx="6" ry="6"/>
     </g>
 </svg>
