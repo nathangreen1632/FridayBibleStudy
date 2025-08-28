@@ -8,5 +8,5 @@ export function useSocket(): Socket {
     const s = ref.current!;
     return () => { s.off(); };
   }, []);
-  return ref.current!;
+  return ref.current;
 }
