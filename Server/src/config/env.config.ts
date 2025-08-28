@@ -1,5 +1,8 @@
+import path from 'path';
 import './dotenv.config.js';
 import { parseNodeEnv, req, opt, int } from '../helpers/env.helper.js';
+
+const DEFAULT_SA_PATH = path.join(process.cwd(), '.runtime', 'keys', 'gcp-sa.json');
 
 export interface Env {
   NODE_ENV: 'development' | 'production' | 'test';
@@ -46,7 +49,7 @@ export const env: Env = {
   RECAPTCHA_MIN_SCORE: int('RECAPTCHA_MIN_SCORE', 0.7),
 
   GOOGLE_CREDENTIALS_B64: opt('GOOGLE_CREDENTIALS_B64', ''),
-  SERVICE_ACCOUNT_KEY_PATH: opt('SERVICE_ACCOUNT_KEY_PATH', '/tmp/gcp-sa.json'),
+  SERVICE_ACCOUNT_KEY_PATH: opt('SERVICE_ACCOUNT_KEY_PATH', DEFAULT_SA_PATH),
 
   UPLOAD_DIR: opt('UPLOAD_DIR', './uploads'),
   MAX_FILE_MB: int('MAX_FILE_MB', 10),
