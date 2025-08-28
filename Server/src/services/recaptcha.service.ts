@@ -1,25 +1,19 @@
-// Server/src/services/recaptcha.service.ts
-import { AnyAuthClient, GoogleAuth } from 'google-auth-library';
+import { GoogleAuth, AnyAuthClient } from 'google-auth-library';
 import fs from 'fs/promises';
-import '../config/dotenv.config.js';
 import { env } from '../config/env.config.js';
 
-/** Response fragments per reCAPTCHA Enterprise API */
-export interface RecaptchaVerificationResponse {
+export type RecaptchaVerificationResponse = {
   tokenProperties?: {
     valid?: boolean;
     invalidReason?: string;
-    action?: string;
     hostname?: string;
+    action?: string;
     createTime?: string;
   };
-  riskAnalysis?: {
-    score?: number;
-    reasons?: string[];
-  };
-}
+  riskAnalysis?: { score?: number; reasons?: string[] };
+};
 
-export interface RecaptchaVerificationResult {
+export type RecaptchaVerificationResult = {
   success: boolean;
   score?: number;
   action?: string;
@@ -28,45 +22,25 @@ export interface RecaptchaVerificationResult {
   errorCodes: string[];
   isActionValid: boolean;
   isScoreAcceptable: boolean;
-}
+};
 
-const PROJECT_ID: string = (env as any)?.RECAPTCHA_PROJECT_ID || '';
-const SITE_KEY: string   = (env as any)?.RECAPTCHA_SITE_KEY || '';
-const MIN_SCORE: number  = (() => {
-  const raw = (env as any)?.RECAPTCHA_MIN_SCORE;
-  if (typeof raw === 'number') return raw;
-  if (typeof raw === 'string' && raw.trim() !== '') {
-    const n = Number(raw);
-    if (Number.isFinite(n)) return n;
-  }
-  return 0.5;
-})();
-const IS_PROD: boolean = process.env.NODE_ENV === 'production';
+const IS_PROD = env.NODE_ENV === 'production';
+const MIN_SCORE = env.RECAPTCHA_MIN_SCORE;
 
-/**
- * If you provide GOOGLE_CREDENTIALS_B64 and SERVICE_ACCOUNT_KEY_PATH,
- * we will decode and write the key file (chmod 600).
- */
-const SERVICE_ACCOUNT_KEY_PATH: string = (env as any)?.SERVICE_ACCOUNT_KEY_PATH || '/tmp/recaptcha-sa.json';
-const GOOGLE_CREDENTIALS_B64: string | undefined = (env as any)?.GOOGLE_CREDENTIALS_B64;
-
-(async (): Promise<void> => {
-  if (GOOGLE_CREDENTIALS_B64) {
+// Ensure service-account JSON is present on disk when provided via B64
+(async () => {
+  if (env.GOOGLE_CREDENTIALS_B64) {
     try {
-      const buffer = Buffer.from(GOOGLE_CREDENTIALS_B64, 'base64');
-      await fs.writeFile(SERVICE_ACCOUNT_KEY_PATH, buffer, { mode: 0o600 });
-    } catch (err) {
-      console.error('❌ Failed to write service account key file:', err);
+      const buf = Buffer.from(env.GOOGLE_CREDENTIALS_B64, 'base64');
+      await fs.writeFile(env.SERVICE_ACCOUNT_KEY_PATH, buf, { mode: 0o600 });
+    } catch (e) {
+      console.error('❌ Failed to write GOOGLE_CREDENTIALS_B64 to disk:', e);
     }
-  } else {
-    // Not fatal for local dev if your keyFile already exists on disk
-    // but warn so you know why OAuth might fail.
-    console.warn('⚠️ GOOGLE_CREDENTIALS_B64 not set (ensure key file exists at SERVICE_ACCOUNT_KEY_PATH)');
   }
 })();
 
 const auth = new GoogleAuth({
-  keyFile: SERVICE_ACCOUNT_KEY_PATH,
+  keyFile: env.SERVICE_ACCOUNT_KEY_PATH,
   scopes: ['https://www.googleapis.com/auth/cloud-platform'],
 });
 
@@ -85,25 +59,19 @@ export async function verifyRecaptchaToken(
     isScoreAcceptable: false,
   };
 
-  if (!token || !SITE_KEY || !PROJECT_ID) {
-    console.warn('⚠️ reCAPTCHA verification skipped due to missing config:', {
-      tokenProvided: !!token,
-      siteKeySet: !!SITE_KEY,
-      projectIdSet: !!PROJECT_ID,
-    });
+  if (!token || !env.RECAPTCHA_SITE_KEY || !env.RECAPTCHA_PROJECT_ID) {
     return defaultResult;
   }
 
   try {
     const client: AnyAuthClient = await auth.getClient();
     const { token: accessToken } = (await client.getAccessToken()) || {};
-    if (!accessToken) {
-      console.error('❌ Failed to acquire Google access token for reCAPTCHA Enterprise');
-      return defaultResult;
-    }
+    if (!accessToken) return defaultResult;
 
-    const apiUrl = `https://recaptchaenterprise.googleapis.com/v1/projects/${PROJECT_ID}/assessments`;
-    const response = await fetch(apiUrl, {
+    const apiUrl = `https://recaptchaenterprise.googleapis.com/v1/projects/${env.RECAPTCHA_PROJECT_ID}/assessments`;
+
+    // ✅ Use global fetch types (DOM lib) — no casting to node-fetch Response
+    const init: RequestInit = {
       method: 'POST',
       headers: {
         Authorization: `Bearer ${accessToken}`,
@@ -112,44 +80,33 @@ export async function verifyRecaptchaToken(
       body: JSON.stringify({
         event: {
           token,
-          siteKey: SITE_KEY,
+          siteKey: env.RECAPTCHA_SITE_KEY,
           expectedAction,
         },
       }),
-    });
+    };
 
-    if (!response.ok) {
-      console.error('🚫 reCAPTCHA API error:', response.status, response.statusText);
-      return defaultResult;
-    }
+    const res = await fetch(apiUrl, init);
 
-    const data = (await response.json()) as RecaptchaVerificationResponse;
+    if (!res.ok) return defaultResult;
 
-    const success = !!data.tokenProperties?.valid;
-    const score = data.riskAnalysis?.score;
+    const data = (await res.json()) as RecaptchaVerificationResponse;
+    const valid = !!data.tokenProperties?.valid;
+    const score = data.riskAnalysis?.score ?? 0;
     const action = data.tokenProperties?.action;
-    const hostname = data.tokenProperties?.hostname;
-    const challenge_ts = data.tokenProperties?.createTime;
-    const errorCodes = data.tokenProperties?.invalidReason
-      ? [data.tokenProperties.invalidReason]
-      : [];
-
-    const isActionValid = action === expectedAction;
-    const threshold = IS_PROD ? MIN_SCORE : 0.1; // looser in dev
-    const isScoreAcceptable = success && (score ?? 0) >= threshold;
 
     return {
-      success,
+      success: valid,
       score,
       action,
-      hostname,
-      challenge_ts,
-      errorCodes,
-      isActionValid,
-      isScoreAcceptable,
+      hostname: data.tokenProperties?.hostname,
+      challenge_ts: data.tokenProperties?.createTime,
+      errorCodes: data.tokenProperties?.invalidReason ? [data.tokenProperties.invalidReason] : [],
+      isActionValid: action === expectedAction,
+      isScoreAcceptable: valid && score >= (IS_PROD ? MIN_SCORE : 0.1),
     };
   } catch (err) {
-    console.error('❌ Unexpected error during reCAPTCHA verification:', err);
+    console.error('❌ reCAPTCHA verification error:', err);
     return defaultResult;
   }
 }
