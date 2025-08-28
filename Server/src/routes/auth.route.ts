@@ -6,6 +6,7 @@ import {
   register,
   requestReset,
   resetPassword,
+  updateProfile,
 } from '../controllers/auth.controller.js';
 import { recaptchaMiddleware } from '../middleware/recaptcha.middleware.js';
 import { requireAuth } from '../middleware/auth.middleware.js';
@@ -23,5 +24,7 @@ router.get('/me', requireAuth, me);
 // Password reset flow (path-mapped reCAPTCHA)
 router.post('/request-reset', recaptchaMiddleware, requestReset);
 router.post('/reset-password', recaptchaMiddleware, resetPassword);
+
+router.put('/profile', requireAuth, updateProfile);
 
 export default router;
