@@ -38,7 +38,7 @@
             <!-- Vertical bar (Latin cross) -->
             <rect x="105" y="35" width="48" height="212" rx="6" ry="6"/>
             <!-- Horizontal bar (slightly above center) -->
-            <rect x="24" y="74" width="208" height="40" rx="6" ry="6"/>
+            <rect x="24" y="90" width="208" height="40" rx="6" ry="6"/>
         </clipPath>
 
         <!-- Elliptical arc for title (bows UPWARD) -->
@@ -57,7 +57,7 @@
     <!-- Hairline highlight outline to crisp the edges on dark bg -->
     <g fill="none" stroke="#FFFFFF" stroke-opacity=".18" stroke-width="1">
         <rect x="105" y="35" width="48" height="212" rx="6" ry="6"/>
-        <rect x="24"  y="74" width="208" height="40"  rx="6" ry="6"/>
+        <rect x="24"  y="90" width="208" height="40"  rx="6" ry="6"/>
     </g>
 
     <!-- Arched title (elliptical, bows upward) -->
@@ -69,6 +69,3 @@
         </textPath>
     </text>
 </svg>
-
-
-
