@@ -5,6 +5,8 @@ import cookieParser from 'cookie-parser';
 import { fileURLToPath } from 'url';
 import apiRouter from './routes/index.js';
 import { errorHandler } from './middleware/error.middleware.js';
+import { cspMiddleware } from './middleware/csp.middleware.js';
+
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -16,6 +18,7 @@ export function createApp(): Express {
   app.use(express.json({ limit: '2mb' }));
   app.use(cookieParser());
 
+  app.use(cspMiddleware);
   // Helmet (prod-strict; dev permissive)
   app.use(
     helmet({
