@@ -1,27 +1,19 @@
+// Server/src/middleware/recaptcha.middleware.ts
 import type { Request, Response, NextFunction } from 'express';
-import '../config/dotenv.config.js';
 import { verifyAndGateRecaptcha } from '../helpers/recaptcha.helper.js';
 
-/** Guard variant: router.post('/login', recaptchaGuard('login'), ...) */
+/** Guard when you want to name the action inline on a route */
 export function recaptchaGuard(expectedAction: string) {
   return async (req: Request, res: Response, next: NextFunction): Promise<void> => {
     const token =
-      (req.body?.recaptchaToken as string | undefined) ||
-      (req.body?.captchaToken as string | undefined) ||
       (req.headers['x-recaptcha-token'] as string | undefined) ||
-      (req.query?.recaptchaToken as string | undefined);
-
-    if (!token) {
-      res.status(400).json({ error: 'Missing CAPTCHA token' });
-      return;
-    }
-
+      (req.body?.recaptchaToken as string | undefined);
+    if (!token) { res.status(400).json({ error: 'Missing CAPTCHA token' }); return; }
     await verifyAndGateRecaptcha(req, res, next, expectedAction, token);
   };
 }
 
-/* ------------------------- Path-mapped variant ------------------------- */
-
+/** Rules mapping (method + path) -> Enterprise action name */
 type Rule = { method: 'GET'|'POST'|'PATCH'|'DELETE', pattern: RegExp, action: string };
 
 const rules: Rule[] = [
@@ -55,25 +47,15 @@ function resolveExpectedAction(req: Request): string | undefined {
   return hit?.action;
 }
 
-export async function recaptchaMiddleware(
-  req: Request,
-  res: Response,
-  next: NextFunction
-): Promise<void> {
+/** Path-mapped middleware: just drop it on the route; it figures out the action */
+export async function recaptchaMiddleware(req: Request, res: Response, next: NextFunction): Promise<void> {
   const token =
-    (req.body?.recaptchaToken as string | undefined) ||
-    (req.body?.captchaToken as string | undefined);
-
-  if (!token) {
-    res.status(400).json({ error: 'Missing CAPTCHA token' });
-    return;
-  }
+    (req.headers['x-recaptcha-token'] as string | undefined) ||
+    (req.body?.recaptchaToken as string | undefined);
+  if (!token) { res.status(400).json({ error: 'Missing CAPTCHA token' }); return; }
 
   const expectedAction = resolveExpectedAction(req);
-  if (!expectedAction) {
-    res.status(400).json({ error: 'Unrecognized CAPTCHA route', method: req.method, path: req.originalUrl });
-    return;
-  }
+  if (!expectedAction) { res.status(400).json({ error: 'Unrecognized CAPTCHA route' }); return; }
 
   await verifyAndGateRecaptcha(req, res, next, expectedAction, token);
 }
