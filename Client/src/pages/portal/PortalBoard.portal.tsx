@@ -3,7 +3,8 @@ import Board from '../../components/board/Board.board';
 import PrayerCard from '../../components/board/PrayerCard.board';
 import type { ListPrayersResponse } from '../../types/api.type';
 import { api } from '../../helpers/http.helper';
-import { toast } from 'react-hot-toast'; // ← add this
+import { apiWithRecaptcha } from '../../helpers/secure-api.helper';
+import { toast } from 'react-hot-toast';
 
 type ColumnKey = 'active' | 'archived';
 
@@ -16,9 +17,21 @@ export default function PortalBoard(): React.ReactElement {
   useEffect(() => {
     void (async () => {
       const data = await api<ListPrayersResponse>('/api/prayers?page=1&pageSize=20');
+
+      // sort by position within each status and map to ids
+      const act = data.items
+        .filter(i => i.status === 'active')
+        .sort((a, b) => a.position - b.position)
+        .map(i => i.id);
+
+      const arch = data.items
+        .filter(i => i.status === 'archived')
+        .sort((a, b) => a.position - b.position)
+        .map(i => i.id);
+
       setItems(data.items);
-      setActiveIds(data.items.filter(i => i.status === 'active').map(i => i.id));
-      setArchivedIds(data.items.filter(i => i.status === 'archived').map(i => i.id));
+      setActiveIds(act);
+      setArchivedIds(arch);
     })();
   }, []);
 
@@ -37,12 +50,12 @@ export default function PortalBoard(): React.ReactElement {
   }
 
   async function onMove(id: number, toStatus: ColumnKey, newIndex: number): Promise<void> {
-    // --- capture previous state for rollback ---
+    // capture previous state for rollback
     const prevActiveIds = activeIds;
     const prevArchivedIds = archivedIds;
     const prevItems = items;
 
-    // --- optimistic update ---
+    // optimistic reordering of id lists
     if (toStatus === 'active') {
       setArchivedIds(prev => prev.filter(x => x !== id));
       setActiveIds(prev => moveIdWithin(prev.concat(id), id, newIndex));
@@ -51,31 +64,52 @@ export default function PortalBoard(): React.ReactElement {
       setArchivedIds(prev => moveIdWithin(prev.concat(id), id, newIndex));
     }
 
-    setItems(prev =>
-      prev.map(p => (p.id === id ? { ...p, status: toStatus } : p))
-    );
+    // optimistic item status + position update
+    setItems(prev => {
+      // compute new positions in each column from the id arrays we just set
+      const next = prev.map(p => ({ ...p }));
+      const posById = new Map<number, number>();
+      (toStatus === 'active' ? activeIds : archivedIds).forEach((pid, i) => posById.set(pid, i));
+      // include the just-moved id at its new index
+      if (toStatus === 'active') {
+        const arr = moveIdWithin(activeIds.concat(id), id, newIndex);
+        arr.forEach((pid, i) => posById.set(pid, i));
+      } else {
+        const arr = moveIdWithin(archivedIds.concat(id), id, newIndex);
+        arr.forEach((pid, i) => posById.set(pid, i));
+      }
 
-    // --- persist to API; rollback on failure ---
+      for (const p of next) {
+        if (p.id === id) {
+          p.status = toStatus;
+        }
+        const maybe = posById.get(p.id);
+        if (maybe !== undefined && p.status === toStatus) {
+          p.position = maybe;
+        }
+      }
+      return next;
+    });
+
+// persist to API with reCAPTCHA (middleware expects 'prayer_update')
     try {
-      await api(`/api/prayers/${id}`, {
+      await apiWithRecaptcha(`/api/prayers/${id}`, 'prayer_update', {
         method: 'PATCH',
-        body: JSON.stringify({ status: toStatus, position: newIndex })
+        body: JSON.stringify({ status: toStatus, position: newIndex }), // ← stringify
       });
     } catch (e) {
-      console.error(e);
+      // rollback
       setActiveIds(prevActiveIds);
       setArchivedIds(prevArchivedIds);
       setItems(prevItems);
 
-      // Notify the user
+      console.error('Failed to move prayer', e); // ← use the exception (satisfies S2486)
       toast.error('Could not move prayer. Your changes were undone.');
-
-      // Optional: log for debugging
-      // console.error(e);
+      return; // optional: make intent explicit for linters
     }
   }
 
-  // Card renderer given an id (Board + Column use this)
+  // Board expects (id, column, index)
   const renderCard = (id: number) => {
     const item = byId.get(id);
     if (!item) return null;
