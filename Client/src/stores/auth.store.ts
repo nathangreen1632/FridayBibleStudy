@@ -1,4 +1,4 @@
-// imports unchanged
+// Client/src/stores/auth.store.ts
 import { create } from 'zustand';
 import { api } from '../helpers/http.helper';
 
@@ -7,44 +7,50 @@ type RegisterPayload = {
   phone: string;
   email: string;
   password: string;
-  recaptchaToken: string; // ← add this
+  recaptchaToken: string;
 };
 
 type AuthState = {
   loading: boolean;
-  // ... other state
-  register: (payload: RegisterPayload) => Promise<void>; // ← update signature
+  register: (payload: RegisterPayload) => Promise<{ success: boolean; message?: string }>;
 };
 
-export const useAuthStore = create<AuthState>((set, _get) => ({
+export const useAuthStore = create<AuthState>((set) => ({
   loading: false,
-  // ...other state & actions
 
   async register(payload) {
     set({ loading: true });
     try {
       const { recaptchaToken, ...body } = payload;
 
-      // Send token to server — pick ONE approach your backend expects:
+      if (!recaptchaToken) {
+        return { success: false, message: 'Missing CAPTCHA token' };
+      }
 
-      // A) Header (common with Enterprise):
+      // Send token in BOTH header and body for maximum compatibility
       await api('/api/auth/register', {
         method: 'POST',
         headers: {
-          'Content-Type': 'application/json',
-          'X-Recaptcha-Token': recaptchaToken, // ← header name your server verifies
+          'X-Recaptcha-Token': recaptchaToken, // middleware checks this
         },
-        body: JSON.stringify(body),
+        body: JSON.stringify({ ...body, recaptchaToken }), // …and/or this
       });
 
-      // B) Or include in body (if your server expects it there):
-      // await api('/api/auth/register', {
-      //   method: 'POST',
-      //   headers: { 'Content-Type': 'application/json' },
-      //   body: JSON.stringify({ ...body, recaptchaToken }),
-      // });
+      // TODO: set user, navigate, etc.
+      return { success: true };
+    } catch (err) {
+      let msg: string;
 
-      // ...handle success (set user, navigate, etc.)
+      if (err instanceof Error) {
+        msg = err.message;
+      } else if (typeof err === 'string') {
+        msg = err;
+      } else {
+        msg = 'Registration failed';
+      }
+
+      // Graceful return instead of throwing
+      return { success: false, message: msg };
     } finally {
       set({ loading: false });
     }
