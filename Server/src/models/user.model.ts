@@ -10,10 +10,30 @@ export interface UserAttributes {
   passwordHash: string;
   role: Role;
   emailVerified: boolean;
+
+  // Roster additions
+  addressStreet: string | null;
+  addressCity: string | null;
+  addressState: string | null;
+  addressZip: string | null;
+  spouseName: string | null;
+
   createdAt: Date;
   updatedAt: Date;
 }
-export type UserCreation = Optional<UserAttributes, 'id'|'role'|'emailVerified'|'createdAt'|'updatedAt'>;
+export type UserCreation = Optional<
+  UserAttributes,
+  | 'id'
+  | 'role'
+  | 'emailVerified'
+  | 'addressStreet'
+  | 'addressCity'
+  | 'addressState'
+  | 'addressZip'
+  | 'spouseName'
+  | 'createdAt'
+  | 'updatedAt'
+>;
 
 export class User extends Model<UserAttributes, UserCreation> implements UserAttributes {
   declare id: number;
@@ -23,6 +43,13 @@ export class User extends Model<UserAttributes, UserCreation> implements UserAtt
   declare passwordHash: string;
   declare role: Role;
   declare emailVerified: boolean;
+
+  declare addressStreet: string | null;
+  declare addressCity: string | null;
+  declare addressState: string | null;
+  declare addressZip: string | null;
+  declare spouseName: string | null;
+
   declare createdAt: Date;
   declare updatedAt: Date;
 
@@ -36,6 +63,14 @@ export class User extends Model<UserAttributes, UserCreation> implements UserAtt
         passwordHash: { type: DataTypes.STRING(200), allowNull: false },
         role: { type: DataTypes.ENUM('classic', 'admin'), allowNull: false, defaultValue: 'classic' },
         emailVerified: { type: DataTypes.BOOLEAN, allowNull: false, defaultValue: false },
+
+        // Roster additions
+        addressStreet: { type: DataTypes.STRING(180), allowNull: true },
+        addressCity:   { type: DataTypes.STRING(120), allowNull: true },
+        addressState:  { type: DataTypes.STRING(40),  allowNull: true },
+        addressZip:    { type: DataTypes.STRING(20),  allowNull: true },
+        spouseName:    { type: DataTypes.STRING(120), allowNull: true },
+
         createdAt: DataTypes.DATE,
         updatedAt: DataTypes.DATE
       },
