@@ -1,5 +1,5 @@
 // Server/src/utils/jwt.util.ts
-import jwt, { type JwtPayload as StdJwtPayload } from 'jsonwebtoken';
+import jwt from 'jsonwebtoken';
 import { env } from '../config/env.config.js';
 
 export interface AppJwtPayload {

@@ -3,13 +3,11 @@ import { Group } from '../models/index.js';
 
 export async function getGroup(_req: Request, res: Response): Promise<void> {
   let g = await Group.findOne();
-  if (!g) {
-    g = await Group.create({
-      name: 'Friday Night Bible Study',
-      slug: 'friday-night-bible-study',
-      groupEmail: '**CHANGE_ME_GROUP_EMAIL@EXAMPLE.COM**'
-    });
-  }
+  g ??= await Group.create({
+    name: 'Friday Night Bible Study',
+    slug: 'friday-night-bible-study',
+    groupEmail: '**CHANGE_ME_GROUP_EMAIL@EXAMPLE.COM**'
+  });
   res.json(g);
 }
 

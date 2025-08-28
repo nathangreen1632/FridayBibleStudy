@@ -1,6 +1,6 @@
 import { Router } from 'express';
 import { requireAuth } from '../middleware/auth.middleware.js';
-import { recaptchaRequired } from '../middleware/recaptcha.middleware.js';
+import { recaptchaMiddleware } from '../middleware/recaptcha.middleware.js';
 import {
   listPrayers,
   createPrayer,
@@ -8,7 +8,7 @@ import {
   updatePrayer,
   deletePrayer,
   createUpdate,
-  addAttachments
+  addAttachments,
 } from '../controllers/prayer.controller.js';
 import { uploadPhotos } from '../middleware/upload.middleware.js';
 
@@ -16,15 +16,45 @@ const router: Router = Router();
 
 // list/create/read/update/delete
 router.get('/', requireAuth, listPrayers);
-router.post('/', requireAuth, recaptchaRequired('post_prayer'), createPrayer);
+
+router.post(
+  '/',
+  requireAuth,
+  recaptchaMiddleware, // path-mapped to 'prayer_create'
+  createPrayer
+);
+
 router.get('/:id', requireAuth, getPrayer);
-router.patch('/:id', requireAuth, updatePrayer);
-router.delete('/:id', requireAuth, deletePrayer);
+
+router.patch(
+  '/:id',
+  requireAuth,
+  recaptchaMiddleware, // path-mapped to 'prayer_update'
+  updatePrayer
+);
+
+router.delete(
+  '/:id',
+  requireAuth,
+  recaptchaMiddleware, // path-mapped to 'prayer_delete'
+  deletePrayer
+);
 
 // updates/comments
-router.post('/:id/updates', requireAuth, recaptchaRequired('post_update'), createUpdate);
+router.post(
+  '/:id/updates',
+  requireAuth,
+  recaptchaMiddleware, // path-mapped to 'prayer_add_update'
+  createUpdate
+);
 
-// photo uploads (moved Multer to middleware)
-router.post('/:id/attachments', requireAuth, uploadPhotos.array('photos', 4), addAttachments);
+// photo uploads (CAPTCHA before upload to avoid unnecessary I/O)
+router.post(
+  '/:id/attachments',
+  requireAuth,
+  recaptchaMiddleware, // path-mapped to 'media_upload'
+  uploadPhotos.array('photos', 4),
+  addAttachments
+);
 
 export default router;
