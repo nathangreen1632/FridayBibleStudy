@@ -46,12 +46,6 @@
     }
   }
 
-  body {
-    font-family: 'Inter', sans-serif;
-    background: var(--theme-bg);
-    color: var(--theme-text);
-  }
-
   .custom-scrollbar {
     scrollbar-width: thin;
     scrollbar-color: var(--theme-accent) var(--theme-surface);
