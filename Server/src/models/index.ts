@@ -7,8 +7,10 @@ import { Prayer } from './prayer.model.js';
 import { PrayerUpdate } from './prayerUpdate.model.js';
 import { Attachment } from './attachment.model.js';
 import { OtpToken } from './otpToken.model.js';
+import { PrayerParticipant } from './prayerParticipant.model.js';
 
 function initAll(s: Sequelize): void {
+  // init models
   User.initModel(s);
   Group.initModel(s);
   GroupMember.initModel(s);
@@ -16,25 +18,44 @@ function initAll(s: Sequelize): void {
   PrayerUpdate.initModel(s);
   Attachment.initModel(s);
   OtpToken.initModel(s);
+  PrayerParticipant.initModel(s);
 
-  // associations
-  GroupMember.belongsTo(User, { foreignKey: 'userId' });
-  GroupMember.belongsTo(Group, { foreignKey: 'groupId' });
-  User.hasMany(GroupMember, { foreignKey: 'userId' });
-  Group.hasMany(GroupMember, { foreignKey: 'groupId' });
+  // associations (+ cascades)
+  GroupMember.belongsTo(User,  { foreignKey: 'userId',  onDelete: 'CASCADE', onUpdate: 'CASCADE' });
+  GroupMember.belongsTo(Group, { foreignKey: 'groupId', onDelete: 'CASCADE', onUpdate: 'CASCADE' });
+  User.hasMany(GroupMember,    { foreignKey: 'userId',  onDelete: 'CASCADE', onUpdate: 'CASCADE' });
+  Group.hasMany(GroupMember,   { foreignKey: 'groupId', onDelete: 'CASCADE', onUpdate: 'CASCADE' });
 
-  Prayer.belongsTo(User, { foreignKey: 'authorUserId', as: 'author' });
-  Prayer.belongsTo(Group, { foreignKey: 'groupId' });
-  Prayer.hasMany(PrayerUpdate, { foreignKey: 'prayerId', as: 'updates' });
-  Prayer.hasMany(Attachment, { foreignKey: 'prayerId', as: 'attachments' });
+  Prayer.belongsTo(User,  { foreignKey: 'authorUserId', as: 'author', onDelete: 'SET NULL', onUpdate: 'CASCADE' });
+  Prayer.belongsTo(Group, { foreignKey: 'groupId',                    onDelete: 'CASCADE',  onUpdate: 'CASCADE' });
+  Prayer.hasMany(PrayerUpdate, { foreignKey: 'prayerId', as: 'updates',     onDelete: 'CASCADE', onUpdate: 'CASCADE' });
+  Prayer.hasMany(Attachment,   { foreignKey: 'prayerId', as: 'attachments', onDelete: 'CASCADE', onUpdate: 'CASCADE' });
 
-  PrayerUpdate.belongsTo(Prayer, { foreignKey: 'prayerId' });
-  PrayerUpdate.belongsTo(User, { foreignKey: 'authorUserId', as: 'author' });
+  PrayerUpdate.belongsTo(Prayer, { foreignKey: 'prayerId', onDelete: 'CASCADE', onUpdate: 'CASCADE' });
+  PrayerUpdate.belongsTo(User,   { foreignKey: 'authorUserId', as: 'author', onDelete: 'SET NULL', onUpdate: 'CASCADE' });
 
-  Attachment.belongsTo(Prayer, { foreignKey: 'prayerId' });
+  Attachment.belongsTo(Prayer, { foreignKey: 'prayerId', onDelete: 'CASCADE', onUpdate: 'CASCADE' });
 
-  OtpToken.belongsTo(User, { foreignKey: 'userId' });
-  User.hasMany(OtpToken, { foreignKey: 'userId' });
+  OtpToken.belongsTo(User, { foreignKey: 'userId', onDelete: 'CASCADE', onUpdate: 'CASCADE' });
+  User.hasMany(OtpToken,   { foreignKey: 'userId', onDelete: 'CASCADE', onUpdate: 'CASCADE' });
+
+  // many-to-many: prayers ↔ users (participants)
+  Prayer.belongsToMany(User, {
+    through: PrayerParticipant,
+    foreignKey: 'prayerId',
+    otherKey: 'userId',
+    as: 'participants',
+    onDelete: 'CASCADE',
+    onUpdate: 'CASCADE'
+  });
+  User.belongsToMany(Prayer, {
+    through: PrayerParticipant,
+    foreignKey: 'userId',
+    otherKey: 'prayerId',
+    as: 'participatingPrayers',
+    onDelete: 'CASCADE',
+    onUpdate: 'CASCADE'
+  });
 }
 
 initAll(sequelize);
@@ -47,9 +68,6 @@ export {
   Prayer,
   PrayerUpdate,
   Attachment,
-  OtpToken
+  OtpToken,
+  PrayerParticipant
 };
-
-export async function ensureDatabase(): Promise<void> {
-  await sequelize.sync({ alter: true }); // dev-friendly
-}
