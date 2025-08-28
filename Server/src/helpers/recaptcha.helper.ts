@@ -1,32 +1,15 @@
+// Server/src/helpers/recaptcha.helper.ts
 import type { Request, Response, NextFunction } from 'express';
-import { verifyRecaptchaToken } from '../services/recaptcha.service.js';
-import type { RecaptchaVerificationResult } from '../services/recaptcha.service.js';
+import { verifyRecaptchaToken, type RecaptchaVerificationResult } from '../services/recaptcha.service.js';
 
-/**
- * Runs Enterprise verification and gates the request.
- * On success: attaches (req as any).recaptcha and calls next()
- * On failure: sends the appropriate HTTP response and returns.
- */
 export async function verifyAndGateRecaptcha(
-  req: Request,
-  res: Response,
-  next: NextFunction,
-  expectedAction: string,
-  token: string
+  req: Request, res: Response, next: NextFunction, expectedAction: string, token: string
 ): Promise<void> {
   let result: RecaptchaVerificationResult;
-
   try {
     result = await verifyRecaptchaToken(token, expectedAction);
   } catch (err: unknown) {
-    let message: string;
-    if (err instanceof Error) {
-      message = err.message;
-    } else if (typeof err === 'string') {
-      message = err;
-    } else {
-      message = 'Unknown error during CAPTCHA verification';
-    }
+    const message = err instanceof Error ? err.message : typeof err === 'string' ? err : 'Unknown error';
     res.status(500).json({ error: 'CAPTCHA verification error', message });
     return;
   }
@@ -54,6 +37,5 @@ export async function verifyAndGateRecaptcha(
     hostname: result.hostname,
     challenge_ts: result.challenge_ts,
   };
-
   next();
 }
