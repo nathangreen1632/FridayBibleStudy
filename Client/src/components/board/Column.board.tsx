@@ -1,9 +1,7 @@
 import React from 'react';
 import { useDroppable } from '@dnd-kit/core';
 import { SortableContext, verticalListSortingStrategy } from '@dnd-kit/sortable';
-import SortableCard from './SortableCard.board';
-
-type ColumnKey = 'active' | 'archived';
+import SortableCard, {type ColumnKey } from './SortableCard.board';
 
 interface ColumnProps {
   title: string;
@@ -16,25 +14,32 @@ export default function Column({
                                  title,
                                  column,
                                  ids,
-                                 renderCard
+                                 renderCard,
                                }: Readonly<ColumnProps>): React.ReactElement {
-  const { setNodeRef } = useDroppable({
-    id: `col-${column}`,          // identify this container
-    data: { column }              // helps dragEnd know the destination
+  const droppableId = column === 'active' ? 'col-active' : 'col-archived';
+  const { setNodeRef, isOver } = useDroppable({
+    id: droppableId,
+    data: { type: 'column', column } as const,
   });
 
   return (
     <section
       ref={setNodeRef}
+      className="rounded-2xl border border-[var(--theme-border)] bg-[var(--theme-surface)] p-4"
       aria-label={`${title} column`}
-      className="flex-1 min-w-[320px] rounded-2xl bg-[var(--theme-surface,#111)] p-4"
     >
-      <header className="flex items-center justify-between mb-3">
-        <h3 className="text-lg font-semibold">{title}</h3>
+      <header className="mb-3 flex items-center justify-between">
+        <h3 className="font-semibold">{title}</h3>
+        <span className="text-xs opacity-70">{ids.length}</span>
       </header>
 
       <SortableContext items={ids} strategy={verticalListSortingStrategy}>
-        <div className="space-y-3">
+        <div
+          className={
+            'space-y-3 min-h-[80px] transition-colors ' +
+            (isOver ? 'bg-[var(--theme-card-hover)] rounded-xl p-2' : '')
+          }
+        >
           {ids.map((id, index) => (
             <SortableCard key={id} id={id} index={index} column={column}>
               {renderCard(id, column, index)}
