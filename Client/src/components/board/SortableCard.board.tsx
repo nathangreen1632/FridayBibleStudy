@@ -2,7 +2,7 @@ import React from 'react';
 import { useSortable } from '@dnd-kit/sortable';
 import { CSS } from '@dnd-kit/utilities';
 
-type ColumnKey = 'active' | 'archived';
+export type ColumnKey = 'active' | 'archived';
 
 interface SortableCardProps {
   id: number;
@@ -15,16 +15,29 @@ export default function SortableCard({
                                        id,
                                        index,
                                        column,
-                                       children
+                                       children,
                                      }: Readonly<SortableCardProps>): React.ReactElement {
-  const { attributes, listeners, setNodeRef, transform, transition } = useSortable({
+  const {
+    attributes,
+    listeners,
+    setNodeRef,
+    transform,
+    transition,
+    isDragging,
+  } = useSortable({
     id,
-    data: { index, column }
+    data: {
+      type: 'card',
+      index,
+      column,
+    } as const,
   });
 
   const style: React.CSSProperties = {
     transform: CSS.Transform.toString(transform),
-    transition
+    transition,
+    opacity: isDragging ? 0.6 : 1,
+    cursor: 'grab',
   };
 
   return (
