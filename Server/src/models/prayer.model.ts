@@ -3,7 +3,8 @@ import type { AttachmentAttributes } from './attachment.model.js';
 import type { PrayerUpdateAttributes } from './prayerUpdate.model.js';
 
 export type Category = 'prayer' | 'long-term' | 'salvation' | 'pregnancy' | 'birth';
-export type Status = 'active' | 'main' | 'archived';
+// Updated per spec: use "praise" instead of "main"
+export type Status = 'active' | 'praise' | 'archived';
 
 export interface PrayerAttributes {
   id: number;
@@ -18,7 +19,10 @@ export interface PrayerAttributes {
   createdAt: Date;
   updatedAt: Date;
 }
-export type PrayerCreation = Optional<PrayerAttributes, 'id'|'status'|'position'|'impersonatedByAdminId'|'createdAt'|'updatedAt'>;
+export type PrayerCreation = Optional<
+  PrayerAttributes,
+  'id' | 'status' | 'position' | 'impersonatedByAdminId' | 'createdAt' | 'updatedAt'
+>;
 
 export class Prayer extends Model<PrayerAttributes, PrayerCreation> implements PrayerAttributes {
   declare id: number;
@@ -43,8 +47,16 @@ export class Prayer extends Model<PrayerAttributes, PrayerCreation> implements P
         authorUserId: { type: DataTypes.INTEGER, allowNull: false },
         title: { type: DataTypes.STRING(200), allowNull: false },
         content: { type: DataTypes.TEXT, allowNull: false },
-        category: { type: DataTypes.ENUM('prayer','long-term','salvation','pregnancy','birth'), allowNull: false },
-        status: { type: DataTypes.ENUM('active','main','archived'), allowNull: false, defaultValue: 'active' },
+        category: {
+          type: DataTypes.ENUM('prayer', 'long-term', 'salvation', 'pregnancy', 'birth'),
+          allowNull: false
+        },
+        // Updated ENUM values here:
+        status: {
+          type: DataTypes.ENUM('active', 'praise', 'archived'),
+          allowNull: false,
+          defaultValue: 'active'
+        },
         position: { type: DataTypes.INTEGER, allowNull: false, defaultValue: 0 },
         impersonatedByAdminId: { type: DataTypes.INTEGER, allowNull: true },
         createdAt: DataTypes.DATE,
