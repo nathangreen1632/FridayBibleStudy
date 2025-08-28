@@ -346,4 +346,4 @@ dist
 # https://plugins.jetbrains.com/plugin/8053-azure-toolkit-for-intellij
 
 
-./runtime
+.runtime/
