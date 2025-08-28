@@ -1,3 +1,4 @@
+// Server/src/services/recaptcha.service.ts
 import { GoogleAuth, AnyAuthClient } from 'google-auth-library';
 import fs from 'fs/promises';
 import { env } from '../config/env.config.js';
@@ -24,6 +25,14 @@ export type RecaptchaVerificationResult = {
   isScoreAcceptable: boolean;
 };
 
+/** New: call signature for the service */
+export type VerifyRecaptchaOptions = {
+  token: string;
+  expectedAction: string;
+  ip?: string;         // optional: forwarded to Google
+  userAgent?: string;  // optional: forwarded to Google
+};
+
 const IS_PROD = env.NODE_ENV === 'production';
 const MIN_SCORE = env.RECAPTCHA_MIN_SCORE;
 
@@ -44,10 +53,15 @@ const auth = new GoogleAuth({
   scopes: ['https://www.googleapis.com/auth/cloud-platform'],
 });
 
+/**
+ * Verify a reCAPTCHA Enterprise token against Google.
+ * Accepts an options object so callers can pass ip/userAgent without breaking.
+ */
 export async function verifyRecaptchaToken(
-  token: string,
-  expectedAction: string
+  opts: VerifyRecaptchaOptions
 ): Promise<RecaptchaVerificationResult> {
+  const { token, expectedAction, ip, userAgent } = opts;
+
   const defaultResult: RecaptchaVerificationResult = {
     success: false,
     score: undefined,
@@ -70,27 +84,29 @@ export async function verifyRecaptchaToken(
 
     const apiUrl = `https://recaptchaenterprise.googleapis.com/v1/projects/${env.RECAPTCHA_PROJECT_ID}/assessments`;
 
-    // ✅ Use global fetch types (DOM lib) — no casting to node-fetch Response
+    // Build the event payload; include ip / UA only when present
+    const event: Record<string, unknown> = {
+      token,
+      siteKey: env.RECAPTCHA_SITE_KEY,
+      expectedAction,
+    };
+    if (ip) event.userIpAddress = ip;
+    if (userAgent) event.userAgent = userAgent;
+
     const init: RequestInit = {
       method: 'POST',
       headers: {
         Authorization: `Bearer ${accessToken}`,
         'Content-Type': 'application/json',
       },
-      body: JSON.stringify({
-        event: {
-          token,
-          siteKey: env.RECAPTCHA_SITE_KEY,
-          expectedAction,
-        },
-      }),
+      body: JSON.stringify({ event }),
     };
 
     const res = await fetch(apiUrl, init);
-
     if (!res.ok) return defaultResult;
 
     const data = (await res.json()) as RecaptchaVerificationResponse;
+
     const valid = !!data.tokenProperties?.valid;
     const score = data.riskAnalysis?.score ?? 0;
     const action = data.tokenProperties?.action;
