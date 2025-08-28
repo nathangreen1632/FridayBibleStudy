@@ -3,51 +3,135 @@
 
 @layer base {
   :root {
-    --theme-bg: #e7dfcf;
-    --theme-surface: #ddd4c5;
-    --theme-text: #000000;
-    --theme-text-white: #ffffff;
-    --theme-accent: #000000;
-    --theme-border: #3b82f6;
-    --theme-border-red: #3b82f6;
-    --theme-button-red: #d63c3c;
-    --theme-button-red-hover: #b73232;
-    --theme-button-gray: #6b7280;
-    --theme-button: #000000;
-    --theme-button-blue: #3b82f6;
-    --theme-button-blue-hover: #2563eb;
-    --theme-card: #555555;
-    --theme-card-hover: #4c4c4c;
-    --theme-hover: #2E2E2E;
-    --theme-focus: #ef4444;
-    --theme-shadow: rgba(59, 130, 246, 0.9);
-  }
+    /* palette */
+    --c-a: #CCDAD1; /* A */
+    --c-b: #9CAEA9; /* B */
+    --c-c: #788585; /* C */
+    --c-d: #6F6866; /* D */
+    --c-e: #38302E; /* E */
 
-  @media (prefers-color-scheme: dark) {
-    :root {
-      --theme-bg: #000000;
-      --theme-surface: #000000;
-      --theme-text: #ffffff;
-      --theme-text-white: #000000;
-      --theme-accent: #ffffff;
-      --theme-border: #000000;
-      --theme-border-red: #ef4444;
-      --theme-button-red: #d63c3c;
-      --theme-button-red-hover: #b73232;
-      --theme-button-blue: #3b82f6;
-      --theme-button-blue-hover: #2563eb;
-      --theme-button-gray: #6b7280;
-      --theme-button: #e7dfcf;
-      --theme-hover: #c4b8a0;
-      --theme-card: #555555;
-      --theme-card-hover: #4c4c4c;
-      --theme-focus: #ef4444;
-      --theme-shadow: rgba(239, 68, 68, 0.6);
-    }
-  }
+    /* LIGHT MODE — uses only A,B,C,D,E */
+    --theme-bg: var(--c-b);                 /* A */
+    --theme-surface: var(--c-a);            /* B */
+    --theme-text: var(--c-e);               /* E */
+    --theme-text-white: var(--c-a);         /* A (label is historic) */
+    --theme-accent: var(--c-e);             /* E */
+    --theme-border: var(--c-c);             /* C */
 
-  .custom-scrollbar {
-    scrollbar-width: thin;
-    scrollbar-color: var(--theme-accent) var(--theme-surface);
+    /* buttons */
+    --theme-button: var(--c-e);             /* E */
+    --theme-button-blue: var(--c-d);        /* D */
+    --theme-button-blue-hover: var(--c-c);  /* C */
+    --theme-button-gray: var(--c-c);        /* C */
+
+    /* “legacy red” mapped within palette */
+    --theme-button-red: var(--c-e);
+    --theme-button-red-hover: var(--c-d);
+    --theme-border-red: var(--c-c);
+
+    /* cards & interactive */
+    --theme-card: var(--c-b);
+    --theme-card-hover: var(--c-c);
+    --theme-hover: var(--c-d);
+
+    /* focus & elevation */
+    --theme-focus: var(--c-d);
+    --theme-shadow: rgba(56, 48, 46, 0.35);
+
+    /* error */
+    --theme-error: #ef4444; /* red-500 */
+  }
+}
+
+@media (prefers-color-scheme: dark) {
+  :root {
+    /* palette repeated for clarity (same five only) */
+    --c-a: #CCDAD1; /* A */
+    --c-b: #9CAEA9; /* B */
+    --c-c: #788585; /* C */
+    --c-d: #6F6866; /* D */
+    --c-e: #38302E; /* E */
+
+    /* DARK MODE — 180° from light (A↔E, B↔D, C→B to avoid hold-overs) */
+    --theme-bg: var(--c-d);
+    --theme-surface: var(--c-e);
+    --theme-text: var(--c-a);
+    --theme-text-white: var(--c-e);
+    --theme-accent: var(--c-a);
+    --theme-border: var(--c-b);
+
+    /* buttons */
+    --theme-button: var(--c-a);
+    --theme-button-blue: var(--c-b);
+    --theme-button-blue-hover: var(--c-a);
+    --theme-button-gray: var(--c-b);
+
+    /* “legacy red” inverted within palette */
+    --theme-button-red: var(--c-a);
+    --theme-button-red-hover: var(--c-b);
+    --theme-border-red: var(--c-b);
+
+    /* cards & interactive */
+    --theme-card: var(--c-d);
+    --theme-card-hover: var(--c-b);
+    --theme-hover: var(--c-b);
+
+    /* focus & elevation */
+    --theme-focus: var(--c-a);
+    --theme-shadow: rgba(204, 218, 209, 0.35);
+
+    /* error */
+    --theme-error: #f87171; /* slightly brighter red for dark mode (red-400) */
+  }
+}
+
+/* PLACEHOLDER COLOR */
+@layer base {
+  input::placeholder {
+    color: var(--theme-text);
+    opacity: 0.7; /* brighter than Tailwind default 0.35 */
+  }
+}
+
+/* GLOBAL STYLES */
+body {
+  font-family: 'Inter', sans-serif;
+  background: var(--theme-bg);
+  color: var(--theme-text);
+}
+
+/* GLOBAL SCROLLBAR */
+.custom-scrollbar {
+  scrollbar-width: thin;
+  scrollbar-color: var(--theme-scrollbar-thumb) var(--theme-scrollbar-track);
+}
+
+.custom-scrollbar::-webkit-scrollbar {
+  width: 10px;
+  border-radius: 8px;
+}
+
+.custom-scrollbar::-webkit-scrollbar-track {
+  background: var(--theme-scrollbar-track);
+  border-radius: 8px;
+}
+
+.custom-scrollbar::-webkit-scrollbar-thumb {
+  background: var(--theme-scrollbar-thumb);
+  border-radius: 8px;
+  border: 2px solid var(--theme-scrollbar-track);
+}
+
+/* LIGHT MODE VARIANTS */
+:root {
+  --theme-scrollbar-track: var(--theme-surface); /* lighter track */
+  --theme-scrollbar-thumb: var(--theme-accent);  /* darker thumb */
+}
+
+/* DARK MODE VARIANTS */
+@media (prefers-color-scheme: dark) {
+  :root {
+    --theme-scrollbar-track: var(--theme-bg);     /* darkest background */
+    --theme-scrollbar-thumb: var(--theme-accent); /* light accent */
   }
 }
