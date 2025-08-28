@@ -3,6 +3,7 @@ import Board from '../../components/board/Board.board';
 import PrayerCard from '../../components/board/PrayerCard.board';
 import type { ListPrayersResponse } from '../../types/api.type';
 import { api } from '../../helpers/http.helper';
+import { toast } from 'react-hot-toast'; // ← add this
 
 type ColumnKey = 'active' | 'archived';
 
@@ -36,7 +37,12 @@ export default function PortalBoard(): React.ReactElement {
   }
 
   async function onMove(id: number, toStatus: ColumnKey, newIndex: number): Promise<void> {
-    // Optimistic local reorder
+    // --- capture previous state for rollback ---
+    const prevActiveIds = activeIds;
+    const prevArchivedIds = archivedIds;
+    const prevItems = items;
+
+    // --- optimistic update ---
     if (toStatus === 'active') {
       setArchivedIds(prev => prev.filter(x => x !== id));
       setActiveIds(prev => moveIdWithin(prev.concat(id), id, newIndex));
@@ -45,25 +51,32 @@ export default function PortalBoard(): React.ReactElement {
       setArchivedIds(prev => moveIdWithin(prev.concat(id), id, newIndex));
     }
 
-    // Update status in the items collection (for rendering card metadata)
     setItems(prev =>
       prev.map(p => (p.id === id ? { ...p, status: toStatus } : p))
     );
 
-    // Persist to API (position can be newIndex; server may normalize)
+    // --- persist to API; rollback on failure ---
     try {
       await api(`/api/prayers/${id}`, {
         method: 'PATCH',
         body: JSON.stringify({ status: toStatus, position: newIndex })
       });
     } catch (e) {
-      // TODO: optional rollback or toast; for now we’ll leave optimistic state
+      console.error(e);
+      setActiveIds(prevActiveIds);
+      setArchivedIds(prevArchivedIds);
+      setItems(prevItems);
+
+      // Notify the user
+      toast.error('Could not move prayer. Your changes were undone.');
+
+      // Optional: log for debugging
       // console.error(e);
     }
   }
 
   // Card renderer given an id (Board + Column use this)
-  const renderCard = (id: number, _column: ColumnKey, _index: number) => {
+  const renderCard = (id: number) => {
     const item = byId.get(id);
     if (!item) return null;
     return (
