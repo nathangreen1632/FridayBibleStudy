@@ -72,7 +72,7 @@ export default function Board({
       collisionDetection={closestCorners}
       onDragEnd={handleDragEnd}
     >
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+      <div className="w-full min-h-[86vh] grid grid-cols-1 md:grid-cols-2 gap-6">
         <Column
           title="Active Praises"
           column="active"
