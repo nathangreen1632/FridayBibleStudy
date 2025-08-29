@@ -3,13 +3,19 @@ import react from '@vitejs/plugin-react';
 import tailwindcss from '@tailwindcss/vite';
 
 export default defineConfig({
-  plugins: [
-    react(),
-    tailwindcss(),
-  ],
+  plugins: [react(), tailwindcss()],
   server: {
     proxy: {
-      '/api': 'http://localhost:3001',
+      '/api': {
+        target: 'http://localhost:3001',
+        changeOrigin: true,
+      },
+      // Socket.IO WS → backend (must proxy the upgrade)
+      '/socket.io': {
+        target: 'http://localhost:3001',
+        ws: true,            // <<< important: enable WebSocket proxying
+        changeOrigin: true,
+      },
     },
   },
 });
