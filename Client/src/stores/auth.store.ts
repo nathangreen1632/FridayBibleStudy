@@ -8,7 +8,9 @@ type User = {
   name: string;
   email: string;
   role: 'classic' | 'admin';
-  // optional profile fields (when /auth/profile returns them)
+  groupId?: number | null;   // ← added
+
+  // optional profile fields
   phone?: string | null;
   addressStreet?: string | null;
   addressCity?: string | null;
@@ -30,7 +32,6 @@ type AuthState = {
   user: User | null;
 
   register: (payload: RegisterPayload) => Promise<{ success: boolean; message?: string }>;
-
   me: () => Promise<void>;
   login: (email: string, password: string) => Promise<{ success: boolean; message?: string }>;
   logout: () => Promise<void>;
@@ -43,15 +44,14 @@ export const useAuthStore = create<AuthState>((set, get) => ({
   loading: false,
   user: null,
 
-  // unchanged register (uses body.recaptchaToken)
   register: async (payload) => {
     set({ loading: true });
     try {
-      const res = await api<{ id: number; name: string; email: string; role: 'classic'|'admin' }>(
+      const res = await api<{ id: number; name: string; email: string; role: 'classic'|'admin'; groupId?: number }>(
         '/api/auth/register',
         { method: 'POST', body: JSON.stringify(payload) }
       );
-      set({ user: res });
+      set({ user: { ...res, groupId: res.groupId ?? null } });
       return { success: true };
     } catch (err: unknown) {
       let msg: string;
@@ -64,16 +64,19 @@ export const useAuthStore = create<AuthState>((set, get) => ({
     }
   },
 
-  // who am I?
   me: async () => {
     try {
-      const me = await api<{ userId: number; role: 'classic' | 'admin' }>('/api/auth/me', { method: 'GET' });
+      const me = await api<{ userId: number; role: 'classic' | 'admin'; groupId?: number }>(
+        '/api/auth/me',
+        { method: 'GET' }
+      );
       set({
         user: {
           id: me.userId,
-          name: 'User', // will be populated after /auth/profile
-          email: '',    // unknown until profile load/update
+          name: 'User',
+          email: '',
           role: me.role,
+          groupId: me.groupId ?? null, // may be missing from API; tolerate
         },
       });
     } catch {
@@ -81,7 +84,6 @@ export const useAuthStore = create<AuthState>((set, get) => ({
     }
   },
 
-  // login with reCAPTCHA Enterprise (header + body), then hydrate via /me
   login: async (email, password) => {
     set({ loading: true });
     try {
@@ -97,20 +99,27 @@ export const useAuthStore = create<AuthState>((set, get) => ({
           'x-recaptcha-token': recaptchaToken,
         },
         body: JSON.stringify({ email, password, recaptchaToken }),
-        // NOTE: api() should default to same-origin credentials; do not override to omit
       });
 
-      // If your api() already throws on !ok, you won't reach here on 400.
-      // If it returns Response on error, detect it and parse error text:
       if (res instanceof Response && !res.ok) {
         const errBody = await res.json().catch(() => ({}));
         const msg = errBody?.error || 'Login failed';
         throw new Error(msg);
       }
 
-      // Cookie is httpOnly; hydrate via /me
-      const me = await api<{ userId: number; role: 'classic' | 'admin' }>('/api/auth/me');
-      set({ user: { id: me.userId, name: '', email, role: me.role } });
+      const me = await api<{ userId: number; role: 'classic' | 'admin'; groupId?: number }>(
+        '/api/auth/me'
+      );
+
+      set({
+        user: {
+          id: me.userId,
+          name: '',
+          email,
+          role: me.role,
+          groupId: me.groupId ?? null,
+        },
+      });
 
       return { success: true };
     } catch (err: unknown) {
@@ -120,7 +129,6 @@ export const useAuthStore = create<AuthState>((set, get) => ({
       set({ loading: false });
     }
   },
-
 
   logout: async () => {
     set({ loading: true });
