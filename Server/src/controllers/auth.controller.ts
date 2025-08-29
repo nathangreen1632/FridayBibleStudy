@@ -93,3 +93,47 @@ export async function resetPassword(req: Request, res: Response): Promise<void> 
 
   res.json({ ok: true });
 }
+
+export async function updateProfile(req: Request, res: Response): Promise<void> {
+  if (!req.user) { res.status(401).json({ error: 'Unauthorized' }); return; }
+
+  const {
+    name,
+    phone,
+    addressStreet,
+    addressCity,
+    addressState,
+    addressZip,
+    spouseName
+  } = (req.body ?? {}) as Partial<{
+    name: string; phone: string;
+    addressStreet: string; addressCity: string; addressState: string; addressZip: string;
+    spouseName: string | null;
+  }>;
+
+  const user = await User.findByPk(req.user.userId);
+  if (!user) { res.status(404).json({ error: 'Not found' }); return; }
+
+  if (name !== undefined) user.name = name;
+  if (phone !== undefined) user.phone = phone;
+  if (addressStreet !== undefined) user.addressStreet = addressStreet;
+  if (addressCity !== undefined) user.addressCity = addressCity;
+  if (addressState !== undefined) user.addressState = addressState;
+  if (addressZip !== undefined) user.addressZip = addressZip;
+  if (spouseName !== undefined) user.spouseName = spouseName;
+
+  await user.save();
+
+  res.json({
+    id: user.id,
+    name: user.name,
+    email: user.email,
+    role: user.role,
+    phone: user.phone,
+    addressStreet: user.addressStreet,
+    addressCity: user.addressCity,
+    addressState: user.addressState,
+    addressZip: user.addressZip,
+    spouseName: user.spouseName
+  });
+}

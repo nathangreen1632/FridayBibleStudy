@@ -14,52 +14,71 @@ declare module 'express-serve-static-core' {
   }
 }
 
-/** Guard when you want to name the action inline on a route */
-export function recaptchaGuard(expectedAction: string) {
-  return async (req: Request, res: Response, next: NextFunction): Promise<void> => {
-    const token =
-      (req.headers['x-recaptcha-token'] as string | undefined) ||
-      (req.body?.recaptchaToken as string | undefined);
+/** -------- helpers: route → action resolution (tolerates /api mount) -------- */
 
-    if (!token) { res.status(400).json({ error: 'Missing CAPTCHA token' }); return; }
+// Map “METHOD path” → Enterprise action
+const ACTIONS: Record<string, string> = {
+  // AUTH
+  'POST /auth/login': 'login',
+  'POST /auth/register': 'register',
+  'POST /auth/request-reset': 'password_reset_request',
+  'POST /auth/reset-password': 'password_reset',
 
-    await assessAndGate(req, res, next, expectedAction, token);
-  };
+  // ADMIN
+  'POST /admin/promote': 'admin_promote',
+
+  // EXPORT
+  'POST /export/prayers': 'export_prayers',
+
+  // GROUPS
+  'PATCH /groups': 'group_update',
+
+  // PRAYERS
+  'POST /prayers': 'prayer_create',
+  'PATCH /prayers/:id': 'prayer_update',
+  'DELETE /prayers/:id': 'prayer_delete',
+  'POST /prayers/:id/updates': 'prayer_add_update',
+  'POST /prayers/:id/attachments': 'media_upload',
+};
+
+// Generate multiple lookup keys that tolerate the /api prefix and router mounts
+function routeKeyCandidates(req: Request): string[] {
+  const method = req.method.toUpperCase();
+
+  const base = req.baseUrl || ''; // e.g. "/auth"
+  const routePath = (req.route && (req.route.path as string)) || ''; // e.g. "/login" or "/:id/updates"
+  const path = req.path || ''; // e.g. "/auth/login"
+  const original = req.originalUrl || '';
+  const qIndex = original.indexOf('?');
+  const origNoQuery = qIndex === -1 ? original : original.slice(0, qIndex);
+  const origNoApi = origNoQuery.replace(/^\/api\b/, ''); // "/auth/login"
+
+  // Normalize numeric IDs to ":id" so "/prayers/123" matches "/prayers/:id"
+  const normalize = (p: string) => p.replace(/\/\d+(?=\/|$)/g, '/:id');
+
+  const set = new Set<string>([
+    `${method} ${base}${routePath}`,
+    `${method} ${path}`,
+    `${method} ${origNoQuery}`,
+    `${method} ${origNoApi}`,
+    `${method} ${normalize(base + routePath)}`,
+    `${method} ${normalize(path)}`,
+    `${method} ${normalize(origNoQuery)}`,
+    `${method} ${normalize(origNoApi)}`,
+  ]);
+
+  // Drop keys with empty paths
+  return Array.from(set).filter(k => k.split(' ')[1]);
 }
 
-/** Rules mapping (method + path) -> Enterprise action name */
-type Rule = { method: 'GET' | 'POST' | 'PATCH' | 'DELETE', pattern: RegExp, action: string };
-
-const rules: Rule[] = [
-  // /auth
-  { method: 'POST', pattern: /^\/auth\/register\/?$/i,               action: 'register' },
-  { method: 'POST', pattern: /^\/auth\/login\/?$/i,                  action: 'login' },
-  { method: 'POST', pattern: /^\/auth\/request-reset\/?$/i,          action: 'password_reset_request' },
-  { method: 'POST', pattern: /^\/auth\/reset-password\/?$/i,         action: 'password_reset' },
-
-  // /admin
-  { method: 'POST', pattern: /^\/admin\/promote\/?$/i,               action: 'admin_promote' },
-
-  // /export
-  { method: 'POST', pattern: /^\/export\/prayers\/?$/i,              action: 'export_prayers' },
-
-  // /groups
-  { method: 'PATCH', pattern: /^\/groups\/?$/i,                      action: 'group_update' },
-
-  // /prayers
-  { method: 'POST',  pattern: /^\/prayers\/?$/i,                     action: 'prayer_create' },
-  { method: 'PATCH', pattern: /^\/prayers\/[^/]+\/?$/i,              action: 'prayer_update' },
-  { method: 'DELETE',pattern: /^\/prayers\/[^/]+\/?$/i,              action: 'prayer_delete' },
-  { method: 'POST',  pattern: /^\/prayers\/[^/]+\/updates\/?$/i,     action: 'prayer_add_update' },
-  { method: 'POST',  pattern: /^\/prayers\/[^/]+\/attachments\/?$/i, action: 'media_upload' },
-];
-
-function resolveExpectedAction(req: Request): string | undefined {
-  const method = req.method.toUpperCase() as Rule['method'];
-  const fullPath = `${req.baseUrl || ''}${req.path || ''}`; // router-safe
-  const hit = rules.find(r => r.method === method && r.pattern.test(fullPath));
-  return hit?.action;
+function resolveExpectedAction(req: Request): string | null {
+  for (const key of routeKeyCandidates(req)) {
+    if (ACTIONS[key]) return ACTIONS[key];
+  }
+  return null;
 }
+
+/** -------- shared assessor -------- */
 
 async function assessAndGate(
   req: Request,
@@ -72,19 +91,30 @@ async function assessAndGate(
     const result = await verifyRecaptchaToken({
       token,
       expectedAction,
-      ip: (req.headers['x-forwarded-for'] as string)?.split(',')[0]?.trim() || req.socket.remoteAddress || undefined,
+      ip:
+        (req.headers['x-forwarded-for'] as string)?.split(',')[0]?.trim() ||
+        req.socket.remoteAddress ||
+        undefined,
       userAgent: req.headers['user-agent'],
     });
 
     // 1) Token must be verified by Google
     if (!result.success) {
-      res.status(400).json({ error: 'Invalid CAPTCHA token', errorCodes: result.errorCodes });
+      res.status(400).json({
+        error: 'Invalid CAPTCHA token',
+        errorCodes: result.errorCodes,
+        action: result.action, // <— added so you can see what action Google parsed
+      });
       return;
     }
 
     // 2) Expected action must match
     if (!result.isActionValid) {
-      res.status(400).json({ error: 'CAPTCHA action mismatch', expected: expectedAction, got: result.action });
+      res.status(400).json({
+        error: 'CAPTCHA action mismatch',
+        expected: expectedAction,
+        got: result.action,
+      });
       return;
     }
 
@@ -104,20 +134,55 @@ async function assessAndGate(
 
     next();
   } catch (err: any) {
-    res.status(502).json({ error: 'reCAPTCHA verification error', message: err?.message ?? String(err) });
+    res
+      .status(502)
+      .json({ error: 'reCAPTCHA verification error', message: err?.message ?? String(err) });
   }
 }
 
-/** Path-mapped middleware: just drop it on the route; it figures out the action */
-export async function recaptchaMiddleware(req: Request, res: Response, next: NextFunction): Promise<void> {
+/** -------- public middlewares -------- */
+
+/** Guard when you want to name the action inline on a route */
+export function recaptchaGuard(expectedAction: string) {
+  return async (req: Request, res: Response, next: NextFunction): Promise<void> => {
+    const token =
+      (req.headers['x-recaptcha-token'] as string | undefined) ||
+      (req.body?.recaptchaToken as string | undefined);
+
+    if (!token) {
+      res.status(400).json({ error: 'Missing CAPTCHA token' });
+      return;
+    }
+
+    await assessAndGate(req, res, next, expectedAction, token);
+  };
+}
+
+/** Path-mapped middleware: drop it on routes; it figures out the action */
+export async function recaptchaMiddleware(
+  req: Request,
+  res: Response,
+  next: NextFunction
+): Promise<void> {
   const token =
     (req.headers['x-recaptcha-token'] as string | undefined) ||
     (req.body?.recaptchaToken as string | undefined);
 
-  if (!token) { res.status(400).json({ error: 'Missing CAPTCHA token' }); return; }
+  if (!token) {
+    res.status(400).json({ error: 'Missing CAPTCHA token' });
+    return;
+  }
 
   const expectedAction = resolveExpectedAction(req);
-  if (!expectedAction) { res.status(400).json({ error: 'Unrecognized CAPTCHA route' }); return; }
+  if (!expectedAction) {
+    if (process.env.NODE_ENV !== 'production') {
+      // Helpful during development: shows what keys we tried
+      // eslint-disable-next-line no-console
+      console.warn('[reCAPTCHA] Unrecognized route. Candidates:', routeKeyCandidates(req));
+    }
+    res.status(400).json({ error: 'Unrecognized CAPTCHA route' });
+    return;
+  }
 
   await assessAndGate(req, res, next, expectedAction, token);
 }

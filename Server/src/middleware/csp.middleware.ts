@@ -11,11 +11,12 @@ export function cspMiddleware(_req: Request, res: Response, next: NextFunction) 
     "img-src 'self' data: https://www.gstatic.com",
     "font-src 'self' data: https://www.gstatic.com",
     "frame-src https://www.google.com https://www.gstatic.com",
-    "connect-src 'self'",
+    "connect-src 'self' https://www.google.com https://www.gstatic.com",
     "base-uri 'self'",
     "form-action 'self'",
     "frame-ancestors 'none'"
   ].join('; '));
+
 
   next();
 }

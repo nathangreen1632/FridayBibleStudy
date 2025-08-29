@@ -1,7 +1,7 @@
 // Server/src/controllers/prayer.controller.ts
 import type { Request, Response } from 'express';
 import type { Order } from 'sequelize';
-import { Group, PrayerUpdate, User, Attachment } from '../models/index.js';
+import {Group, PrayerUpdate, User, Attachment, PrayerParticipant} from '../models/index.js';
 import { Prayer, type Status } from '../models/prayer.model.js';
 import { sendEmail } from '../services/email.service.js';
 import { emitToGroup } from '../config/socket.config.js';
@@ -119,19 +119,37 @@ export async function updatePrayer(req: Request, res: Response): Promise<void> {
   const prayer = await findPrayerOr404(id, res);
   if (!prayer) return;
 
-  // author or admin may edit/move
   const isAuthor = prayer.authorUserId === req.user!.userId;
-  const isAdmin = req.user!.role === 'admin';
-  if (!isAuthor && !isAdmin) {
+  const isAdmin  = req.user!.role === 'admin';
+
+  // Determine if this request is *only* a move (status/position) and not an edit to content/meta
+  const isOnlyMove =
+    title === undefined &&
+    content === undefined &&
+    category === undefined &&
+    (status !== undefined || position !== undefined);
+
+  // Participants may move (archive/reorder), but not edit text/category
+  let isParticipant = false;
+  if (!isAuthor && !isAdmin && isOnlyMove) {
+    const pp = await PrayerParticipant.findOne({
+      where: { prayerId: prayer.id, userId: req.user!.userId },
+    });
+    isParticipant = !!pp;
+  }
+
+  if (!isAuthor && !isAdmin && !isParticipant) {
     res.status(403).json({ error: 'Forbidden' });
     return;
   }
 
-  if (title !== undefined) prayer.title = title;
-  if (content !== undefined) prayer.content = content;
-  if (category !== undefined) prayer.category = category;
-  if (status !== undefined) prayer.status = status;
-  if (position !== undefined) prayer.position = position;
+  // Apply changes
+  if (title     !== undefined) prayer.title     = title;
+  if (content   !== undefined) prayer.content   = content;
+  if (category  !== undefined) prayer.category  = category as any;
+  if (status    !== undefined) prayer.status    = status   as any;
+  if (position  !== undefined) prayer.position  = position;
+
   await prayer.save();
 
   emitToGroup(prayer.groupId, 'prayer:updated', { id: prayer.id });

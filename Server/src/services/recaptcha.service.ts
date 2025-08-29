@@ -3,6 +3,23 @@ import { GoogleAuth, AnyAuthClient } from 'google-auth-library';
 import fs from 'fs/promises';
 import { env } from '../config/env.config.js';
 
+
+// Quick visibility at startup
+(async () => {
+  try {
+    const raw = await fs.readFile(env.SERVICE_ACCOUNT_KEY_PATH, 'utf8');
+    const sa = JSON.parse(raw);
+    // eslint-disable-next-line no-console
+    console.log('[reCAPTCHA] SA project_id:', sa.project_id, ' RECAPTCHA_PROJECT_ID:', env.RECAPTCHA_PROJECT_ID);
+    if (sa.project_id !== env.RECAPTCHA_PROJECT_ID) {
+      console.warn('⚠️  Service account project_id does NOT match RECAPTCHA_PROJECT_ID');
+    }
+  } catch (e) {
+    console.warn('⚠️  Could not read service account file:', e);
+  }
+})();
+
+
 export type RecaptchaVerificationResponse = {
   tokenProperties?: {
     valid?: boolean;
@@ -103,7 +120,13 @@ export async function verifyRecaptchaToken(
     };
 
     const res = await fetch(apiUrl, init);
-    if (!res.ok) return defaultResult;
+
+    // --- Added explicit HTTP error logging ---
+    if (!res.ok) {
+      const body = await res.text().catch(() => '');
+      console.error('❌ reCAPTCHA HTTP error', res.status, body);
+      return defaultResult;
+    }
 
     const data = (await res.json()) as RecaptchaVerificationResponse;
 
@@ -111,13 +134,24 @@ export async function verifyRecaptchaToken(
     const score = data.riskAnalysis?.score ?? 0;
     const action = data.tokenProperties?.action;
 
+    // --- Added explicit invalid-token logging ---
+    if (!valid) {
+      console.error('❌ reCAPTCHA invalid token', {
+        invalidReason: data.tokenProperties?.invalidReason,
+        action,
+        score,
+      });
+    }
+
     return {
       success: valid,
       score,
       action,
       hostname: data.tokenProperties?.hostname,
       challenge_ts: data.tokenProperties?.createTime,
-      errorCodes: data.tokenProperties?.invalidReason ? [data.tokenProperties.invalidReason] : [],
+      errorCodes: data.tokenProperties?.invalidReason
+        ? [data.tokenProperties.invalidReason]
+        : [],
       isActionValid: action === expectedAction,
       isScoreAcceptable: valid && score >= (IS_PROD ? MIN_SCORE : 0.1),
     };
