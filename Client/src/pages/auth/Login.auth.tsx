@@ -16,7 +16,7 @@ export default function Login(): React.ReactElement {
     setErr(null);
     const { success, message } = await login(email, password);
     if (success) {
-      const to = (loc.state)?.from ?? '/portal';
+      const to = (loc.state)?.from ?? '/profile';
       nav(to, { replace: true });
     } else {
       setErr(message ?? 'Login failed');
