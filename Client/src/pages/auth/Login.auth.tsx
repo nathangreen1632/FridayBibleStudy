@@ -64,7 +64,7 @@ export default function Login(): React.ReactElement {
     const { success, message } = await login(email, password /* , recaptchaToken */);
     if (success) {
       toast.success('Welcome back!');
-      const to = (loc.state as any)?.from ?? '/profile';
+      const to = (loc.state)?.from ?? '/profile';
       nav(to, { replace: true });
     } else {
       const msg = message ?? 'Login failed';
