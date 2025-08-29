@@ -6,7 +6,7 @@ export default function PhilosophyView(): React.ReactElement {
       <div className="rounded-3xl overflow-hidden shadow-[0_4px_14px_0_var(--theme-shadow)] bg-[var(--theme-surface)]">
         <div className="w-full h-[280px] sm:h-[400px] md:h-[480px] lg:h-[540px] xl:h-[600px] 2xl:h-[650px] overflow-hidden">
           <img
-            src="../.././public/bible-study-banner.webp"
+            src="/bible-study-banner.webp"
             alt="Friday Bible Study group banner"
             className="w-full h-full object-cover rounded-3xl"
           />
