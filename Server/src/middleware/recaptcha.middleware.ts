@@ -48,7 +48,9 @@ function routeKeyCandidates(req: Request): string[] {
   const base = req.baseUrl || ''; // e.g. "/auth"
   const routePath = (req.route && (req.route.path as string)) || ''; // e.g. "/login" or "/:id/updates"
   const path = req.path || ''; // e.g. "/auth/login"
-  const origNoQuery = (req.originalUrl || '').replace(/\?.*$/, ''); // e.g. "/api/auth/login?x=1" -> "/api/auth/login"
+  const original = req.originalUrl || '';
+  const qIndex = original.indexOf('?');
+  const origNoQuery = qIndex === -1 ? original : original.slice(0, qIndex);
   const origNoApi = origNoQuery.replace(/^\/api\b/, ''); // "/auth/login"
 
   // Normalize numeric IDs to ":id" so "/prayers/123" matches "/prayers/:id"
