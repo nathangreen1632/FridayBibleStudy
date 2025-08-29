@@ -121,7 +121,7 @@ export default function Register(): React.ReactElement {
 
 
   return (
-    <div className="min-h-screen bg-[var(--theme-bg)] text-[var(--theme-text)] flex items-center justify-center p-6">
+    <div className="min-h-[88vh] bg-[var(--theme-bg)] text-[var(--theme-text)] flex items-center justify-center p-3">
       <Toaster position="top-center" reverseOrder={false} /> {/* ✅ global toaster */}
 
       <form
