@@ -12,8 +12,8 @@ export default function Login(): React.ReactElement {
   const loc = useLocation();
   const { login, loading } = useAuthStore();
 
-  const [email, setEmail] = useState('testuser@example.com');
-  const [password, setPassword] = useState('Password123!');
+  const [email, setEmail] = useState('');
+  const [password, setPassword] = useState('');
   const [showPw, setShowPw] = useState(false);
   const [ready, setReady] = useState(false);        // reCAPTCHA readiness (optional)
   const [err, setErr] = useState<string | null>(null);
