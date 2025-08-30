@@ -13,7 +13,7 @@ export default function ContactFormView({
                                           form, submitting, savedMsg, error, onChange, onSubmit,
                                         }: Readonly<Props>): React.ReactElement {
   return (
-    <div className="rounded-2xl shadow-md p-6 bg-[var(--theme-surface)] border border-[var(--theme-border)]">
+    <div className="w-full rounded-2xl shadow-md p-6 bg-[var(--theme-surface)] border border-[var(--theme-border)]">
       {savedMsg && (
         <div className="mb-4 rounded-lg px-4 py-3 text-sm bg-emerald-100 text-emerald-800 dark:bg-emerald-900 dark:text-emerald-100">
           {savedMsg}
@@ -27,6 +27,7 @@ export default function ContactFormView({
 
       <div className="space-y-4">
         <label className="block">
+          <h2 className="text-2xl text-center font-semibold mb-1">Contact Us</h2>
           <span className="block text-sm mb-1">Name</span>
           <input
             className="w-full rounded-xl px-3 py-2 bg-[var(--theme-bg)] text-[var(--theme-text)] border border-[var(--theme-border)] focus:outline-none focus:ring-2 focus:ring-[var(--theme-focus)]"
