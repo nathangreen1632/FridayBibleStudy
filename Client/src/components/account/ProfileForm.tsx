@@ -1,6 +1,7 @@
-//Client/src/components/account/ProfileForm.tsx
+// Client/src/components/account/ProfileForm.tsx
 import React, { useEffect, useMemo, useState } from 'react';
-import type { User } from '../../types/domain.types'; // adjust if your User type lives elsewhere
+import toast from 'react-hot-toast';
+import type { User } from '../../types/domain.types';
 
 type FormValues = {
   name: string;
@@ -13,6 +14,7 @@ type FormValues = {
 };
 
 type ProfileFormProps = {
+  open?: boolean; // modal open state
   user: User;
   savedMsg?: string | null;
   onSave: (values: FormValues) => Promise<void>;
@@ -25,7 +27,6 @@ function normalizeFromUser(user: User): FormValues {
       ? user.name
       : '';
 
-  // these casts match your existing usage of (user as any)
   return {
     name,
     phone: (user as any).phone ?? '',
@@ -38,22 +39,41 @@ function normalizeFromUser(user: User): FormValues {
 }
 
 export default function ProfileForm({
+                                      open,
                                       user,
                                       savedMsg,
                                       onSave,
                                       onDirtyChange,
                                     }: Readonly<ProfileFormProps>): React.ReactElement {
+  // --- phone helpers (strict 555-123-4567) ---
+  const phoneRE = /^\d{3}-\d{3}-\d{4}$/;
+  function formatPhone(value: string): string {
+    const d = value.replace(/\D/g, '').slice(0, 10);
+    if (d.length <= 3) return d;
+    if (d.length <= 6) return `${d.slice(0, 3)}-${d.slice(3)}`;
+    return `${d.slice(0, 3)}-${d.slice(3, 6)}-${d.slice(6)}`;
+  }
+  // -------------------------------------------
+
   const initial = useMemo(() => normalizeFromUser(user), [user]);
   const [form, setForm] = useState<FormValues>(initial);
 
+  // If the user object itself changes, re-seed
   useEffect(() => {
-    // Whenever the modal opens with a newer user snapshot, re-seed.
     setForm(normalizeFromUser(user));
   }, [user]);
 
-  const dirty = useMemo(() => {
-    return JSON.stringify(form) !== JSON.stringify(initial);
-  }, [form, initial]);
+  // Also re-seed each time the modal transitions to open
+  useEffect(() => {
+    if (open) {
+      setForm(normalizeFromUser(user));
+    }
+  }, [open, user]);
+
+  const dirty = useMemo(
+    () => JSON.stringify(form) !== JSON.stringify(initial),
+    [form, initial]
+  );
 
   useEffect(() => {
     if (onDirtyChange) onDirtyChange(dirty);
@@ -61,6 +81,15 @@ export default function ProfileForm({
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
+    if (!dirty) {
+      toast('No changes to save.', { icon: 'ℹ️' });
+      return;
+    }
+    // phone is optional, but if provided it must match 555-123-4567
+    if (form.phone && !phoneRE.test(form.phone)) {
+      toast.error('Please enter your phone as 555-123-4567');
+      return;
+    }
     await onSave(form);
   }
 
@@ -78,13 +107,19 @@ export default function ProfileForm({
         />
       </label>
 
-      {/* Phone */}
+      {/* Phone (strict format) */}
       <label className="block text-xs sm:text-sm font-medium">
         <span className="text-sm sm:text-base mb-1 block">Phone</span>
         <input
+          type="tel"
+          inputMode="numeric"
+          autoComplete="tel"
+          maxLength={12}                 // 3+1+3+1+4
           placeholder="555-123-4567"
           value={form.phone}
-          onChange={e => setForm({ ...form, phone: e.target.value })}
+          onChange={e => setForm({ ...form, phone: formatPhone(e.target.value) })}
+          pattern="^\d{3}-\d{3}-\d{4}$"
+          title="Format: 555-123-4567"
           className="block w-full rounded-xl border border-[var(--theme-border)] bg-[var(--theme-surface)] px-3 py-2 text-sm sm:text-base
                      text-[var(--theme-text)] focus:outline-none focus:ring-2 focus:ring-[var(--theme-focus)]"
         />
