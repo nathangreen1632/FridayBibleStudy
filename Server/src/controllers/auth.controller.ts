@@ -143,8 +143,18 @@ export async function updateProfile(req: Request, res: Response): Promise<void> 
     const user = await User.findByPk(req.user.userId);
     if (!user) { res.status(404).json({ error: 'Not found' }); return; }
 
-    // Helper: trim strings; treat whitespace-only as "empty" to ignore
-    const clean = (v: unknown) => typeof v === 'string' ? v.trim() : v;
+    // Helpers
+    const clean = (v: unknown) => (typeof v === 'string' ? v.trim() : v);
+    const phoneRE = /^\d{3}-\d{3}-\d{4}$/;
+
+    // Server-side phone validation (only if provided and non-empty)
+    if (phone !== undefined) {
+      const cleanedPhone = clean(phone) as string | undefined;
+      if (cleanedPhone && !phoneRE.test(cleanedPhone)) {
+        res.status(400).json({ error: 'Invalid phone format. Use 555-123-4567' });
+        return;
+      }
+    }
 
     // Start from current values; only overwrite if a non-empty value is provided
     const next = {
@@ -169,12 +179,14 @@ export async function updateProfile(req: Request, res: Response): Promise<void> 
 
     (Object.keys(candidates) as (keyof typeof next)[]).forEach((key) => {
       const val = candidates[key];
-      if (val === undefined) return; // not provided -> leave as-is
-      if (typeof val === 'string' && val.trim() === '') return; // empty string -> ignore to protect data
+      if (val === undefined) return;                      // not provided -> leave as-is
+      if (typeof val === 'string' && val.trim() === '') { // empty string -> ignore to protect data
+        return;
+      }
       (next as any)[key] = val;
     });
 
-    // Detect no-op (nothing actually changed)
+    // Detect no-op
     const unchanged =
       next.name === user.name &&
       next.phone === user.phone &&
@@ -229,4 +241,5 @@ export async function updateProfile(req: Request, res: Response): Promise<void> 
     res.status(500).json({ error: msg });
   }
 }
+
 
