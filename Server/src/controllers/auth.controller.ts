@@ -1,3 +1,4 @@
+// Server/src/controllers/auth.controller.ts
 import type { Request, Response } from 'express';
 import dayjs from 'dayjs';
 import { User, OtpToken } from '../models/index.js';
@@ -53,7 +54,34 @@ export async function logout(_req: Request, res: Response): Promise<void> {
 }
 
 export async function me(req: Request, res: Response): Promise<void> {
-  res.json(req.user);
+  if (!req.user) { res.status(401).json({ error: 'Unauthorized' }); return; }
+
+  try {
+    const user = await User.findByPk(req.user.userId, {
+      attributes: [
+        'id', 'name', 'email', 'role',
+        'phone', 'addressStreet', 'addressCity', 'addressState', 'addressZip', 'spouseName'
+      ],
+    });
+
+    if (!user) { res.status(404).json({ error: 'Not found' }); return; }
+
+    res.json({
+      id: user.id,
+      name: user.name,
+      email: user.email,
+      role: user.role,
+      phone: user.phone,
+      addressStreet: user.addressStreet,
+      addressCity: user.addressCity,
+      addressState: user.addressState,
+      addressZip: user.addressZip,
+      spouseName: user.spouseName
+    });
+  } catch (err) {
+    const msg = err instanceof Error ? err.message : 'Failed to fetch user';
+    res.status(500).json({ error: msg });
+  }
 }
 
 export async function requestReset(req: Request, res: Response): Promise<void> {
@@ -97,43 +125,108 @@ export async function resetPassword(req: Request, res: Response): Promise<void> 
 export async function updateProfile(req: Request, res: Response): Promise<void> {
   if (!req.user) { res.status(401).json({ error: 'Unauthorized' }); return; }
 
-  const {
-    name,
-    phone,
-    addressStreet,
-    addressCity,
-    addressState,
-    addressZip,
-    spouseName
-  } = (req.body ?? {}) as Partial<{
-    name: string; phone: string;
-    addressStreet: string; addressCity: string; addressState: string; addressZip: string;
-    spouseName: string | null;
-  }>;
+  try {
+    const {
+      name,
+      phone,
+      addressStreet,
+      addressCity,
+      addressState,
+      addressZip,
+      spouseName
+    } = (req.body ?? {}) as Partial<{
+      name: string; phone: string;
+      addressStreet: string; addressCity: string; addressState: string; addressZip: string;
+      spouseName: string | null;
+    }>;
 
-  const user = await User.findByPk(req.user.userId);
-  if (!user) { res.status(404).json({ error: 'Not found' }); return; }
+    const user = await User.findByPk(req.user.userId);
+    if (!user) { res.status(404).json({ error: 'Not found' }); return; }
 
-  if (name !== undefined) user.name = name;
-  if (phone !== undefined) user.phone = phone;
-  if (addressStreet !== undefined) user.addressStreet = addressStreet;
-  if (addressCity !== undefined) user.addressCity = addressCity;
-  if (addressState !== undefined) user.addressState = addressState;
-  if (addressZip !== undefined) user.addressZip = addressZip;
-  if (spouseName !== undefined) user.spouseName = spouseName;
+    // Helper: trim strings; treat whitespace-only as "empty" to ignore
+    const clean = (v: unknown) => typeof v === 'string' ? v.trim() : v;
 
-  await user.save();
+    // Start from current values; only overwrite if a non-empty value is provided
+    const next = {
+      name: user.name,
+      phone: user.phone,
+      addressStreet: user.addressStreet,
+      addressCity: user.addressCity,
+      addressState: user.addressState,
+      addressZip: user.addressZip,
+      spouseName: user.spouseName,
+    };
 
-  res.json({
-    id: user.id,
-    name: user.name,
-    email: user.email,
-    role: user.role,
-    phone: user.phone,
-    addressStreet: user.addressStreet,
-    addressCity: user.addressCity,
-    addressState: user.addressState,
-    addressZip: user.addressZip,
-    spouseName: user.spouseName
-  });
+    const candidates: Partial<typeof next> = {
+      name: clean(name) as string | undefined,
+      phone: clean(phone) as string | undefined,
+      addressStreet: clean(addressStreet) as string | undefined,
+      addressCity: clean(addressCity) as string | undefined,
+      addressState: clean(addressState) as string | undefined,
+      addressZip: clean(addressZip) as string | undefined,
+      spouseName: clean(spouseName ?? undefined) as string | null | undefined,
+    };
+
+    (Object.keys(candidates) as (keyof typeof next)[]).forEach((key) => {
+      const val = candidates[key];
+      if (val === undefined) return; // not provided -> leave as-is
+      if (typeof val === 'string' && val.trim() === '') return; // empty string -> ignore to protect data
+      (next as any)[key] = val;
+    });
+
+    // Detect no-op (nothing actually changed)
+    const unchanged =
+      next.name === user.name &&
+      next.phone === user.phone &&
+      next.addressStreet === user.addressStreet &&
+      next.addressCity === user.addressCity &&
+      next.addressState === user.addressState &&
+      next.addressZip === user.addressZip &&
+      next.spouseName === user.spouseName;
+
+    if (unchanged) {
+      res.status(200).json({
+        id: user.id,
+        name: user.name,
+        email: user.email,
+        role: user.role,
+        phone: user.phone,
+        addressStreet: user.addressStreet,
+        addressCity: user.addressCity,
+        addressState: user.addressState,
+        addressZip: user.addressZip,
+        spouseName: user.spouseName,
+        message: 'No changes',
+      });
+      return;
+    }
+
+    // Persist only when there are changes
+    user.name = next.name;
+    user.phone = next.phone;
+    user.addressStreet = next.addressStreet;
+    user.addressCity = next.addressCity;
+    user.addressState = next.addressState;
+    user.addressZip = next.addressZip;
+    user.spouseName = next.spouseName;
+
+    await user.save();
+
+    res.json({
+      id: user.id,
+      name: user.name,
+      email: user.email,
+      role: user.role,
+      phone: user.phone,
+      addressStreet: user.addressStreet,
+      addressCity: user.addressCity,
+      addressState: user.addressState,
+      addressZip: user.addressZip,
+      spouseName: user.spouseName
+    });
+  } catch (err) {
+    const msg = err instanceof Error ? err.message : 'Failed to update profile';
+    res.status(500).json({ error: msg });
+  }
 }
+
