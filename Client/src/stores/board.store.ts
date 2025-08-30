@@ -6,11 +6,27 @@ import type { ListPrayersResponse } from '../types/api.type';
 import type { Category, Status } from '../types/domain.types';
 
 type ColumnKey = 'active' | 'archived';
-
 type Item = ListPrayersResponse['items'][number];
 
 function sortByPosition(a: Item, b: Item) {
   return a.position - b.position;
+}
+
+// insert id at a given index, removing any previous occurrence
+function moveIdWithin(list: number[], movedId: number, toIdx: number): number[] {
+  const without = list.filter((x) => x !== movedId);
+  const idx = Math.max(0, Math.min(toIdx, without.length));
+  without.splice(idx, 0, movedId);
+  return without;
+}
+
+// (Re)build a single column’s order from byId
+function rebuildColumn(byId: Map<number, Item>, ids: number[], status: ColumnKey): number[] {
+  return ids
+    .map((id) => byId.get(id))
+    .filter((p): p is Item => !!p && p.status === status)
+    .sort(sortByPosition)
+    .map((p) => p.id);
 }
 
 type BoardState = {
@@ -28,9 +44,16 @@ type BoardState = {
   filterStatus?: Status;
   filterCategory?: Category;
 
-  // Actions
+  // Initial fetch
   fetchInitial: () => Promise<void>;
+
+  // Drag/drop persist
   move: (id: number, toStatus: ColumnKey, newIndex: number) => Promise<boolean>;
+
+  // Socket-friendly optimistic patch ops (LOCAL ONLY — NO NETWORK)
+  upsertPrayer: (p: Item) => void;
+  movePrayer: (id: number, to: Status) => void;
+
   setSort: (s: BoardState['sort']) => void;
   setQuery: (q: string) => void;
 };
@@ -80,6 +103,7 @@ export const useBoardStore = create<BoardState>((set, get) => ({
     }
   },
 
+  // ---- Drag/drop persist ----
   move: async (id, toStatus, newIndex) => {
     const { byId, order } = get();
 
@@ -91,31 +115,28 @@ export const useBoardStore = create<BoardState>((set, get) => ({
     const prevById = new Map(byId);
     const prevOrder = { active: [...order.active], archived: [...order.archived] };
 
-    // Helpers
-    const moveIdWithin = (list: number[], movedId: number, toIdx: number) => {
-      const arr = list.filter((x) => x !== movedId);
-      const idx = Math.max(0, Math.min(toIdx, arr.length));
-      arr.splice(idx, 0, movedId);
-      return arr;
-    };
-
     // --- Optimistic update ---
     const nextById = new Map(byId);
     const nextOrder = { active: [...order.active], archived: [...order.archived] };
 
-    if (toStatus === 'active') {
-      nextOrder.archived = nextOrder.archived.filter((x) => x !== id);
-      nextOrder.active = moveIdWithin([...nextOrder.active, id], id, newIndex);
-    } else {
-      nextOrder.active = nextOrder.active.filter((x) => x !== id);
-      nextOrder.archived = moveIdWithin([...nextOrder.archived, id], id, newIndex);
+    try {
+      if (toStatus === 'active') {
+        nextOrder.archived = nextOrder.archived.filter((x) => x !== id);
+        nextOrder.active = moveIdWithin([...nextOrder.active, id], id, newIndex);
+      } else {
+        nextOrder.active = nextOrder.active.filter((x) => x !== id);
+        nextOrder.archived = moveIdWithin([...nextOrder.archived, id], id, newIndex);
+      }
+
+      // Update item’s status/position optimistically
+      const updated: Item = { ...item, status: toStatus, position: newIndex };
+      nextById.set(id, updated);
+
+      set({ byId: nextById, order: nextOrder });
+    } catch {
+      set({ byId: prevById, order: prevOrder });
+      return false;
     }
-
-    // Update item’s status/position optimistically
-    const updated = { ...item, status: toStatus, position: newIndex };
-    nextById.set(id, updated);
-
-    set({ byId: nextById, order: nextOrder });
 
     // --- Persist (with reCAPTCHA) ---
     try {
@@ -124,10 +145,73 @@ export const useBoardStore = create<BoardState>((set, get) => ({
         body: JSON.stringify({ status: toStatus, position: newIndex }),
       });
       return true;
-    } catch (e) {
-      console.error('Move failed', e);
+    } catch {
+      // Roll back on failure
       set({ byId: prevById, order: prevOrder });
       return false;
+    }
+  },
+
+  // ---- Socket-driven optimistic patches (LOCAL ONLY) ----
+  upsertPrayer: (p) => {
+    try {
+      set((state) => {
+        const byId = new Map(state.byId);
+        const prev = byId.get(p.id);
+
+        const merged: Item = { ...(prev ?? ({} as Item)), ...p };
+        byId.set(p.id, merged);
+
+        // If it’s praise, remove from both board columns
+        if (merged.status === 'praise') {
+          const active = state.order.active.filter((x) => x !== p.id);
+          const archived = state.order.archived.filter((x) => x !== p.id);
+          return { byId, order: { active, archived } };
+        }
+
+        const order = { active: [...state.order.active], archived: [...state.order.archived] };
+        if (merged.status === 'active') {
+          order.archived = order.archived.filter((x) => x !== p.id);
+          if (!order.active.includes(p.id)) order.active = [p.id, ...order.active];
+          order.active = rebuildColumn(byId, order.active, 'active');
+        } else if (merged.status === 'archived') {
+          order.active = order.active.filter((x) => x !== p.id);
+          if (!order.archived.includes(p.id)) order.archived = [p.id, ...order.archived];
+          order.archived = rebuildColumn(byId, order.archived, 'archived');
+        }
+
+        return { byId, order };
+      });
+    } catch {
+      // ignore
+    }
+  },
+
+  movePrayer: (id, to) => {
+    try {
+      set((state) => {
+        const item = state.byId.get(id);
+        if (!item) return {};
+
+        const byId = new Map(state.byId);
+        const moved: Item = { ...item, status: to };
+        byId.set(id, moved);
+
+        let active = state.order.active.filter((x) => x !== id);
+        let archived = state.order.archived.filter((x) => x !== id);
+
+        if (to === 'active') {
+          active = [id, ...active];
+          active = rebuildColumn(byId, active, 'active');
+        } else if (to === 'archived') {
+          archived = [id, ...archived];
+          archived = rebuildColumn(byId, archived, 'archived');
+        }
+
+        return { byId, order: { active, archived } };
+      });
+    } catch {
+      // ignore
     }
   },
 }));

@@ -1,6 +1,6 @@
 import React, { useEffect } from 'react';
 import { Route, Routes, Navigate, useLocation } from 'react-router-dom';
-import Home from './pages/Home';
+import HomePage from './pages/HomePage.tsx';
 import Register from './pages/auth/Register.auth';
 import Login from './pages/auth/Login.auth';
 import PortalBoard from './pages/portal/PortalBoard.portal';
@@ -21,7 +21,7 @@ function RequireAuth({ children }: Readonly<{ children: React.ReactElement }>): 
 export default function AppRoutes(): React.ReactElement {
   return (
     <Routes>
-      <Route path="/" element={<Home />} />
+      <Route path="/" element={<HomePage />} />
       <Route path="/register" element={<Register />} />
       <Route path="/login" element={<Login />} />
 

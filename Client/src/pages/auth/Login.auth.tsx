@@ -1,6 +1,11 @@
-import React, { useState } from 'react';
+// Client/src/pages/auth/Login.auth.tsx
+import React, { useEffect, useMemo, useState } from 'react';
+import { Link, useLocation, useNavigate } from 'react-router-dom';
+import toast, { Toaster } from 'react-hot-toast';
 import { useAuthStore } from '../../stores/auth.store';
-import { useNavigate, useLocation, Link } from 'react-router-dom';
+import { loadRecaptchaEnterprise, getRecaptchaToken } from '../../lib/recaptcha.lib';
+
+const SITE_KEY = import.meta.env.VITE_RECAPTCHA_SITE_KEY as string | undefined;
 
 export default function Login(): React.ReactElement {
   const nav = useNavigate();
@@ -9,58 +14,151 @@ export default function Login(): React.ReactElement {
 
   const [email, setEmail] = useState('testuser@example.com');
   const [password, setPassword] = useState('Password123!');
+  const [showPw, setShowPw] = useState(false);
+  const [ready, setReady] = useState(false);        // reCAPTCHA readiness (optional)
   const [err, setErr] = useState<string | null>(null);
+
+  // Load reCAPTCHA (optional; login proceeds even if unavailable)
+  useEffect(() => {
+    let mounted = true;
+    (async () => {
+      if (!SITE_KEY) { setReady(true); return; } // allow login without captcha if not configured
+      try {
+        await loadRecaptchaEnterprise(SITE_KEY);
+        if (mounted) setReady(true);
+      } catch {
+        if (mounted) {
+          setReady(false);
+          // Don’t block login; just inform
+          toast.error('Security check could not load. You can still try to sign in.');
+          setReady(true);
+        }
+      }
+    })();
+    return () => { mounted = false; };
+  }, []);
+
+  const disabled = useMemo(() => loading || !email || !password, [loading, email, password]);
+
+  async function safeGetRecaptchaToken(): Promise<string | null> {
+    if (!SITE_KEY) return null;
+    try {
+      const token = await getRecaptchaToken(SITE_KEY, 'login');
+      return token || null;
+    } catch {
+      return null;
+    }
+  }
 
   async function onSubmit(e: React.FormEvent) {
     e.preventDefault();
     setErr(null);
-    const { success, message } = await login(email, password);
+
+    // Optional: obtain token (not required for existing login signature)
+    const recaptchaToken = ready ? await safeGetRecaptchaToken() : null;
+    if (SITE_KEY && !recaptchaToken) {
+      // Non-blocking warning if site key exists but token failed
+      toast('Proceeding without security token.', { icon: '⚠️' });
+    }
+
+    const { success, message } = await login(email, password /* , recaptchaToken */);
     if (success) {
+      toast.success('Welcome back!');
       const to = (loc.state)?.from ?? '/profile';
       nav(to, { replace: true });
     } else {
-      setErr(message ?? 'Login failed');
+      const msg = message ?? 'Login failed';
+      setErr(msg);
+      toast.error(msg);
     }
   }
 
   return (
-    <div className="max-w-md mx-auto mt-10 space-y-4">
-      <h1 className="text-2xl font-semibold">Sign in</h1>
-      <form className="space-y-3" onSubmit={onSubmit}>
-        <label className="block">
-          <span className="text-sm">Email</span>
+    <div className="min-h-[88vh] bg-[var(--theme-bg)] text-[var(--theme-text)] flex items-center justify-center p-3">
+      <Toaster position="top-center" reverseOrder={false} />
+
+      <form
+        onSubmit={onSubmit}
+        aria-label="Sign in"
+        className="w-full max-w-md bg-[var(--theme-surface)] border border-[var(--theme-border)] rounded-2xl shadow-[0_4px_14px_0_var(--theme-shadow)] p-6 md:p-8 space-y-5"
+      >
+        <header className="space-y-1 text-center">
+          <h1 className="text-3xl font-semibold text-[var(--theme-accent)]">Sign in</h1>
+          <p className="text-md opacity-80">Welcome back to Friday Bible Study.</p>
+        </header>
+
+        {/* Email */}
+        <label className="block text-sm font-medium">
+          <span className="text-base mb-1 block">Email</span>
           <input
-            className="w-full border p-2 rounded"
+            required
             type="email"
             autoComplete="email"
             value={email}
             onChange={(e) => setEmail(e.target.value)}
-            required
+            className="block w-full rounded-xl border border-[var(--theme-border)] bg-[var(--theme-surface)] px-3 py-2
+                       text-[var(--theme-text)] focus:outline-none focus:ring-2 focus:ring-[var(--theme-focus)]"
+            placeholder="you@example.com"
           />
         </label>
 
-        <label className="block">
-          <span className="text-sm">Password</span>
-          <input
-            className="w-full border p-2 rounded"
-            type="password"
-            autoComplete="current-password"
-            value={password}
-            onChange={(e) => setPassword(e.target.value)}
-            required
-          />
+        {/* Password */}
+        <label className="block text-sm font-medium">
+          <span className="text-base mb-1 block">Password</span>
+          <div className="relative">
+            <input
+              required
+              type={showPw ? 'text' : 'password'}
+              autoComplete="current-password"
+              value={password}
+              onChange={(e) => setPassword(e.target.value)}
+              className="block w-full rounded-xl border border-[var(--theme-border)] bg-[var(--theme-surface)] px-3 py-2 pr-12
+                         text-[var(--theme-text)] focus:outline-none focus:ring-2 focus:ring-[var(--theme-focus)]"
+              placeholder="Your password"
+            />
+            <button
+              type="button"
+              onClick={() => setShowPw((s) => !s)}
+              className="absolute right-2 top-1/2 -translate-y-1/2 rounded-md px-2 py-1 text-xs font-semibold
+                         text-[var(--theme-text)] hover:bg-[var(--theme-card-hover)]"
+            >
+              {showPw ? 'Hide' : 'Show'}
+            </button>
+          </div>
         </label>
 
-        {err && <p className="text-red-600">{err}</p>}
+        {err && (
+          <p
+            role="alert"
+            className="rounded-lg border border-[var(--theme-error)] bg-[var(--theme-surface)] px-3 py-2 text-sm text-[var(--theme-error)] font-medium"
+          >
+            {err}
+          </p>
+        )}
 
-        <button className="px-4 py-2 bg-black text-white rounded" disabled={loading} type="submit">
-          {loading ? 'Signing in…' : 'Sign in'}
+        <button
+          type="submit"
+          disabled={disabled}
+          className="w-full rounded-xl bg-[var(--theme-button)] px-4 py-2.5 text-[var(--theme-text-white)] font-semibold
+                     hover:bg-[var(--theme-hover)] disabled:opacity-60 disabled:cursor-not-allowed"
+        >
+          {loading ? '…' : 'Sign in'}
         </button>
-      </form>
 
-      <p className="text-sm">
-        No account? <Link to="/register" className="underline">Register</Link>
-      </p>
+        <div className="text-sm pt-3 space-y-2 text-center">
+          <p>
+            <Link to="/request-reset" className="underline">
+              Forgot password?
+            </Link>
+          </p>
+          <p className="opacity-80">
+            <Link to="/register" className="underline">
+              Create Account
+            </Link>
+          </p>
+        </div>
+
+      </form>
     </div>
   );
 }

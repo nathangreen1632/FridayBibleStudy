@@ -9,22 +9,49 @@ export async function apiWithRecaptcha<T = unknown>(
   action: string,
   init?: RequestInit
 ): Promise<T> {
-  if (!SITE_KEY) throw new Error('Missing VITE_RECAPTCHA_SITE_KEY');
-
-  await loadRecaptchaEnterprise(SITE_KEY);
-  const recaptchaToken = await getRecaptchaToken(SITE_KEY, action);
-
-  const headers = new Headers(init?.headers);
-  if (!headers.has('Content-Type')) headers.set('Content-Type', 'application/json');
-  headers.set('x-recaptcha-token', recaptchaToken);
-
-  // If body is an object, stringify it here (nice DX)
-  let body = init?.body as any;
-  if (body && typeof body === 'object' && !(body instanceof FormData)) {
-    body = JSON.stringify({ ...body, recaptchaToken });
-  } else if (!body) {
-    body = JSON.stringify({ recaptchaToken });
+  // Reject with an Error object to satisfy Sonar (S6671)
+  if (!SITE_KEY) {
+    return Promise.reject(new Error('Missing VITE_RECAPTCHA_SITE_KEY'));
   }
 
-  return api<T>(url, { ...init, headers, body });
+  try {
+    await loadRecaptchaEnterprise(SITE_KEY);
+    const recaptchaToken = await getRecaptchaToken(SITE_KEY, action);
+
+    // Headers
+    const headers = new Headers(init?.headers);
+    headers.set('x-recaptcha-token', recaptchaToken);
+
+    // Prepare body with correct typing
+    const originalBody = init?.body;
+    let body: BodyInit | null | undefined = originalBody;
+
+    try {
+      const maybeJson = originalBody as unknown;
+      if (maybeJson && typeof maybeJson === 'object' && !(maybeJson instanceof FormData)) {
+        // Merge token into JSON body
+        body = JSON.stringify({
+          ...(maybeJson as Record<string, unknown>),
+          recaptchaToken,
+        });
+      } else if (!originalBody) {
+        // No body provided → send token-only JSON
+        body = JSON.stringify({ recaptchaToken });
+      }
+    } catch {
+      // keep original body on any failure
+      body = originalBody;
+    }
+
+    // Only set JSON content-type when body is a string we created
+    if (typeof body === 'string' && !headers.has('Content-Type')) {
+      headers.set('Content-Type', 'application/json');
+    }
+
+    return await api<T>(url, { ...init, headers, body });
+  } catch (e) {
+    // Reject with Error object (S6671 compliant)
+    const err = e instanceof Error ? e : new Error(String(e));
+    return Promise.reject(err);
+  }
 }

@@ -1,12 +1,16 @@
 // Server/src/controllers/prayer.controller.ts
 import type { Request, Response } from 'express';
 import type { Order } from 'sequelize';
-import {Group, PrayerUpdate, User, Attachment, PrayerParticipant} from '../models/index.js';
+import { Group, PrayerUpdate, User, Attachment, PrayerParticipant } from '../models/index.js';
 import { Prayer, type Status } from '../models/prayer.model.js';
 import { sendEmail } from '../services/email.service.js';
 import { emitToGroup } from '../config/socket.config.js';
 import path from 'path';
 import { env } from '../config/env.config.js';
+
+// NEW: typed events + DTO mapper
+import { Events } from '../types/socket.types.js';
+import { toPrayerDTO } from './dto/prayer.dto.js';
 
 // DRY helper to load a prayer (optionally with author) or return 404
 async function findPrayerOr404(
@@ -60,8 +64,6 @@ export async function listPrayers(req: Request, res: Response): Promise<void> {
     offset: (page - 1) * pageSize
   });
 
-  // If your Prayer model declares: `declare author?: { id: number; name: string }`,
-  // you can remove the next line and use `rows` directly.
   const rowsWithAuthor = rows as Array<Prayer & { author?: { id: number; name: string } }>;
 
   const filtered = q
@@ -99,13 +101,18 @@ export async function createPrayer(req: Request, res: Response): Promise<void> {
 
   const created = await Prayer.create({ title, content, category, groupId, authorUserId, status: 'active' });
 
-  emitToGroup(groupId, 'prayer:created', { id: created.id });
+  // ⬇️ emit full DTO (typed event)
+  emitToGroup(groupId, Events.PrayerCreated, { prayer: toPrayerDTO(created) });
 
-  await sendEmail({
-    to: group?.groupEmail ?? '**CHANGE_ME_GROUP_EMAIL@EXAMPLE.COM**',
-    subject: 'New Prayer Posted',
-    html: `<p><b>${title}</b> posted.</p><p>${content}</p>`
-  });
+  try {
+    await sendEmail({
+      to: group?.groupEmail ?? '**CHANGE_ME_GROUP_EMAIL@EXAMPLE.COM**',
+      subject: 'New Prayer Posted',
+      html: `<p><b>${title}</b> posted.</p><p>${content}</p>`
+    });
+  } catch {
+    // non-fatal for API response
+  }
 
   res.json(created);
 }
@@ -120,7 +127,7 @@ export async function updatePrayer(req: Request, res: Response): Promise<void> {
   if (!prayer) return;
 
   const isAuthor = prayer.authorUserId === req.user!.userId;
-  const isAdmin  = req.user!.role === 'admin';
+  const isAdmin = req.user!.role === 'admin';
 
   // Determine if this request is *only* a move (status/position) and not an edit to content/meta
   const isOnlyMove =
@@ -133,7 +140,7 @@ export async function updatePrayer(req: Request, res: Response): Promise<void> {
   let isParticipant = false;
   if (!isAuthor && !isAdmin && isOnlyMove) {
     const pp = await PrayerParticipant.findOne({
-      where: { prayerId: prayer.id, userId: req.user!.userId },
+      where: { prayerId: prayer.id, userId: req.user!.userId }
     });
     isParticipant = !!pp;
   }
@@ -143,16 +150,29 @@ export async function updatePrayer(req: Request, res: Response): Promise<void> {
     return;
   }
 
+  // capture previous status to decide moved vs updated
+  const prevStatus = prayer.status;
+
   // Apply changes
-  if (title     !== undefined) prayer.title     = title;
-  if (content   !== undefined) prayer.content   = content;
-  if (category  !== undefined) prayer.category  = category as any;
-  if (status    !== undefined) prayer.status    = status   as any;
-  if (position  !== undefined) prayer.position  = position;
+  if (title !== undefined) prayer.title = title;
+  if (content !== undefined) prayer.content = content;
+  if (category !== undefined) prayer.category = category as any;
+  if (status !== undefined) prayer.status = status as any;
+  if (position !== undefined) prayer.position = position;
 
   await prayer.save();
 
-  emitToGroup(prayer.groupId, 'prayer:updated', { id: prayer.id });
+  // ⬇️ choose event by whether status changed
+  if (prevStatus !== prayer.status) {
+    emitToGroup(prayer.groupId, Events.PrayerMoved, {
+      prayer: toPrayerDTO(prayer),
+      from: prevStatus as 'active' | 'praise' | 'archived',
+      to: prayer.status as 'active' | 'praise' | 'archived'
+    });
+  } else {
+    emitToGroup(prayer.groupId, Events.PrayerUpdated, { prayer: toPrayerDTO(prayer) });
+  }
+
   res.json(prayer);
 }
 
@@ -169,6 +189,7 @@ export async function deletePrayer(req: Request, res: Response): Promise<void> {
   }
 
   await prayer.destroy();
+  // keep existing event name to avoid client breakage
   emitToGroup(prayer.groupId, 'prayer:deleted', { id: prayer.id });
   res.json({ ok: true });
 }
@@ -182,14 +203,19 @@ export async function createUpdate(req: Request, res: Response): Promise<void> {
 
   const upd = await PrayerUpdate.create({ prayerId, authorUserId: req.user!.userId, content });
 
+  // keep existing event name to avoid client breakage
   emitToGroup(prayer.groupId, 'update:created', { id: upd.id, prayerId });
 
   const group = await Group.findByPk(prayer.groupId);
-  await sendEmail({
-    to: group?.groupEmail ?? '**CHANGE_ME_GROUP_EMAIL@EXAMPLE.COM**',
-    subject: 'Prayer Updated',
-    html: `<p>Prayer <b>${prayer.title}</b> was updated.</p><p>${content}</p>`
-  });
+  try {
+    await sendEmail({
+      to: group?.groupEmail ?? '**CHANGE_ME_GROUP_EMAIL@EXAMPLE.COM**',
+      subject: 'Prayer Updated',
+      html: `<p>Prayer <b>${prayer.title}</b> was updated.</p><p>${content}</p>`
+    });
+  } catch {
+    // non-fatal for API response
+  }
 
   res.json(upd);
 }
@@ -197,7 +223,10 @@ export async function createUpdate(req: Request, res: Response): Promise<void> {
 export async function addAttachments(req: Request, res: Response): Promise<void> {
   const prayerId = Number(req.params.id);
   const files = (req.files ?? []) as Express.Multer.File[];
-  if (!Number.isFinite(prayerId)) { res.status(400).json({ error: 'Invalid id' }); return; }
+  if (!Number.isFinite(prayerId)) {
+    res.status(400).json({ error: 'Invalid id' });
+    return;
+  }
 
   const saved = await Promise.all(
     files.map((f) =>
