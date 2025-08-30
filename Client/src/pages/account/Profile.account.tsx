@@ -46,6 +46,9 @@ export default function ProfileAccount(): React.ReactElement {
       setSavedMsg(null);
       const { success, message } = await updateProfile(values);
       if (success) {
+        // ⬇️ ensure store has the latest user from DB
+        await me();
+
         setSavedMsg('Profile saved');
         toast.success('Profile updated successfully!');
         setFormDirty(false);
@@ -267,7 +270,8 @@ export default function ProfileAccount(): React.ReactElement {
                 className="rounded-xl bg-[var(--theme-button)] text-[var(--theme-text-white)] px-4 py-2 hover:bg-[var(--theme-hover)] disabled:opacity-60"
                 type="submit"
                 form="profile-form"
-                disabled={loading || saving}
+                disabled={loading || saving || !formDirty}
+                aria-disabled={loading || saving || !formDirty}
               >
                 {loading || saving ? 'Saving…' : 'Save Profile'}
               </button>
@@ -277,6 +281,7 @@ export default function ProfileAccount(): React.ReactElement {
       >
         <p className="opacity-80 text-sm sm:text-base mb-4">Update your contact and address details.</p>
         <ProfileForm
+          open={isOpen('profile')}           // ⬅️ tell the form when it opens
           user={user as any}
           savedMsg={savedMsg}
           onSave={onSaveProfile}
