@@ -65,10 +65,9 @@ export const useSocketStore = create<SocketState>((set, get) => {
     get().enqueue({ type: 'move', id: d.prayer.id, to: d.to });
   });
 
-  // IMPORTANT: return an object that satisfies SocketState
   return {
     socket: s,
-    connected: s.connected, // initial value
+    connected: s.connected,
     joinGroup: (groupId: number)  => get().socket?.emit('join:group', groupId),
     leaveGroup: (groupId: number) => get().socket?.emit('leave:group', groupId),
     enqueue: (patch: Patch) => { queue.push(patch); debouncedFlush(); },
