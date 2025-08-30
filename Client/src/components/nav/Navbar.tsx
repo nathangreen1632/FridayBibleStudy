@@ -35,6 +35,10 @@ export default function Navbar(): React.ReactElement {
             Home
           </NavLink>
 
+          <NavLink to="/contact" className={({ isActive }) => linkClass(isActive)}>
+            Contact
+          </NavLink>
+
           {!user && (
             <>
               <NavLink to="/login" className={({ isActive }) => linkClass(isActive)}>
