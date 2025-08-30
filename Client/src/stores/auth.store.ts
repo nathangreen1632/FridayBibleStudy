@@ -8,7 +8,7 @@ type User = {
   name: string;
   email: string;
   role: 'classic' | 'admin';
-  groupId?: number | null;   // ← added
+  groupId?: number | null;
 
   // optional profile fields
   phone?: string | null;
@@ -51,13 +51,18 @@ export const useAuthStore = create<AuthState>((set, get) => ({
         '/api/auth/register',
         { method: 'POST', body: JSON.stringify(payload) }
       );
-      set({ user: { ...res, groupId: res.groupId ?? null } });
+
+      // Prefer to load the full profile if available, otherwise fall back.
+      try {
+        const full = await api<User>('/api/auth/me', { method: 'GET' });
+        set(state => ({ user: state.user ? { ...state.user, ...full } : { ...full, groupId: full.groupId ?? null } }));
+      } catch {
+        set({ user: { ...res, groupId: res.groupId ?? null } });
+      }
+
       return { success: true };
     } catch (err: unknown) {
-      let msg: string;
-      if (err instanceof Error) msg = err.message;
-      else if (typeof err === 'string') msg = err;
-      else msg = 'Registration failed';
+      const msg = err instanceof Error ? err.message : 'Registration failed';
       return { success: false, message: msg };
     } finally {
       set({ loading: false });
@@ -66,19 +71,11 @@ export const useAuthStore = create<AuthState>((set, get) => ({
 
   me: async () => {
     try {
-      const me = await api<{ userId: number; role: 'classic' | 'admin'; groupId?: number }>(
-        '/api/auth/me',
-        { method: 'GET' }
-      );
-      set({
-        user: {
-          id: me.userId,
-          name: 'User',
-          email: '',
-          role: me.role,
-          groupId: me.groupId ?? null, // may be missing from API; tolerate
-        },
-      });
+      const full = await api<User>('/api/auth/me', { method: 'GET' });
+      set(state => ({
+        // merge so partial payloads never wipe existing fields (e.g., groupId)
+        user: state.user ? ({ ...state.user, ...full } as User) : ({ ...full, groupId: full.groupId ?? null } as User),
+      }));
     } catch {
       set({ user: null });
     }
@@ -107,19 +104,11 @@ export const useAuthStore = create<AuthState>((set, get) => ({
         throw new Error(msg);
       }
 
-      const me = await api<{ userId: number; role: 'classic' | 'admin'; groupId?: number }>(
-        '/api/auth/me'
-      );
-
-      set({
-        user: {
-          id: me.userId,
-          name: '',
-          email,
-          role: me.role,
-          groupId: me.groupId ?? null,
-        },
-      });
+      // fetch full profile and MERGE
+      const full = await api<User>('/api/auth/me', { method: 'GET' });
+      set(state => ({
+        user: state.user ? ({ ...state.user, ...full } as User) : ({ ...full, groupId: full.groupId ?? null } as User),
+      }));
 
       return { success: true };
     } catch (err: unknown) {
@@ -147,13 +136,12 @@ export const useAuthStore = create<AuthState>((set, get) => ({
         method: 'PUT',
         body: JSON.stringify(data),
       });
-      set({ user: { ...get().user, ...updated } as User });
+
+      // merge the server's canonical user object into state
+      set({ user: { ...(get().user ?? {}), ...updated } as User });
       return { success: true };
     } catch (err: unknown) {
-      let msg: string;
-      if (err instanceof Error) msg = err.message;
-      else if (typeof err === 'string') msg = err;
-      else msg = 'Profile update failed';
+      const msg = err instanceof Error ? err.message : 'Profile update failed';
       return { success: false, message: msg };
     } finally {
       set({ loading: false });
