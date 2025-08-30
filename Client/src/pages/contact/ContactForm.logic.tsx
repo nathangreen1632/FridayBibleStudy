@@ -1,3 +1,4 @@
+// Client/src/pages/contact/ContactForm.logic.tsx
 import React, { useEffect, useState } from 'react';
 import ContactFormView from '../../components/contact/ContactForm.view';
 import { api } from '../../helpers/http.helper';
@@ -71,13 +72,15 @@ export default function ContactFormLogic(): React.ReactElement {
   }
 
   return (
-    <ContactFormView
-      form={form}
-      submitting={submitting}
-      savedMsg={savedMsg}
-      error={error}
-      onChange={onChange}
-      onSubmit={onSubmit}
-    />
+    <div className="min-h-[88vh] bg-[var(--theme-bg)] text-[var(--theme-text)] flex items-start sm:items-center justify-center p-3 sm:p-6">
+      <ContactFormView
+        form={form}
+        submitting={submitting}
+        savedMsg={savedMsg}
+        error={error}
+        onChange={onChange}
+        onSubmit={onSubmit}
+      />
+    </div>
   );
 }
