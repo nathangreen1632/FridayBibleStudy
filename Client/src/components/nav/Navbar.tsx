@@ -1,10 +1,19 @@
 import React from 'react';
 import { NavLink, useNavigate } from 'react-router-dom';
 import { useAuthStore } from '../../stores/auth.store';
+import {
+  Home,
+  Mail,
+  LogIn,
+  UserPlus,
+  LayoutDashboard,
+  User,
+  LogOut,
+} from 'lucide-react';
 
 function linkClass(isActive: boolean): string {
   return [
-    'px-3 py-2 rounded-lg text-sm font-medium transition-colors',
+    'flex items-center gap-1 px-3 py-2 rounded-lg text-sm font-medium transition-colors',
     isActive
       ? 'bg-[var(--theme-button)] text-[var(--theme-text-white)]'
       : 'text-[var(--theme-text)] hover:bg-[var(--theme-card-hover)]',
@@ -32,19 +41,23 @@ export default function Navbar(): React.ReactElement {
         <nav className="flex items-center gap-2">
           {/* Public */}
           <NavLink to="/" className={({ isActive }) => linkClass(isActive)} end>
+            <Home className="w-4 h-4" />
             Home
           </NavLink>
 
           <NavLink to="/contact" className={({ isActive }) => linkClass(isActive)}>
+            <Mail className="w-4 h-4" />
             Contact
           </NavLink>
 
           {!user && (
             <>
               <NavLink to="/login" className={({ isActive }) => linkClass(isActive)}>
+                <LogIn className="w-4 h-4" />
                 Sign in
               </NavLink>
               <NavLink to="/register" className={({ isActive }) => linkClass(isActive)}>
+                <UserPlus className="w-4 h-4" />
                 Create account
               </NavLink>
             </>
@@ -54,17 +67,20 @@ export default function Navbar(): React.ReactElement {
           {user && (
             <>
               <NavLink to="/portal" className={({ isActive }) => linkClass(isActive)}>
+                <LayoutDashboard className="w-4 h-4" />
                 Portal
               </NavLink>
               <NavLink to="/profile" className={({ isActive }) => linkClass(isActive)}>
+                <User className="w-4 h-4" />
                 Profile
               </NavLink>
 
               <button
                 onClick={onLogout}
-                className="ml-2 px-3 py-2 rounded-lg text-sm font-medium bg-[var(--theme-surface)] border border-[var(--theme-border)] hover:bg-[var(--theme-card-hover)]"
+                className="ml-2 flex items-center gap-1 px-3 py-2 rounded-lg text-sm font-medium bg-[var(--theme-surface)] border border-[var(--theme-border)] hover:bg-[var(--theme-card-hover)]"
                 aria-label="Sign out"
               >
+                <LogOut className="w-4 h-4" />
                 Sign out
               </button>
             </>
