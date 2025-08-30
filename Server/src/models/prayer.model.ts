@@ -2,7 +2,7 @@ import { DataTypes, Model, Optional, Sequelize } from 'sequelize';
 import type { AttachmentAttributes } from './attachment.model.js';
 import type { PrayerUpdateAttributes } from './prayerUpdate.model.js';
 
-export type Category = 'prayer' | 'long-term' | 'salvation' | 'pregnancy' | 'birth';
+export type Category = 'prayer' | 'long-term' | 'salvation' | 'pregnancy' | 'birth' | 'praise';
 // Updated per spec: use "praise" instead of "main"
 export type Status = 'active' | 'praise' | 'archived';
 
@@ -48,7 +48,7 @@ export class Prayer extends Model<PrayerAttributes, PrayerCreation> implements P
         title: { type: DataTypes.STRING(200), allowNull: false },
         content: { type: DataTypes.TEXT, allowNull: false },
         category: {
-          type: DataTypes.ENUM('prayer', 'long-term', 'salvation', 'pregnancy', 'birth'),
+          type: DataTypes.ENUM('prayer', 'long-term', 'salvation', 'pregnancy', 'birth', 'praise'),
           allowNull: false
         },
         // Updated ENUM values here:
