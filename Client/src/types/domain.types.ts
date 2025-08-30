@@ -1,5 +1,5 @@
 export type Role = 'classic' | 'admin';
-export type Category = 'prayer' | 'long-term' | 'salvation' | 'pregnancy' | 'birth';
+export type Category = 'prayer' | 'long-term' | 'salvation' | 'pregnancy' | 'birth' | 'praise';
 export type Status = 'active' | 'praise' | 'archived';
 
 export interface User {

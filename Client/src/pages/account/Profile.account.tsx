@@ -1,71 +1,59 @@
 // Client/src/pages/account/Profile.account.tsx
 import React, { useEffect, useState } from 'react';
 import toast, { Toaster } from 'react-hot-toast';
-import { useAuthStore } from '../../stores/auth.store';
+import { ChevronDown } from 'lucide-react';
+import type { Category } from '../../types/domain.types';
 import { api } from '../../helpers/http.helper';
 import { loadRecaptchaEnterprise, getRecaptchaToken } from '../../lib/recaptcha.lib';
+import { useAuthStore } from '../../stores/auth.store';
+import { useUiStore } from '../../stores/ui.store';
+import Modal from '../../components/ui/Modal';
+import ConfirmBar from '../../components/ui/ConfirmBar';
+import ProfileForm from '../../components/account/ProfileForm';
 
 const SITE_KEY = import.meta.env.VITE_RECAPTCHA_SITE_KEY as string | undefined;
 
-type PrayerCategory = 'prayer' | 'long-term' | 'salvation' | 'pregnancy' | 'birth';
+// allow empty string for the placeholder until a real selection is made
+type CategoryOption = Category | '';
 
 export default function ProfileAccount(): React.ReactElement {
   const { user, me, updateProfile, loading } = useAuthStore();
+  const { openModal, closeModal, isOpen } = useUiStore();
 
   const [savedMsg, setSavedMsg] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
   const [posting, setPosting] = useState(false);
 
-  const [form, setForm] = useState({
-    name: '',
-    phone: '',
-    addressStreet: '',
-    addressCity: '',
-    addressState: '',
-    addressZip: '',
-    spouseName: ''
-  });
+  // NEW: dirty flag from ProfileForm + "show confirm" flag
+  const [formDirty, setFormDirty] = useState(false);
+  const [confirmExit, setConfirmExit] = useState(false);
 
   const [prayer, setPrayer] = useState<{
     title: string;
     content: string;
-    category: PrayerCategory;
+    category: CategoryOption;
   }>({
     title: '',
     content: '',
-    category: 'prayer'
+    category: '' // default to placeholder "Select Prayer Type"
   });
 
   useEffect(() => { void me(); }, [me]);
 
-  useEffect(() => {
-    if (user) {
-      setForm(f => ({
-        ...f,
-        name:
-          user.name.trim().length > 0 &&
-          user.name.trim().toLowerCase() !== 'user'
-            ? user.name
-            : '',
-        phone: (user as any).phone ?? '',
-        addressStreet: (user as any).addressStreet ?? '',
-        addressCity: (user as any).addressCity ?? '',
-        addressState: (user as any).addressState ?? '',
-        addressZip: (user as any).addressZip ?? '',
-        spouseName: (user as any).spouseName ?? ''
-      }));
-    }
-  }, [user]);
-
-  async function saveProfile(e: React.FormEvent) {
-    e.preventDefault();
+  async function onSaveProfile(values: Parameters<typeof updateProfile>[0]) {
     try {
       setSaving(true);
       setSavedMsg(null);
-      const { success, message } = await updateProfile(form);
+      const { success, message } = await updateProfile(values);
       if (success) {
+        // ⬇️ ensure store has the latest user from DB
+        await me();
+
         setSavedMsg('Profile saved');
         toast.success('Profile updated successfully!');
+        setFormDirty(false);
+        setConfirmExit(false);
+        closeModal('profile');
       } else {
         const msg = message ?? 'Save failed';
         setSavedMsg(msg);
@@ -77,8 +65,40 @@ export default function ProfileAccount(): React.ReactElement {
     }
   }
 
+  function openProfile() {
+    setConfirmExit(false);
+    openModal('profile');
+  }
+
+  /** Called by ESC via Modal.onRequestClose, or by the "Close" button */
+  function requestCloseProfile() {
+    if (formDirty) {
+      setConfirmExit(true);
+      return;
+    }
+    setConfirmExit(false);
+    closeModal('profile');
+  }
+
+  /** Confirm bar handlers */
+  function confirmExitWithoutSaving() {
+    setConfirmExit(false);
+    setFormDirty(false);
+    closeModal('profile');
+  }
+  function cancelExit() {
+    setConfirmExit(false);
+  }
+
   async function postPrayer(e: React.FormEvent) {
     e.preventDefault();
+
+    // Extra-safe guard: ensure a real category was chosen
+    if (prayer.category === '') {
+      toast.error('Please select a prayer type.');
+      return;
+    }
+
     try {
       setPosting(true);
 
@@ -96,11 +116,15 @@ export default function ProfileAccount(): React.ReactElement {
 
       await api('/api/prayers', {
         method: 'POST',
-        body: JSON.stringify({ ...prayer, recaptchaToken })
+        body: JSON.stringify({
+          ...prayer,
+          category: prayer.category, // safe now — not ''
+          recaptchaToken
+        })
       });
 
       toast.success('Prayer posted!');
-      setPrayer({ title: '', content: '', category: 'prayer' });
+      setPrayer({ title: '', content: '', category: '' }); // reset to placeholder
     } catch (err: unknown) {
       const msg = err instanceof Error ? err.message : 'Failed to post prayer. Please try again.';
       toast.error(msg);
@@ -124,119 +148,22 @@ export default function ProfileAccount(): React.ReactElement {
       <Toaster position="top-center" reverseOrder={false} />
       <div className="mx-auto max-w-4xl px-3 sm:px-6 py-6 sm:py-8 space-y-6 sm:space-y-8">
 
-        {/* Profile Card */}
-        <section className="bg-[var(--theme-surface)] border border-[var(--theme-border)] rounded-2xl shadow-md md:shadow-[0_4px_14px_0_var(--theme-shadow)] p-4 sm:p-6 md:p-8">
-          <header className="mb-4 sm:mb-6">
-            <h2 className="text-xl sm:text-2xl font-semibold text-[var(--theme-accent)] text-center sm:text-left">
-              My Profile
-            </h2>
-            <p className="opacity-80 text-center sm:text-left text-sm sm:text-base">Update your contact and address details.</p>
-          </header>
+        {/* Page Header */}
+        <header className="flex items-center justify-between">
+          <div>
+            <h1 className="text-2xl sm:text-3xl font-semibold text-[var(--theme-accent)]">Account</h1>
+            <p className="opacity-80 text-sm sm:text-base">Manage your information and share prayers.</p>
+          </div>
+          <button
+            type="button"
+            onClick={openProfile}
+            className="rounded-xl bg-[var(--theme-button)] text-[var(--theme-text-white)] px-4 py-2 text-sm sm:text-base hover:bg-[var(--theme-hover)]"
+          >
+            Edit My Profile
+          </button>
+        </header>
 
-          <form onSubmit={saveProfile} className="space-y-4">
-            {/* Name */}
-            <label className="block text-xs sm:text-sm font-medium">
-              <span className="text-sm sm:text-base mb-1 block">Name</span>
-              <input
-                placeholder="Your full name"
-                value={form.name}
-                onChange={e => setForm({ ...form, name: e.target.value })}
-                className="block w-full rounded-xl border border-[var(--theme-border)] bg-[var(--theme-surface)] px-3 py-2 text-sm sm:text-base
-                           text-[var(--theme-text)] focus:outline-none focus:ring-2 focus:ring-[var(--theme-focus)]"
-              />
-            </label>
-
-            {/* Phone */}
-            <label className="block text-xs sm:text-sm font-medium">
-              <span className="text-sm sm:text-base mb-1 block">Phone</span>
-              <input
-                placeholder="555-123-4567"
-                value={form.phone}
-                onChange={e => setForm({ ...form, phone: e.target.value })}
-                className="block w-full rounded-xl border border-[var(--theme-border)] bg-[var(--theme-surface)] px-3 py-2 text-sm sm:text-base
-                           text-[var(--theme-text)] focus:outline-none focus:ring-2 focus:ring-[var(--theme-focus)]"
-              />
-            </label>
-
-            {/* Street */}
-            <label className="block text-xs sm:text-sm font-medium">
-              <span className="text-sm sm:text-base mb-1 block">Street Address</span>
-              <input
-                placeholder="123 Main St"
-                value={form.addressStreet}
-                onChange={e => setForm({ ...form, addressStreet: e.target.value })}
-                className="block w-full rounded-xl border border-[var(--theme-border)] bg-[var(--theme-surface)] px-3 py-2 text-sm sm:text-base
-                           text-[var(--theme-text)] focus:outline-none focus:ring-2 focus:ring-[var(--theme-focus)]"
-              />
-            </label>
-
-            {/* City / State / ZIP */}
-            <div className="grid gap-3 sm:grid-cols-3">
-              <label className="block text-xs sm:text-sm font-medium">
-                <span className="text-sm sm:text-base mb-1 block">City</span>
-                <input
-                  placeholder="City"
-                  value={form.addressCity}
-                  onChange={e => setForm({ ...form, addressCity: e.target.value })}
-                  className="block w-full rounded-xl border border-[var(--theme-border)] bg-[var(--theme-surface)] px-3 py-2 text-sm sm:text-base
-                             text-[var(--theme-text)] focus:outline-none focus:ring-2 focus:ring-[var(--theme-focus)]"
-                />
-              </label>
-
-              <label className="block text-xs sm:text-sm font-medium">
-                <span className="text-sm sm:text-base mb-1 block">State</span>
-                <input
-                  placeholder="State"
-                  value={form.addressState}
-                  onChange={e => setForm({ ...form, addressState: e.target.value })}
-                  className="block w-full rounded-xl border border-[var(--theme-border)] bg-[var(--theme-surface)] px-3 py-2 text-sm sm:text-base
-                             text-[var(--theme-text)] focus:outline-none focus:ring-2 focus:ring-[var(--theme-focus)]"
-                />
-              </label>
-
-              <label className="block text-xs sm:text-sm font-medium">
-                <span className="text-sm sm:text-base mb-1 block">ZIP</span>
-                <input
-                  placeholder="ZIP"
-                  value={form.addressZip}
-                  onChange={e => setForm({ ...form, addressZip: e.target.value })}
-                  className="block w-full rounded-xl border border-[var(--theme-border)] bg-[var(--theme-surface)] px-3 py-2 text-sm sm:text-base
-                             text-[var(--theme-text)] focus:outline-none focus:ring-2 focus:ring-[var(--theme-focus)]"
-                />
-              </label>
-            </div>
-
-            {/* Spouse */}
-            <label className="block text-xs sm:text-sm font-medium">
-              <span className="text-sm sm:text-base mb-1 block">Spouse Name (optional)</span>
-              <input
-                placeholder="Spouse name"
-                value={form.spouseName}
-                onChange={e => setForm({ ...form, spouseName: e.target.value })}
-                className="block w-full rounded-xl border border-[var(--theme-border)] bg-[var(--theme-surface)] px-3 py-2 text-sm sm:text-base
-                           text-[var(--theme-text)] focus:outline-none focus:ring-2 focus:ring-[var(--theme-focus)]"
-              />
-            </label>
-
-            {/* Save */}
-            <div className="pt-2">
-              <button
-                className="w-full sm:w-auto rounded-xl bg-[var(--theme-button)] px-5 py-2.5 text-[var(--theme-text-white)] text-sm sm:text-base font-semibold
-                           hover:bg-[var(--theme-hover)] disabled:opacity-60 disabled:cursor-not-allowed"
-                disabled={loading || saving}
-                type="submit"
-              >
-                {loading || saving ? 'Saving…' : 'Save Profile'}
-              </button>
-            </div>
-
-            {savedMsg && (
-              <p className="text-xs sm:text-sm font-medium text-green-600 pt-1">{savedMsg}</p>
-            )}
-          </form>
-        </section>
-
-        {/* Post a Prayer Card */}
+        {/* Post a Prayer */}
         <section className="bg-[var(--theme-surface)] border border-[var(--theme-border)] rounded-2xl shadow-md md:shadow-[0_4px_14px_0_var(--theme-shadow)] p-4 sm:p-6 md:p-8">
           <header className="mb-4 sm:mb-6">
             <h2 className="text-xl sm:text-2xl font-semibold text-[var(--theme-accent)] text-center sm:text-left">
@@ -259,21 +186,32 @@ export default function ProfileAccount(): React.ReactElement {
               />
             </label>
 
-            {/* Category */}
+            {/* Category with Lucide chevron */}
             <label className="block text-xs sm:text-sm font-medium">
               <span className="text-sm sm:text-base mb-1 block">Category</span>
-              <select
-                value={prayer.category}
-                onChange={e => setPrayer({ ...prayer, category: e.target.value as PrayerCategory })}
-                className="block w-full rounded-xl border border-[var(--theme-border)] bg-[var(--theme-surface)] px-3 py-2 text-sm sm:text-base
-                           text-[var(--theme-text)] focus:outline-none focus:ring-2 focus:ring-[var(--theme-focus)]"
-              >
-                <option value="prayer">Prayer</option>
-                <option value="long-term">Long-term</option>
-                <option value="salvation">Salvation</option>
-                <option value="pregnancy">Pregnancy</option>
-                <option value="birth">Birth / Praise</option>
-              </select>
+
+              <div className="relative">
+                <select
+                  required
+                  value={prayer.category}
+                  onChange={e => setPrayer({ ...prayer, category: e.target.value as CategoryOption })}
+                  className="block w-full appearance-none pr-10 rounded-xl border border-[var(--theme-border)] bg-[var(--theme-surface)] px-3 py-2
+                             text-sm sm:text-base text-[var(--theme-text)] focus:outline-none focus:ring-2 focus:ring-[var(--theme-focus)]"
+                >
+                  <option value="">Select Prayer Type</option>
+                  <option value="birth">Birth</option>
+                  <option value="long-term">Long-term</option>
+                  <option value="praise">Praise</option>
+                  <option value="prayer">Prayer</option>
+                  <option value="pregnancy">Pregnancy</option>
+                  <option value="salvation">Salvation</option>
+                </select>
+
+                <ChevronDown
+                  className="pointer-events-none absolute right-3 top-1/2 -translate-y-1/2 h-4 w-4 text-[var(--theme-accent)]"
+                  aria-hidden="true"
+                />
+              </div>
             </label>
 
             {/* Content */}
@@ -304,6 +242,52 @@ export default function ProfileAccount(): React.ReactElement {
           </form>
         </section>
       </div>
+
+      {/* Profile Modal */}
+      <Modal
+        open={isOpen('profile')}
+        onRequestClose={requestCloseProfile}  // ESC → asks first if dirty
+        title="My Profile"
+        footer={
+          confirmExit ? (
+            <ConfirmBar
+              onCancel={cancelExit}
+              onConfirm={confirmExitWithoutSaving}
+              message="You have unsaved changes. Exit without saving?"
+              cancelLabel="Keep editing"
+              confirmLabel="Exit without saving"
+            />
+          ) : (
+            <>
+              <button
+                className="rounded-xl bg-[var(--theme-button-gray)] text-[var(--theme-text-white)] px-4 py-2 hover:bg-[var(--theme-button-blue-hover)]"
+                type="button"
+                onClick={requestCloseProfile}
+              >
+                Close
+              </button>
+              <button
+                className="rounded-xl bg-[var(--theme-button)] text-[var(--theme-text-white)] px-4 py-2 hover:bg-[var(--theme-hover)] disabled:opacity-60"
+                type="submit"
+                form="profile-form"
+                disabled={loading || saving || !formDirty}
+                aria-disabled={loading || saving || !formDirty}
+              >
+                {loading || saving ? 'Saving…' : 'Save Profile'}
+              </button>
+            </>
+          )
+        }
+      >
+        <p className="opacity-80 text-sm sm:text-base mb-4">Update your contact and address details.</p>
+        <ProfileForm
+          open={isOpen('profile')}           // ⬅️ tell the form when it opens
+          user={user as any}
+          savedMsg={savedMsg}
+          onSave={onSaveProfile}
+          onDirtyChange={setFormDirty}
+        />
+      </Modal>
     </div>
   );
 }
