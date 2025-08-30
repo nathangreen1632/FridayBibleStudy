@@ -42,7 +42,11 @@ export default function ProfileAccount(): React.ReactElement {
     if (user) {
       setForm(f => ({
         ...f,
-        name: user.name ?? '',
+        name:
+          user.name.trim().length > 0 &&
+          user.name.trim().toLowerCase() !== 'user'
+            ? user.name
+            : '',
         phone: (user as any).phone ?? '',
         addressStreet: (user as any).addressStreet ?? '',
         addressCity: (user as any).addressCity ?? '',
@@ -107,8 +111,8 @@ export default function ProfileAccount(): React.ReactElement {
 
   if (!user) {
     return (
-      <div className="min-h-[70vh] bg-[var(--theme-bg)] text-[var(--theme-text)] flex items-center justify-center p-6">
-        <div className="rounded-2xl border border-[var(--theme-border)] bg-[var(--theme-surface)] shadow-[0_4px_14px_0_var(--theme-shadow)] px-6 py-5">
+      <div className="min-h-[70vh] bg-[var(--theme-bg)] text-[var(--theme-text)] flex items-center justify-center p-4 sm:p-6">
+        <div className="rounded-2xl border border-[var(--theme-border)] bg-[var(--theme-surface)] shadow-[0_4px_14px_0_var(--theme-shadow)] px-4 py-3 sm:px-6 sm:py-5 text-sm sm:text-base">
           Loading…
         </div>
       </div>
@@ -118,98 +122,98 @@ export default function ProfileAccount(): React.ReactElement {
   return (
     <div className="min-h-[88vh] bg-[var(--theme-bg)] text-[var(--theme-text)]">
       <Toaster position="top-center" reverseOrder={false} />
-      <div className="mx-auto max-w-4xl px-4 sm:px-6 py-8 space-y-8">
+      <div className="mx-auto max-w-4xl px-3 sm:px-6 py-6 sm:py-8 space-y-6 sm:space-y-8">
 
         {/* Profile Card */}
-        <section className="bg-[var(--theme-surface)] border border-[var(--theme-border)] rounded-2xl shadow-[0_4px_14px_0_var(--theme-shadow)] p-6 md:p-8">
-          <header className="mb-6">
-            <h2 className="text-2xl font-semibold text-[var(--theme-accent)] text-center sm:text-left">
+        <section className="bg-[var(--theme-surface)] border border-[var(--theme-border)] rounded-2xl shadow-md md:shadow-[0_4px_14px_0_var(--theme-shadow)] p-4 sm:p-6 md:p-8">
+          <header className="mb-4 sm:mb-6">
+            <h2 className="text-xl sm:text-2xl font-semibold text-[var(--theme-accent)] text-center sm:text-left">
               My Profile
             </h2>
-            <p className="opacity-80 text-center sm:text-left">Update your contact and address details.</p>
+            <p className="opacity-80 text-center sm:text-left text-sm sm:text-base">Update your contact and address details.</p>
           </header>
 
           <form onSubmit={saveProfile} className="space-y-4">
             {/* Name */}
-            <label className="block text-sm font-medium">
-              <span className="text-base mb-1 block">Name</span>
+            <label className="block text-xs sm:text-sm font-medium">
+              <span className="text-sm sm:text-base mb-1 block">Name</span>
               <input
                 placeholder="Your full name"
                 value={form.name}
                 onChange={e => setForm({ ...form, name: e.target.value })}
-                className="block w-full rounded-xl border border-[var(--theme-border)] bg-[var(--theme-surface)] px-3 py-2
+                className="block w-full rounded-xl border border-[var(--theme-border)] bg-[var(--theme-surface)] px-3 py-2 text-sm sm:text-base
                            text-[var(--theme-text)] focus:outline-none focus:ring-2 focus:ring-[var(--theme-focus)]"
               />
             </label>
 
             {/* Phone */}
-            <label className="block text-sm font-medium">
-              <span className="text-base mb-1 block">Phone</span>
+            <label className="block text-xs sm:text-sm font-medium">
+              <span className="text-sm sm:text-base mb-1 block">Phone</span>
               <input
                 placeholder="555-123-4567"
                 value={form.phone}
                 onChange={e => setForm({ ...form, phone: e.target.value })}
-                className="block w-full rounded-xl border border-[var(--theme-border)] bg-[var(--theme-surface)] px-3 py-2
+                className="block w-full rounded-xl border border-[var(--theme-border)] bg-[var(--theme-surface)] px-3 py-2 text-sm sm:text-base
                            text-[var(--theme-text)] focus:outline-none focus:ring-2 focus:ring-[var(--theme-focus)]"
               />
             </label>
 
             {/* Street */}
-            <label className="block text-sm font-medium">
-              <span className="text-base mb-1 block">Street Address</span>
+            <label className="block text-xs sm:text-sm font-medium">
+              <span className="text-sm sm:text-base mb-1 block">Street Address</span>
               <input
                 placeholder="123 Main St"
                 value={form.addressStreet}
                 onChange={e => setForm({ ...form, addressStreet: e.target.value })}
-                className="block w-full rounded-xl border border-[var(--theme-border)] bg-[var(--theme-surface)] px-3 py-2
+                className="block w-full rounded-xl border border-[var(--theme-border)] bg-[var(--theme-surface)] px-3 py-2 text-sm sm:text-base
                            text-[var(--theme-text)] focus:outline-none focus:ring-2 focus:ring-[var(--theme-focus)]"
               />
             </label>
 
             {/* City / State / ZIP */}
             <div className="grid gap-3 sm:grid-cols-3">
-              <label className="block text-sm font-medium">
-                <span className="text-base mb-1 block">City</span>
+              <label className="block text-xs sm:text-sm font-medium">
+                <span className="text-sm sm:text-base mb-1 block">City</span>
                 <input
                   placeholder="City"
                   value={form.addressCity}
                   onChange={e => setForm({ ...form, addressCity: e.target.value })}
-                  className="block w-full rounded-xl border border-[var(--theme-border)] bg-[var(--theme-surface)] px-3 py-2
+                  className="block w-full rounded-xl border border-[var(--theme-border)] bg-[var(--theme-surface)] px-3 py-2 text-sm sm:text-base
                              text-[var(--theme-text)] focus:outline-none focus:ring-2 focus:ring-[var(--theme-focus)]"
                 />
               </label>
 
-              <label className="block text-sm font-medium">
-                <span className="text-base mb-1 block">State</span>
+              <label className="block text-xs sm:text-sm font-medium">
+                <span className="text-sm sm:text-base mb-1 block">State</span>
                 <input
                   placeholder="State"
                   value={form.addressState}
                   onChange={e => setForm({ ...form, addressState: e.target.value })}
-                  className="block w-full rounded-xl border border-[var(--theme-border)] bg-[var(--theme-surface)] px-3 py-2
+                  className="block w-full rounded-xl border border-[var(--theme-border)] bg-[var(--theme-surface)] px-3 py-2 text-sm sm:text-base
                              text-[var(--theme-text)] focus:outline-none focus:ring-2 focus:ring-[var(--theme-focus)]"
                 />
               </label>
 
-              <label className="block text-sm font-medium">
-                <span className="text-base mb-1 block">ZIP</span>
+              <label className="block text-xs sm:text-sm font-medium">
+                <span className="text-sm sm:text-base mb-1 block">ZIP</span>
                 <input
                   placeholder="ZIP"
                   value={form.addressZip}
                   onChange={e => setForm({ ...form, addressZip: e.target.value })}
-                  className="block w-full rounded-xl border border-[var(--theme-border)] bg-[var(--theme-surface)] px-3 py-2
+                  className="block w-full rounded-xl border border-[var(--theme-border)] bg-[var(--theme-surface)] px-3 py-2 text-sm sm:text-base
                              text-[var(--theme-text)] focus:outline-none focus:ring-2 focus:ring-[var(--theme-focus)]"
                 />
               </label>
             </div>
 
             {/* Spouse */}
-            <label className="block text-sm font-medium">
-              <span className="text-base mb-1 block">Spouse Name (optional)</span>
+            <label className="block text-xs sm:text-sm font-medium">
+              <span className="text-sm sm:text-base mb-1 block">Spouse Name (optional)</span>
               <input
                 placeholder="Spouse name"
                 value={form.spouseName}
                 onChange={e => setForm({ ...form, spouseName: e.target.value })}
-                className="block w-full rounded-xl border border-[var(--theme-border)] bg-[var(--theme-surface)] px-3 py-2
+                className="block w-full rounded-xl border border-[var(--theme-border)] bg-[var(--theme-surface)] px-3 py-2 text-sm sm:text-base
                            text-[var(--theme-text)] focus:outline-none focus:ring-2 focus:ring-[var(--theme-focus)]"
               />
             </label>
@@ -217,7 +221,7 @@ export default function ProfileAccount(): React.ReactElement {
             {/* Save */}
             <div className="pt-2">
               <button
-                className="w-full sm:w-auto rounded-xl bg-[var(--theme-button)] px-5 py-2.5 text-[var(--theme-text-white)] font-semibold
+                className="w-full sm:w-auto rounded-xl bg-[var(--theme-button)] px-5 py-2.5 text-[var(--theme-text-white)] text-sm sm:text-base font-semibold
                            hover:bg-[var(--theme-hover)] disabled:opacity-60 disabled:cursor-not-allowed"
                 disabled={loading || saving}
                 type="submit"
@@ -227,41 +231,41 @@ export default function ProfileAccount(): React.ReactElement {
             </div>
 
             {savedMsg && (
-              <p className="text-sm font-medium text-green-600 pt-1">{savedMsg}</p>
+              <p className="text-xs sm:text-sm font-medium text-green-600 pt-1">{savedMsg}</p>
             )}
           </form>
         </section>
 
         {/* Post a Prayer Card */}
-        <section className="bg-[var(--theme-surface)] border border-[var(--theme-border)] rounded-2xl shadow-[0_4px_14px_0_var(--theme-shadow)] p-6 md:p-8">
-          <header className="mb-6">
-            <h2 className="text-2xl font-semibold text-[var(--theme-accent)] text-center sm:text-left">
+        <section className="bg-[var(--theme-surface)] border border-[var(--theme-border)] rounded-2xl shadow-md md:shadow-[0_4px_14px_0_var(--theme-shadow)] p-4 sm:p-6 md:p-8">
+          <header className="mb-4 sm:mb-6">
+            <h2 className="text-xl sm:text-2xl font-semibold text-[var(--theme-accent)] text-center sm:text-left">
               Post a Prayer
             </h2>
-            <p className="opacity-80 text-center sm:text-left">Share a prayer request or praise with the group.</p>
+            <p className="opacity-80 text-center sm:text-left text-sm sm:text-base">Share a prayer request or praise with the group.</p>
           </header>
 
           <form className="space-y-4" onSubmit={postPrayer}>
             {/* Title */}
-            <label className="block text-sm font-medium">
-              <span className="text-base mb-1 block">Title</span>
+            <label className="block text-xs sm:text-sm font-medium">
+              <span className="text-sm sm:text-base mb-1 block">Title</span>
               <input
                 required
                 placeholder="Brief title"
                 value={prayer.title}
                 onChange={e => setPrayer({ ...prayer, title: e.target.value })}
-                className="block w-full rounded-xl border border-[var(--theme-border)] bg-[var(--theme-surface)] px-3 py-2
+                className="block w-full rounded-xl border border-[var(--theme-border)] bg-[var(--theme-surface)] px-3 py-2 text-sm sm:text-base
                            text-[var(--theme-text)] focus:outline-none focus:ring-2 focus:ring-[var(--theme-focus)]"
               />
             </label>
 
             {/* Category */}
-            <label className="block text-sm font-medium">
-              <span className="text-base mb-1 block">Category</span>
+            <label className="block text-xs sm:text-sm font-medium">
+              <span className="text-sm sm:text-base mb-1 block">Category</span>
               <select
                 value={prayer.category}
                 onChange={e => setPrayer({ ...prayer, category: e.target.value as PrayerCategory })}
-                className="block w-full rounded-xl border border-[var(--theme-border)] bg-[var(--theme-surface)] px-3 py-2
+                className="block w-full rounded-xl border border-[var(--theme-border)] bg-[var(--theme-surface)] px-3 py-2 text-sm sm:text-base
                            text-[var(--theme-text)] focus:outline-none focus:ring-2 focus:ring-[var(--theme-focus)]"
               >
                 <option value="prayer">Prayer</option>
@@ -273,15 +277,15 @@ export default function ProfileAccount(): React.ReactElement {
             </label>
 
             {/* Content */}
-            <label className="block text-sm font-medium">
-              <span className="text-base mb-1 block">Content</span>
+            <label className="block text-xs sm:text-sm font-medium">
+              <span className="text-sm sm:text-base mb-1 block">Content</span>
               <textarea
                 required
                 rows={5}
                 placeholder="Write your prayer or praise here…"
                 value={prayer.content}
                 onChange={e => setPrayer({ ...prayer, content: e.target.value })}
-                className="block w-full rounded-xl border border-[var(--theme-border)] bg-[var(--theme-surface)] px-3 py-2
+                className="block w-full rounded-xl border border-[var(--theme-border)] bg-[var(--theme-surface)] px-3 py-2 text-sm sm:text-base leading-relaxed
                            text-[var(--theme-text)] focus:outline-none focus:ring-2 focus:ring-[var(--theme-focus)]"
               />
             </label>
@@ -289,7 +293,7 @@ export default function ProfileAccount(): React.ReactElement {
             {/* Post */}
             <div className="pt-2">
               <button
-                className="w-full sm:w-auto rounded-xl bg-[var(--theme-button)] px-5 py-2.5 text-[var(--theme-text-white)] font-semibold
+                className="w-full sm:w-auto rounded-xl bg-[var(--theme-button)] px-5 py-2.5 text-[var(--theme-text-white)] text-sm sm:text-base font-semibold
                            hover:bg-[var(--theme-hover)] disabled:opacity-60 disabled:cursor-not-allowed"
                 type="submit"
                 disabled={posting}

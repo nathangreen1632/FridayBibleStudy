@@ -5,13 +5,13 @@ import Register from './pages/auth/Register.auth';
 import Login from './pages/auth/Login.auth';
 import PortalBoard from './pages/portal/PortalBoard.portal';
 import ProfileAccount from './pages/account/Profile.account';
+import ContactPage from './pages/contact/ContactPage';
 import { useAuthStore } from './stores/auth.store';
 
 function RequireAuth({ children }: Readonly<{ children: React.ReactElement }>): React.ReactElement {
   const { user, me } = useAuthStore();
   const loc = useLocation();
 
-  // try hydrate session once on entry
   useEffect(() => { if (!user) void me(); }, [user, me]);
 
   if (!user) return <Navigate to="/login" replace state={{ from: loc.pathname }} />;
@@ -24,6 +24,7 @@ export default function AppRoutes(): React.ReactElement {
       <Route path="/" element={<HomePage />} />
       <Route path="/register" element={<Register />} />
       <Route path="/login" element={<Login />} />
+      <Route path="/contact" element={<ContactPage />} />
 
       <Route path="/portal" element={<RequireAuth><PortalBoard /></RequireAuth>} />
       <Route path="/profile" element={<RequireAuth><ProfileAccount /></RequireAuth>} />

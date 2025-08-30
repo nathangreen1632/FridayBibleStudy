@@ -31,22 +31,30 @@ export default function Column({
   return (
     <section
       ref={setNodeRef}
-      className="rounded-2xl border border-[var(--theme-border)] bg-[var(--theme-surface)] p-4"
+      className="
+        rounded-2xl border border-[var(--theme-border)]
+        bg-[var(--theme-surface)]
+        p-3 sm:p-4 md:p-5
+        transition-shadow
+        shadow-none md:shadow-[0_2px_8px_var(--theme-shadow)]
+      "
       aria-label={`${title} column`}
       data-column={column}
       data-droppable-id={droppableId}
       data-count={ids.length}
     >
-      <header className="mb-3 flex items-center justify-between">
-        <h3 className="font-semibold">{title}</h3>
-        <span className="text-xs opacity-70">{ids.length}</span>
+      <header className="mb-2 sm:mb-3 flex items-center justify-between">
+        <h3 className="font-semibold text-sm sm:text-base">{title}</h3>
+        <span className="text-[11px] sm:text-xs opacity-70">{ids.length}</span>
       </header>
 
       <SortableContext items={ids} strategy={verticalListSortingStrategy}>
         <div
           className={
-            'space-y-3 min-h-[80px] transition-colors ' +
-            (isOver ? 'bg-[var(--theme-card-hover)] rounded-xl p-2' : '')
+            'min-h-[80px] space-y-2 sm:space-y-3 transition-colors ' +
+            (isOver
+              ? 'rounded-xl p-2 sm:p-3 bg-[var(--theme-card-hover)] outline-1 outline-[var(--theme-border)]'
+              : '')
           }
         >
           {ids.map((id, index) => {
@@ -58,7 +66,6 @@ export default function Column({
                 </SortableCard>
               );
             } catch {
-
               return (
                 <div
                   key={`err-${String(id)}-${index}`}

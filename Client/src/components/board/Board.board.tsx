@@ -53,11 +53,9 @@ export default function Board({
       const cx = rect.left + rect.width / 2;
       const cy = rect.top + rect.height / 2;
 
-      // ✅ generic querySelector<HTMLElement> — no assertions needed
       const elActive = document.querySelector<HTMLElement>('[data-column="active"]');
       const elArchived = document.querySelector<HTMLElement>('[data-column="archived"]');
 
-      // ✅ works with Element | null (getBoundingClientRect exists on Element)
       const inside = (el?: Element | null) => {
         if (!el) return false;
         const r = el.getBoundingClientRect();
@@ -71,7 +69,6 @@ export default function Board({
     }
     return undefined;
   }
-
 
   function getDropIndex(evt: DragEndEvent | DragOverEvent, toColumn: ColumnKey): number {
     try {
@@ -150,7 +147,15 @@ export default function Board({
       collisionDetection={closestCorners}
       onDragEnd={handleDragEnd}
     >
-      <div className="w-full min-h-[86vh] grid grid-cols-1 md:grid-cols-2 gap-6">
+      <div
+        className="
+          w-full min-h-[86vh]
+          mx-auto max-w-5xl
+          grid grid-cols-1 md:grid-cols-2
+          gap-3 sm:gap-4 md:gap-6
+          px-3 sm:px-4 md:px-0
+        "
+      >
         <Column
           title="Active Praises"
           column="active"

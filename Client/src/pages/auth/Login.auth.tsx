@@ -12,8 +12,8 @@ export default function Login(): React.ReactElement {
   const loc = useLocation();
   const { login, loading } = useAuthStore();
 
-  const [email, setEmail] = useState('testuser@example.com');
-  const [password, setPassword] = useState('Password123!');
+  const [email, setEmail] = useState('');
+  const [password, setPassword] = useState('');
   const [showPw, setShowPw] = useState(false);
   const [ready, setReady] = useState(false);        // reCAPTCHA readiness (optional)
   const [err, setErr] = useState<string | null>(null);
@@ -74,37 +74,37 @@ export default function Login(): React.ReactElement {
   }
 
   return (
-    <div className="min-h-[88vh] bg-[var(--theme-bg)] text-[var(--theme-text)] flex items-center justify-center p-3">
+    <div className="min-h-[83vh] bg-[var(--theme-bg)] text-[var(--theme-text)] flex items-center justify-center p-3 sm:p-4">
       <Toaster position="top-center" reverseOrder={false} />
 
       <form
         onSubmit={onSubmit}
         aria-label="Sign in"
-        className="w-full max-w-md bg-[var(--theme-surface)] border border-[var(--theme-border)] rounded-2xl shadow-[0_4px_14px_0_var(--theme-shadow)] p-6 md:p-8 space-y-5"
+        className="w-full max-w-md bg-[var(--theme-surface)] border border-[var(--theme-border)] rounded-2xl shadow-md md:shadow-[0_4px_14px_0_var(--theme-shadow)] p-4 sm:p-6 md:p-8 space-y-4 sm:space-y-5"
       >
         <header className="space-y-1 text-center">
-          <h1 className="text-3xl font-semibold text-[var(--theme-accent)]">Sign in</h1>
-          <p className="text-md opacity-80">Welcome back to Friday Bible Study.</p>
+          <h1 className="text-2xl sm:text-3xl font-semibold text-[var(--theme-accent)]">Sign in</h1>
+          <p className="text-sm sm:text-md opacity-80">Welcome back to Friday Bible Study.</p>
         </header>
 
         {/* Email */}
-        <label className="block text-sm font-medium">
-          <span className="text-base mb-1 block">Email</span>
+        <label className="block text-xs sm:text-sm font-medium">
+          <span className="text-sm sm:text-base mb-1 block">Email</span>
           <input
             required
             type="email"
             autoComplete="email"
             value={email}
             onChange={(e) => setEmail(e.target.value)}
-            className="block w-full rounded-xl border border-[var(--theme-border)] bg-[var(--theme-surface)] px-3 py-2
+            className="block w-full rounded-xl border border-[var(--theme-border)] bg-[var(--theme-surface)] px-3 py-2 text-sm sm:text-base
                        text-[var(--theme-text)] focus:outline-none focus:ring-2 focus:ring-[var(--theme-focus)]"
             placeholder="you@example.com"
           />
         </label>
 
         {/* Password */}
-        <label className="block text-sm font-medium">
-          <span className="text-base mb-1 block">Password</span>
+        <label className="block text-xs sm:text-sm font-medium">
+          <span className="text-sm sm:text-base mb-1 block">Password</span>
           <div className="relative">
             <input
               required
@@ -112,14 +112,14 @@ export default function Login(): React.ReactElement {
               autoComplete="current-password"
               value={password}
               onChange={(e) => setPassword(e.target.value)}
-              className="block w-full rounded-xl border border-[var(--theme-border)] bg-[var(--theme-surface)] px-3 py-2 pr-12
+              className="block w-full rounded-xl border border-[var(--theme-border)] bg-[var(--theme-surface)] px-3 py-2 pr-16 text-sm sm:text-base
                          text-[var(--theme-text)] focus:outline-none focus:ring-2 focus:ring-[var(--theme-focus)]"
               placeholder="Your password"
             />
             <button
               type="button"
               onClick={() => setShowPw((s) => !s)}
-              className="absolute right-2 top-1/2 -translate-y-1/2 rounded-md px-2 py-1 text-xs font-semibold
+              className="absolute right-2 top-1/2 -translate-y-1/2 rounded-md px-3 py-1.5 text-xs sm:text-sm font-semibold
                          text-[var(--theme-text)] hover:bg-[var(--theme-card-hover)]"
             >
               {showPw ? 'Hide' : 'Show'}
@@ -130,7 +130,7 @@ export default function Login(): React.ReactElement {
         {err && (
           <p
             role="alert"
-            className="rounded-lg border border-[var(--theme-error)] bg-[var(--theme-surface)] px-3 py-2 text-sm text-[var(--theme-error)] font-medium"
+            className="rounded-lg border border-[var(--theme-error)] bg-[var(--theme-surface)] px-3 py-2 text-xs sm:text-sm text-[var(--theme-error)] font-medium"
           >
             {err}
           </p>
@@ -139,13 +139,13 @@ export default function Login(): React.ReactElement {
         <button
           type="submit"
           disabled={disabled}
-          className="w-full rounded-xl bg-[var(--theme-button)] px-4 py-2.5 text-[var(--theme-text-white)] font-semibold
+          className="w-full rounded-xl bg-[var(--theme-button)] px-4 py-2.5 sm:py-3 text-[var(--theme-text-white)] text-sm sm:text-base font-semibold
                      hover:bg-[var(--theme-hover)] disabled:opacity-60 disabled:cursor-not-allowed"
         >
           {loading ? '…' : 'Sign in'}
         </button>
 
-        <div className="text-sm pt-3 space-y-2 text-center">
+        <div className="text-xs sm:text-sm pt-2 sm:pt-3 space-y-2 text-center">
           <p>
             <Link to="/request-reset" className="underline">
               Forgot password?

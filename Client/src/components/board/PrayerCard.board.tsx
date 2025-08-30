@@ -24,7 +24,6 @@ function formatDate(value: string): string {
 export default function PrayerCard(props: Readonly<PrayerCardProps>): React.ReactElement {
   const { id, title, content, author, category, createdAt } = props;
 
-  // Safely compute display values; never throw
   const display = useMemo(() => {
     try {
       const safeTitle = title.trim().length ? title : 'Untitled';
@@ -41,18 +40,24 @@ export default function PrayerCard(props: Readonly<PrayerCardProps>): React.Reac
   }, [title, content, author, category, createdAt]);
 
   if (!display.ok) {
-    // Non-intrusive fallback to keep the list stable and visible
     return (
       <article
-        className="rounded-xl border border-[var(--theme-border)] bg-[var(--theme-card)] p-4 shadow-sm"
+        className="
+          rounded-xl border border-[var(--theme-border)]
+          bg-[var(--theme-card)]
+          p-3 sm:p-4
+          shadow-sm
+        "
         data-card-id={id}
         data-error="render"
       >
         <header className="flex items-center justify-between">
-          <h4 className="font-semibold text-[var(--theme-text)]">Card Error</h4>
-          <span className="text-xs opacity-60">#{id}</span>
+          <h4 className="font-semibold text-[var(--theme-text)] text-sm sm:text-base">
+            Card Error
+          </h4>
+          <span className="text-[11px] sm:text-xs opacity-60">#{id}</span>
         </header>
-        <p className="text-sm mt-2 opacity-80">
+        <p className="text-xs sm:text-sm mt-2 opacity-80 leading-relaxed">
           Failed to render this card.
         </p>
       </article>
@@ -61,28 +66,33 @@ export default function PrayerCard(props: Readonly<PrayerCardProps>): React.Reac
 
   return (
     <article
-      className="rounded-xl border border-[var(--theme-border)] bg-[var(--theme-accent)] p-4 shadow-sm"
+      className="
+        rounded-xl border border-[var(--theme-border)]
+        bg-[var(--theme-accent)]
+        p-3 sm:p-4
+        shadow-sm
+      "
       data-card-id={id}
       data-category={display.safeCategory}
       data-created={createdAt}
     >
-      <header className="flex items-center justify-between">
-        <h4 className="font-semibold text-[var(--theme-text-white)]">
+      <header className="flex items-center justify-between gap-2">
+        <h4 className="font-semibold text-[var(--theme-text-white)] text-sm sm:text-base truncate">
           {display.safeTitle}
         </h4>
-        <span className="text-[var(--theme-text-white)] text-xs opacity-60">
+        <span className="text-[var(--theme-text-white)] text-[11px] sm:text-xs opacity-60 whitespace-nowrap">
           {display.safeDate}
         </span>
       </header>
 
-      <p className="text-[var(--theme-text-white)] text-sm mt-2 opacity-90 whitespace-pre-line">
+      <p className="text-[var(--theme-text-white)] text-xs sm:text-sm mt-2 opacity-90 whitespace-pre-line leading-relaxed">
         {display.safeContent}
       </p>
 
-      <div className="text-[var(--theme-text-white)] text-sm mt-2 opacity-80">
+      <div className="text-[var(--theme-text-white)] text-xs sm:text-sm mt-2 opacity-80">
         Author: {display.safeAuthor}
       </div>
-      <div className="text-[var(--theme-text-white)] text-xs mt-2 opacity-60">
+      <div className="text-[var(--theme-text-white)] text-[11px] sm:text-xs mt-2 opacity-60">
         {display.safeCategory}
       </div>
     </article>

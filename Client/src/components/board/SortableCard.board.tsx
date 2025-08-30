@@ -18,7 +18,6 @@ export default function SortableCard({
                                        column,
                                        children,
                                      }: Readonly<SortableCardProps>): React.ReactElement {
-  // Guard against odd id/index inputs (never throw)
   const safeId = Number.isFinite(id) ? id : Number(id);
   const safeIndex = Number.isFinite(index) ? index : 0;
 
@@ -36,7 +35,6 @@ export default function SortableCard({
     isDragging = false,
   } = sortable ?? ({} as ReturnType<typeof useSortable>);
 
-  // Computed style (never throw if transform is undefined)
   const style: React.CSSProperties = useMemo(() => {
     try {
       return {
@@ -54,10 +52,25 @@ export default function SortableCard({
         cursor: 'grab',
       };
     }
-  }, []);
+  }, [transform, transition, isDragging]);
 
   return (
-    <div ref={setNodeRef} style={style} {...attributes} {...listeners}>
+    <div
+      ref={setNodeRef}
+      style={style}
+      {...attributes}
+      {...listeners}
+      className={`
+        w-full
+        rounded-lg sm:rounded-xl
+        shadow-sm
+        transition-transform
+        active:scale-[0.98]
+        bg-[var(--theme-card)]
+        border border-[var(--theme-border)]
+        p-3 sm:p-4
+      `}
+    >
       {children}
     </div>
   );
