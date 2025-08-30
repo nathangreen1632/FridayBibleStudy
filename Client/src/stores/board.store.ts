@@ -47,7 +47,7 @@ type BoardState = {
   // Initial fetch
   fetchInitial: () => Promise<void>;
 
-  // Drag/drop persist (KEEPING your original signature)
+  // Drag/drop persist
   move: (id: number, toStatus: ColumnKey, newIndex: number) => Promise<boolean>;
 
   // Socket-friendly optimistic patch ops (LOCAL ONLY — NO NETWORK)
@@ -103,7 +103,7 @@ export const useBoardStore = create<BoardState>((set, get) => ({
     }
   },
 
-  // ---- Drag/drop persist (unchanged API) ----
+  // ---- Drag/drop persist ----
   move: async (id, toStatus, newIndex) => {
     const { byId, order } = get();
 
@@ -119,19 +119,24 @@ export const useBoardStore = create<BoardState>((set, get) => ({
     const nextById = new Map(byId);
     const nextOrder = { active: [...order.active], archived: [...order.archived] };
 
-    if (toStatus === 'active') {
-      nextOrder.archived = nextOrder.archived.filter((x) => x !== id);
-      nextOrder.active = moveIdWithin([...nextOrder.active, id], id, newIndex);
-    } else {
-      nextOrder.active = nextOrder.active.filter((x) => x !== id);
-      nextOrder.archived = moveIdWithin([...nextOrder.archived, id], id, newIndex);
+    try {
+      if (toStatus === 'active') {
+        nextOrder.archived = nextOrder.archived.filter((x) => x !== id);
+        nextOrder.active = moveIdWithin([...nextOrder.active, id], id, newIndex);
+      } else {
+        nextOrder.active = nextOrder.active.filter((x) => x !== id);
+        nextOrder.archived = moveIdWithin([...nextOrder.archived, id], id, newIndex);
+      }
+
+      // Update item’s status/position optimistically
+      const updated: Item = { ...item, status: toStatus, position: newIndex };
+      nextById.set(id, updated);
+
+      set({ byId: nextById, order: nextOrder });
+    } catch {
+      set({ byId: prevById, order: prevOrder });
+      return false;
     }
-
-    // Update item’s status/position optimistically
-    const updated: Item = { ...item, status: toStatus, position: newIndex };
-    nextById.set(id, updated);
-
-    set({ byId: nextById, order: nextOrder });
 
     // --- Persist (with reCAPTCHA) ---
     try {
@@ -140,8 +145,8 @@ export const useBoardStore = create<BoardState>((set, get) => ({
         body: JSON.stringify({ status: toStatus, position: newIndex }),
       });
       return true;
-    } catch (e) {
-      console.error('Move failed', e);
+    } catch {
+      // Roll back on failure
       set({ byId: prevById, order: prevOrder });
       return false;
     }
@@ -149,65 +154,64 @@ export const useBoardStore = create<BoardState>((set, get) => ({
 
   // ---- Socket-driven optimistic patches (LOCAL ONLY) ----
   upsertPrayer: (p) => {
-    set((state) => {
-      const byId = new Map(state.byId);
-      const prev = byId.get(p.id);
+    try {
+      set((state) => {
+        const byId = new Map(state.byId);
+        const prev = byId.get(p.id);
 
-      // merge new fields
-      const merged: Item = { ...(prev ?? {} as Item), ...p };
-      byId.set(p.id, merged);
+        const merged: Item = { ...(prev ?? ({} as Item)), ...p };
+        byId.set(p.id, merged);
 
-      // If it’s praise, remove from both board columns (still stored in byId for other views)
-      if (merged.status === 'praise') {
-        const active = state.order.active.filter((x) => x !== p.id);
-        const archived = state.order.archived.filter((x) => x !== p.id);
-        return { byId, order: { active, archived } };
-      }
+        // If it’s praise, remove from both board columns
+        if (merged.status === 'praise') {
+          const active = state.order.active.filter((x) => x !== p.id);
+          const archived = state.order.archived.filter((x) => x !== p.id);
+          return { byId, order: { active, archived } };
+        }
 
-      // Rebuild only the affected column by position
-      const order = { active: [...state.order.active], archived: [...state.order.archived] };
-      if (merged.status === 'active') {
-        // ensure it is not in archived
-        order.archived = order.archived.filter((x) => x !== p.id);
-        // ensure it’s present in active, then rebuild active by position
-        if (!order.active.includes(p.id)) order.active = [p.id, ...order.active];
-        order.active = rebuildColumn(byId, order.active, 'active');
-      } else if (merged.status === 'archived') {
-        order.active = order.active.filter((x) => x !== p.id);
-        if (!order.archived.includes(p.id)) order.archived = [p.id, ...order.archived];
-        order.archived = rebuildColumn(byId, order.archived, 'archived');
-      }
+        const order = { active: [...state.order.active], archived: [...state.order.archived] };
+        if (merged.status === 'active') {
+          order.archived = order.archived.filter((x) => x !== p.id);
+          if (!order.active.includes(p.id)) order.active = [p.id, ...order.active];
+          order.active = rebuildColumn(byId, order.active, 'active');
+        } else if (merged.status === 'archived') {
+          order.active = order.active.filter((x) => x !== p.id);
+          if (!order.archived.includes(p.id)) order.archived = [p.id, ...order.archived];
+          order.archived = rebuildColumn(byId, order.archived, 'archived');
+        }
 
-      return { byId, order };
-    });
+        return { byId, order };
+      });
+    } catch {
+      // ignore
+    }
   },
 
   movePrayer: (id, to) => {
-    // Local-only move used by socket “moved” events (position provided via upsert payload)
-    set((state) => {
-      const item = state.byId.get(id);
-      if (!item) return {}; // nothing to do
+    try {
+      set((state) => {
+        const item = state.byId.get(id);
+        if (!item) return {};
 
-      const byId = new Map(state.byId);
-      const moved: Item = { ...item, status: to };
-      byId.set(id, moved);
+        const byId = new Map(state.byId);
+        const moved: Item = { ...item, status: to };
+        byId.set(id, moved);
 
-      // Remove from both columns first
-      let active = state.order.active.filter((x) => x !== id);
-      let archived = state.order.archived.filter((x) => x !== id);
+        let active = state.order.active.filter((x) => x !== id);
+        let archived = state.order.archived.filter((x) => x !== id);
 
-      if (to === 'active') {
-        // insert (temp) then rebuild by position
-        active = [id, ...active];
-        active = rebuildColumn(byId, active, 'active');
-      } else if (to === 'archived') {
-        archived = [id, ...archived];
-        archived = rebuildColumn(byId, archived, 'archived');
-      } else {
-        // praise → not shown on this 2-column board
-      }
+        if (to === 'active') {
+          active = [id, ...active];
+          active = rebuildColumn(byId, active, 'active');
+        } else if (to === 'archived') {
+          archived = [id, ...archived];
+          archived = rebuildColumn(byId, archived, 'archived');
+        }
 
-      return { byId, order: { active, archived } };
-    });
+        return { byId, order: { active, archived } };
+      });
+    } catch {
+      // ignore
+    }
   },
 }));
