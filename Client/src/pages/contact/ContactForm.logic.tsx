@@ -3,7 +3,7 @@ import React, { useEffect, useState } from 'react';
 import ContactFormView from '../../components/contact/ContactForm.view';
 import { api } from '../../helpers/http.helper';
 import { loadRecaptchaEnterprise, getRecaptchaToken } from '../../lib/recaptcha.lib';
-import toast from 'react-hot-toast';
+import { toast } from 'react-hot-toast'; // ✅ match PortalBoard import
 
 const SITE_KEY = import.meta.env.VITE_RECAPTCHA_SITE_KEY as string | undefined;
 
