@@ -60,16 +60,6 @@ export default function SortableCard({
       style={style}
       {...attributes}
       {...listeners}
-      className={`
-        w-full
-        rounded-lg sm:rounded-xl
-        shadow-sm
-        transition-transform
-        active:scale-[0.98]
-        bg-[var(--theme-card)]
-        border border-[var(--theme-border)]
-        p-3 sm:p-4
-      `}
     >
       {children}
     </div>
