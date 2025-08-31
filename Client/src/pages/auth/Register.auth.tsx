@@ -1,6 +1,6 @@
 // Client/src/pages/auth/Register.auth.tsx
 import React, { useEffect, useState, useMemo } from 'react';
-import toast, { Toaster } from 'react-hot-toast';   // ✅ toast support
+import { toast } from 'react-hot-toast';
 import { useAuthStore } from '../../stores/auth.store';
 import { loadRecaptchaEnterprise, getRecaptchaToken } from '../../lib/recaptcha.lib';
 
@@ -122,12 +122,12 @@ export default function Register(): React.ReactElement {
 
   return (
     <div className="min-h-[83vh] bg-[var(--theme-bg)] text-[var(--theme-text)] flex items-center justify-center p-2 sm:p-4">
-      <Toaster position="top-center" reverseOrder={false} /> {/* ✅ global toaster */}
+      {/* Global <Toaster /> is rendered in App.tsx */}
 
       <form
         onSubmit={onSubmit}
         aria-label="Register"
-        className="w-full max-w-md bg-[var(--theme-surface)] border border-[var(--theme-border)] rounded-2xl shadow-md md:shadow-[0_4px_14px_0_var(--theme-shadow)] p-4 sm:p-6 md:p-8 space-y-4 sm:space-y-5"
+        className="w-full max-w-md bg-[var(--theme-surface)] border border-[var(--theme-border)] rounded-2xl shadow-md md:shadow-[0_4px_14px_0_var(--theme-shadow)] p-4 sm:p-6 md:p-8 space-y-4 sm:space-5"
       >
         <header className="space-y-1 text-center">
           <h1 className="text-2xl sm:text-3xl font-semibold text-[var(--theme-accent)]">Create your account</h1>
