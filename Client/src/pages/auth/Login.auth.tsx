@@ -1,7 +1,7 @@
 // Client/src/pages/auth/Login.auth.tsx
 import React, { useEffect, useMemo, useState } from 'react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
-import toast, { Toaster } from 'react-hot-toast';
+import { toast } from 'react-hot-toast';
 import { useAuthStore } from '../../stores/auth.store';
 import { loadRecaptchaEnterprise, getRecaptchaToken } from '../../lib/recaptcha.lib';
 
@@ -75,7 +75,7 @@ export default function Login(): React.ReactElement {
 
   return (
     <div className="min-h-[83vh] bg-[var(--theme-bg)] text-[var(--theme-text)] flex items-center justify-center p-3 sm:p-4">
-      <Toaster position="top-center" reverseOrder={false} />
+      {/* Global <Toaster /> is rendered in App.tsx */}
 
       <form
         onSubmit={onSubmit}
