@@ -1,6 +1,6 @@
 // Client/src/pages/account/Profile.account.tsx
 import React, { useEffect, useState } from 'react';
-import toast, { Toaster } from 'react-hot-toast';
+import { toast } from 'react-hot-toast';
 import { ChevronDown } from 'lucide-react';
 import type { Category } from '../../types/domain.types';
 import { api } from '../../helpers/http.helper';
@@ -145,7 +145,6 @@ export default function ProfileAccount(): React.ReactElement {
 
   return (
     <div className="min-h-[88vh] bg-[var(--theme-bg)] text-[var(--theme-text)]">
-      <Toaster position="top-center" reverseOrder={false} />
       <div className="mx-auto max-w-4xl px-3 sm:px-6 py-6 sm:py-8 space-y-6 sm:space-y-8">
 
         {/* Page Header */}
@@ -279,7 +278,7 @@ export default function ProfileAccount(): React.ReactElement {
           )
         }
       >
-        <p className="opacity-80 text-sm sm:text-base mb-4">Update your contact and address details.</p>
+        <p className="text-center opacity-80 text-sm sm:text-base mb-4">Update your contact and address details.</p>
         <ProfileForm
           open={isOpen('profile')}           // ⬅️ tell the form when it opens
           user={user as any}

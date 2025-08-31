@@ -1,4 +1,7 @@
+// Client/src/components/ui/Modal.tsx
+
 import React, { useEffect, useRef } from 'react';
+import {useScrollLock} from "../../hooks/useScrollLock.ts";
 
 type ModalProps = {
   open: boolean;
@@ -21,6 +24,9 @@ export default function Modal({
                                 children,
                                 footer
                               }: Readonly<ModalProps>): React.ReactElement | null {
+
+  useScrollLock(open);
+
   const backdropRef = useRef<HTMLDivElement | null>(null);
 
   useEffect(() => {
@@ -41,17 +47,17 @@ export default function Modal({
     <div
       ref={backdropRef}
       /* intentionally no onMouseDown to prevent click-away closes */
-      className="fixed inset-0 z-[100] flex items-center justify-center bg-black/50"
+      className="fixed inset-0 z-[100] flex items-center justify-center bg-black/40 backdrop-blur-sm"
       aria-modal="true"
       role="text"
       aria-label={title ?? 'Dialog'}
     >
-      <div
-        className="w-full max-w-xl mx-3 rounded-2xl border border-[var(--theme-border)] bg-[var(--theme-surface)] shadow-[0_10px_28px_0_var(--theme-shadow)]"
-      >
+      <div className="w-full max-w-xl mx-3 rounded-2xl border border-[var(--theme-border)] bg-[var(--theme-surface)] shadow-[0_10px_28px_0_var(--theme-shadow)]">
         {title && (
           <div className="px-5 py-4 border-b border-[var(--theme-border)]">
-            <h3 className="text-lg sm:text-xl font-semibold text-[var(--theme-accent)]">{title}</h3>
+            <h3 className="text-center text-lg sm:text-xl font-semibold text-[var(--theme-accent)]">
+              {title}
+            </h3>
           </div>
         )}
 
@@ -61,8 +67,6 @@ export default function Modal({
 
         <div className="px-5 py-4 border-t border-[var(--theme-border)] flex items-center justify-end gap-3">
           {footer}
-          {/* Optional explicit close button if desired by parent; parent can pass one in `footer`.
-              We omit the default "Close" button to prevent accidental closing without confirmation. */}
         </div>
       </div>
     </div>

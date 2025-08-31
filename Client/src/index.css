@@ -3,35 +3,47 @@
 
 @layer base {
   :root {
-    /* palette */
+    /* base palette */
     --c-a: #CCDAD1; /* A */
     --c-b: #9CAEA9; /* B */
     --c-c: #788585; /* C */
     --c-d: #6F6866; /* D */
     --c-e: #38302E; /* E */
 
-    /* LIGHT MODE — uses only A,B,C,D,E */
-    --theme-bg: var(--c-b);                 /* A */
-    --theme-surface: var(--c-a);            /* B */
-    --theme-text: var(--c-e);               /* E */
-    --theme-text-white: var(--c-a);         /* A (label is historic) */
-    --theme-accent: var(--c-e);             /* E */
-    --theme-border: var(--c-c);             /* C */
+    /* extended palette */
+    --c-f: #E8E3DC; /* F: soft parchment */
+    --c-g: #B2C5B2; /* G: muted sage */
+    --c-h: #5C6A72; /* H: slate gray */
+    --c-i: #A27B5C; /* I: warm sand/tan */
+    --c-j: #4A6FA5; /* J: desaturated blue (optional CTA/link) */
+
+    /* LIGHT MODE */
+    --theme-bg: var(--c-b);
+    --theme-surface: var(--c-a);
+    --theme-text: var(--c-e);
+    --theme-text-white: var(--c-a);
+    --theme-accent: var(--c-e);
+    --theme-border: var(--c-c);
 
     /* buttons */
-    --theme-button: var(--c-e);             /* E */
-    --theme-button-blue: var(--c-d);        /* D */
-    --theme-button-blue-hover: var(--c-c);  /* C */
-    --theme-button-gray: var(--c-c);        /* C */
+    --theme-button: var(--c-e);
+    --theme-button-blue: var(--c-d);
+    --theme-button-blue-hover: var(--c-c);
+    --theme-button-gray: var(--c-c);
 
-    /* “legacy red” mapped within palette */
-    --theme-button-red: var(--c-e);
-    --theme-button-red-hover: var(--c-d);
-    --theme-border-red: var(--c-c);
+    /* extended buttons / links */
+    --theme-link: var(--c-j);
+    --theme-link-hover: #3B5C84;
+
+    /* semantic colors */
+    --theme-success: var(--c-g);
+    --theme-warning: var(--c-i);
+    --theme-info: var(--c-j);
 
     /* cards & interactive */
     --theme-card: var(--c-b);
     --theme-card-hover: var(--c-c);
+    --theme-card-alt: var(--c-f);
     --theme-hover: var(--c-d);
 
     /* focus & elevation */
@@ -45,12 +57,19 @@
 
 @media (prefers-color-scheme: dark) {
   :root {
-    /* palette repeated for clarity (same five only) */
+    /* base palette */
     --c-a: #CCDAD1; /* A */
     --c-b: #9CAEA9; /* B */
     --c-c: #788585; /* C */
     --c-d: #6F6866; /* D */
     --c-e: #38302E; /* E */
+
+    /* extended palette */
+    --c-f: #E8E3DC; /* F: soft parchment */
+    --c-g: #B2C5B2; /* G: muted sage */
+    --c-h: #5C6A72; /* H: slate gray */
+    --c-i: #A27B5C; /* I: warm sand/tan */
+    --c-j: #4A6FA5; /* J: desaturated blue */
 
     /* DARK MODE — 180° from light (A↔E, B↔D, C→B to avoid hold-overs) */
     --theme-bg: var(--c-d);
@@ -66,14 +85,19 @@
     --theme-button-blue-hover: var(--c-a);
     --theme-button-gray: var(--c-b);
 
-    /* “legacy red” inverted within palette */
-    --theme-button-red: var(--c-a);
-    --theme-button-red-hover: var(--c-b);
-    --theme-border-red: var(--c-b);
+    /* extended buttons / links */
+    --theme-link: var(--c-j);
+    --theme-link-hover: #678CB8;
+
+    /* semantic colors */
+    --theme-success: var(--c-g);
+    --theme-warning: var(--c-i);
+    --theme-info: var(--c-j);
 
     /* cards & interactive */
     --theme-card: var(--c-d);
     --theme-card-hover: var(--c-b);
+    --theme-card-alt: var(--c-h); /* darker parchment substitute */
     --theme-hover: var(--c-b);
 
     /* focus & elevation */
@@ -81,9 +105,10 @@
     --theme-shadow: rgba(204, 218, 209, 0.35);
 
     /* error */
-    --theme-error: #f87171; /* slightly brighter red for dark mode (red-400) */
+    --theme-error: #f87171; /* red-400 */
   }
 }
+
 
 /* PLACEHOLDER COLOR */
 @layer base {

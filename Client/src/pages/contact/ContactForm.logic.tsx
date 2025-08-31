@@ -3,6 +3,7 @@ import React, { useEffect, useState } from 'react';
 import ContactFormView from '../../components/contact/ContactForm.view';
 import { api } from '../../helpers/http.helper';
 import { loadRecaptchaEnterprise, getRecaptchaToken } from '../../lib/recaptcha.lib';
+import { toast } from 'react-hot-toast'; // ✅ match PortalBoard import
 
 const SITE_KEY = import.meta.env.VITE_RECAPTCHA_SITE_KEY as string | undefined;
 
@@ -21,8 +22,6 @@ export default function ContactFormLogic(): React.ReactElement {
     message: '',
   });
   const [submitting, setSubmitting] = useState(false);
-  const [savedMsg, setSavedMsg] = useState<string | null>(null);
-  const [error, setError] = useState<string | null>(null);
 
   // load reCAPTCHA Enterprise early
   useEffect(() => {
@@ -37,11 +36,8 @@ export default function ContactFormLogic(): React.ReactElement {
   }
 
   async function onSubmit(): Promise<void> {
-    setError(null);
-    setSavedMsg(null);
-
     if (!form.name.trim() || !form.email.trim() || !form.message.trim()) {
-      setError('Please fill out all fields.');
+      toast.error('Please fill out all fields.');
       return;
     }
 
@@ -59,13 +55,13 @@ export default function ContactFormLogic(): React.ReactElement {
       });
 
       if (res.ok) {
-        setSavedMsg('Thanks! Your message was sent.');
+        toast.success('Thanks! Your message was sent.');
         setForm({ name: '', email: '', message: '' });
       } else {
-        setError(res.error || 'Unable to send message right now.');
+        toast.error(res.error || 'Unable to send message right now.');
       }
     } catch {
-      setError('Network error. Please try again.');
+      toast.error('Network error. Please try again.');
     } finally {
       setSubmitting(false);
     }
@@ -76,8 +72,6 @@ export default function ContactFormLogic(): React.ReactElement {
       <ContactFormView
         form={form}
         submitting={submitting}
-        savedMsg={savedMsg}
-        error={error}
         onChange={onChange}
         onSubmit={onSubmit}
       />

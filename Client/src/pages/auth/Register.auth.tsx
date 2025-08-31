@@ -1,6 +1,6 @@
 // Client/src/pages/auth/Register.auth.tsx
 import React, { useEffect, useState, useMemo } from 'react';
-import toast, { Toaster } from 'react-hot-toast';   // ✅ toast support
+import { toast } from 'react-hot-toast';
 import { useAuthStore } from '../../stores/auth.store';
 import { loadRecaptchaEnterprise, getRecaptchaToken } from '../../lib/recaptcha.lib';
 
@@ -19,6 +19,16 @@ export default function Register(): React.ReactElement {
   const [showConfirm, setShowConfirm] = useState(false);
   const [ready, setReady] = useState(false);
   const [error, setError] = useState<string | null>(null);
+
+  // --- phone helpers (strict 555-123-4567) ---
+  const phoneRE = /^\d{3}-\d{3}-\d{4}$/;
+  function formatPhone(value: string): string {
+    const d = value.replace(/\D/g, '').slice(0, 10);
+    if (d.length <= 3) return d;
+    if (d.length <= 6) return `${d.slice(0, 3)}-${d.slice(3)}`;
+    return `${d.slice(0, 3)}-${d.slice(3, 6)}-${d.slice(6)}`;
+  }
+  // -------------------------------------------
 
   const passwordsMatch = useMemo(
     () => form.password.length > 0 && form.password === form.confirmPassword,
@@ -50,9 +60,7 @@ export default function Register(): React.ReactElement {
       }
     })();
 
-    return () => {
-      mounted = false;
-    };
+    return () => { mounted = false; };
   }, []);
 
   async function safeGetRecaptchaToken(): Promise<string | null> {
@@ -68,6 +76,14 @@ export default function Register(): React.ReactElement {
   async function onSubmit(e: React.FormEvent) {
     e.preventDefault();
     setError(null);
+
+    // phone is required here; must match 555-123-4567
+    if (!form.phone || !phoneRE.test(form.phone)) {
+      const msg = 'Please enter your phone as 555-123-4567';
+      setError(msg);
+      toast.error(msg);
+      return;
+    }
 
     if (!form.password || !form.confirmPassword) {
       const msg = 'Please enter and confirm your password.';
@@ -113,7 +129,6 @@ export default function Register(): React.ReactElement {
     }
   }
 
-  // 1) Helper returns only the BORDER COLOR class
   function getConfirmBorderColorClass(): string {
     if (showPwdStatus && passwordsMatch) return 'border-green-600';
     if (showPwdStatus && !passwordsMatch) return 'border-[var(--theme-error)]';
@@ -122,12 +137,12 @@ export default function Register(): React.ReactElement {
 
   return (
     <div className="min-h-[83vh] bg-[var(--theme-bg)] text-[var(--theme-text)] flex items-center justify-center p-2 sm:p-4">
-      <Toaster position="top-center" reverseOrder={false} /> {/* ✅ global toaster */}
+      {/* Global <Toaster /> is rendered in App.tsx */}
 
       <form
         onSubmit={onSubmit}
         aria-label="Register"
-        className="w-full max-w-md bg-[var(--theme-surface)] border border-[var(--theme-border)] rounded-2xl shadow-md md:shadow-[0_4px_14px_0_var(--theme-shadow)] p-4 sm:p-6 md:p-8 space-y-4 sm:space-y-5"
+        className="w-full max-w-md bg-[var(--theme-surface)] border border-[var(--theme-border)] rounded-2xl shadow-md md:shadow-[0_4px_14px_0_var(--theme-shadow)] p-4 sm:p-6 md:p-8 space-y-4 sm:space-5"
       >
         <header className="space-y-1 text-center">
           <h1 className="text-2xl sm:text-3xl font-semibold text-[var(--theme-accent)]">Create your account</h1>
@@ -149,18 +164,23 @@ export default function Register(): React.ReactElement {
           />
         </label>
 
-        {/* Phone */}
+        {/* Phone (strict format) */}
         <label className="block text-xs sm:text-sm font-medium">
           <span className="text-sm sm:text-base mb-1 block">Phone</span>
           <input
             required
+            type="tel"
+            inputMode="numeric"
             name="tel"
             autoComplete="tel"
+            maxLength={12} // 3+1+3+1+4
+            placeholder="555-123-4567"
             value={form.phone}
-            onChange={(e) => setForm({ ...form, phone: e.target.value })}
+            onChange={(e) => setForm({ ...form, phone: formatPhone(e.target.value) })}
+            pattern="^\d{3}-\d{3}-\d{4}$"
+            title="Format: 555-123-4567"
             className="block w-full rounded-xl border border-[var(--theme-border)] bg-[var(--theme-surface)] px-3 py-2 text-sm sm:text-base
                        text-[var(--theme-text)] focus:outline-none focus:ring-2 focus:ring-[var(--theme-focus)]"
-            placeholder="555-123-4567"
           />
         </label>
 
@@ -217,19 +237,17 @@ export default function Register(): React.ReactElement {
               type={showConfirm ? 'text' : 'password'}
               value={form.confirmPassword}
               onChange={(e) => setForm({ ...form, confirmPassword: e.target.value })}
-              className={
-                `block w-full rounded-xl bg-[var(--theme-surface)] px-3 py-2 pr-16 text-sm sm:text-base text-[var(--theme-text)]
-         border ${getConfirmBorderColorClass()} 
-         focus:outline-none focus:ring-2 focus:ring-[var(--theme-focus)]
-         focus:ring-offset-2 focus:ring-offset-[var(--theme-bg)]`
-              }
+              className={`block w-full rounded-xl bg-[var(--theme-surface)] px-3 py-2 pr-16 text-sm sm:text-base text-[var(--theme-text)]
+                          border ${getConfirmBorderColorClass()}
+                          focus:outline-none focus:ring-2 focus:ring-[var(--theme-focus)]
+                          focus:ring-offset-2 focus:ring-offset-[var(--theme-bg)]`}
               placeholder="Re-enter your password"
             />
             <button
               type="button"
               onClick={() => setShowConfirm((s) => !s)}
               className="absolute right-2 top-1/2 -translate-y-1/2 rounded-md px-3 py-1.5 text-xs sm:text-sm font-semibold
-                 text-[var(--theme-text)] hover:bg-[var(--theme-card-hover)]"
+                         text-[var(--theme-text)] hover:bg-[var(--theme-card-hover)]"
             >
               {showConfirm ? 'Hide' : 'Show'}
             </button>

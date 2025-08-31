@@ -3,7 +3,6 @@ import type { Request, Response } from 'express';
 import type { Order } from 'sequelize';
 import { Group, PrayerUpdate, User, Attachment, PrayerParticipant } from '../models/index.js';
 import { Prayer, type Status } from '../models/prayer.model.js';
-import { sendEmail } from '../services/email.service.js';
 import { emitToGroup } from '../config/socket.config.js';
 import path from 'path';
 import { env } from '../config/env.config.js';
@@ -11,6 +10,13 @@ import { env } from '../config/env.config.js';
 // NEW: typed events + DTO mapper
 import { Events } from '../types/socket.types.js';
 import { toPrayerDTO } from './dto/prayer.dto.js';
+
+// NEW: Resend helpers (logic-only service)
+import {
+  notifyGroupOnCategoryCreate,
+  notifyAdminOnCategoryCreate,
+  sendEmailViaResend,
+} from '../services/resend.service.js';
 
 // DRY helper to load a prayer (optionally with author) or return 404
 async function findPrayerOr404(
@@ -104,15 +110,27 @@ export async function createPrayer(req: Request, res: Response): Promise<void> {
   // ⬇️ emit full DTO (typed event)
   emitToGroup(groupId, Events.PrayerCreated, { prayer: toPrayerDTO(created) });
 
+  // Notify group & admin (non-fatal)
+  const linkUrl = `${env.PUBLIC_URL}/portal/prayers/${created.id}`;
   try {
-    await sendEmail({
-      to: group?.groupEmail ?? '**CHANGE_ME_GROUP_EMAIL@EXAMPLE.COM**',
-      subject: 'New Prayer Posted',
-      html: `<p><b>${title}</b> posted.</p><p>${content}</p>`
+    await notifyGroupOnCategoryCreate({
+      category: created.category,
+      title: created.title,
+      description: created.content,
+      createdByName: undefined, // keep neutral; can be wired to author name later
+      linkUrl,
     });
-  } catch {
-    // non-fatal for API response
-  }
+  } catch { /* ignore non-fatal email errors */ }
+
+  try {
+    await notifyAdminOnCategoryCreate({
+      category: created.category,
+      title: created.title,
+      description: created.content,
+      createdByName: undefined,
+      linkUrl,
+    });
+  } catch { /* ignore non-fatal email errors */ }
 
   res.json(created);
 }
@@ -206,16 +224,15 @@ export async function createUpdate(req: Request, res: Response): Promise<void> {
   // keep existing event name to avoid client breakage
   emitToGroup(prayer.groupId, 'update:created', { id: upd.id, prayerId });
 
+  // Send a simple update notice to the group via Resend (non-fatal)
   const group = await Group.findByPk(prayer.groupId);
   try {
-    await sendEmail({
-      to: group?.groupEmail ?? '**CHANGE_ME_GROUP_EMAIL@EXAMPLE.COM**',
+    await sendEmailViaResend({
+      to: group?.groupEmail ?? env.GROUP_EMAIL,
       subject: 'Prayer Updated',
-      html: `<p>Prayer <b>${prayer.title}</b> was updated.</p><p>${content}</p>`
+      html: `<p>Prayer <b>${prayer.title}</b> was updated.</p><p>${content}</p>`,
     });
-  } catch {
-    // non-fatal for API response
-  }
+  } catch { /* ignore non-fatal email errors */ }
 
   res.json(upd);
 }

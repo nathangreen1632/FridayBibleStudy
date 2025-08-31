@@ -4,54 +4,40 @@ import { loadRecaptchaEnterprise, getRecaptchaToken } from '../lib/recaptcha.lib
 
 const SITE_KEY = import.meta.env.VITE_RECAPTCHA_SITE_KEY as string | undefined;
 
+/**
+ * Wraps `api` and automatically attaches an x-recaptcha-token header
+ * for the given action. Safe in dev: if no SITE_KEY or a token can't be
+ * fetched, it gracefully sends the request without the header.
+ *
+ * IMPORTANT:
+ * - We DO NOT mutate the request body. Some routes expect exact JSON.
+ * - We only add the header if we successfully obtain a token.
+ * - Header merging preserves any headers the caller provided.
+ */
 export async function apiWithRecaptcha<T = unknown>(
-  url: string,
+  input: RequestInfo,
   action: string,
   init?: RequestInit
 ): Promise<T> {
-  // Reject with an Error object to satisfy Sonar (S6671)
-  if (!SITE_KEY) {
-    return Promise.reject(new Error('Missing VITE_RECAPTCHA_SITE_KEY'));
-  }
+  let token: string | undefined;
 
-  try {
-    await loadRecaptchaEnterprise(SITE_KEY);
-    const recaptchaToken = await getRecaptchaToken(SITE_KEY, action);
-
-    // Headers
-    const headers = new Headers(init?.headers);
-    headers.set('x-recaptcha-token', recaptchaToken);
-
-    // Prepare body with correct typing
-    const originalBody = init?.body;
-    let body: BodyInit | null | undefined = originalBody;
-
+  if (SITE_KEY) {
     try {
-      const maybeJson = originalBody as unknown;
-      if (maybeJson && typeof maybeJson === 'object' && !(maybeJson instanceof FormData)) {
-        // Merge token into JSON body
-        body = JSON.stringify({
-          ...(maybeJson as Record<string, unknown>),
-          recaptchaToken,
-        });
-      } else if (!originalBody) {
-        // No body provided → send token-only JSON
-        body = JSON.stringify({ recaptchaToken });
-      }
+      // Ensure the enterprise script is loaded (idempotent in our lib)
+      await loadRecaptchaEnterprise(SITE_KEY);
+      token = await getRecaptchaToken(SITE_KEY, action);
     } catch {
-      // keep original body on any failure
-      body = originalBody;
+      // Non-fatal in dev/local: continue without token
+      token = undefined;
     }
-
-    // Only set JSON content-type when body is a string we created
-    if (typeof body === 'string' && !headers.has('Content-Type')) {
-      headers.set('Content-Type', 'application/json');
-    }
-
-    return await api<T>(url, { ...init, headers, body });
-  } catch (e) {
-    // Reject with Error object (S6671 compliant)
-    const err = e instanceof Error ? e : new Error(String(e));
-    return Promise.reject(err);
   }
+
+  // Merge headers without clobbering defaults OR the token
+  // (http.helper adds Content-Type: application/json afterwards)
+  const mergedHeaders: HeadersInit = {
+    ...(init?.headers ?? {}),
+    ...(token ? { 'x-recaptcha-token': token } : {}),
+  };
+
+  return api<T>(input, { ...init, headers: mergedHeaders });
 }

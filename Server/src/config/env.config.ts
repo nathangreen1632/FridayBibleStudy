@@ -16,6 +16,8 @@ export interface Env {
   RESEND_API_KEY: string;
   EMAIL_FROM: string;
   GROUP_EMAIL: string;
+  ADMIN_EMAIL: string;
+  AUDIT_CC: string;
 
   // reCAPTCHA Enterprise
   RECAPTCHA_PROJECT_ID: string;
@@ -43,6 +45,8 @@ export const env: Env = {
   RESEND_API_KEY: req('RESEND_API_KEY'),
   EMAIL_FROM: req('EMAIL_FROM'),
   GROUP_EMAIL: req('GROUP_EMAIL'),
+  ADMIN_EMAIL: req('ADMIN_EMAIL'),
+  AUDIT_CC: req('AUDIT_CC'),
 
   RECAPTCHA_PROJECT_ID: opt('RECAPTCHA_PROJECT_ID', ''),
   RECAPTCHA_SITE_KEY: opt('RECAPTCHA_SITE_KEY', ''),
