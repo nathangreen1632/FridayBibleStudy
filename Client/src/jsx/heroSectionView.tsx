@@ -4,11 +4,11 @@ import { Link } from "react-router-dom";
 
 export default function HeroSectionView(): React.ReactElement {
   return (
-    <section className="text-center py-6 sm:py-10 px-3 sm:px-6 bg-[var(--theme-bg)] text-[var(--theme-text)]">
-      <h2 className="text-2xl sm:text-4xl md:text-5xl font-bold mb-3 sm:mb-4 text-[var(--theme-accent)] leading-tight">
+    <section className="text-center py-2 sm:py-10 px-3 sm:px-6 bg-[var(--theme-bg)] text-[var(--theme-text)] space-y-4 sm:space-y-6">
+      <h2 className="text-2xl sm:text-4xl md:text-5xl font-bold text-[var(--theme-accent)] leading-tight">
         Friday Night Bible Study
       </h2>
-      <p className="text-sm sm:text-base md:text-lg mb-6 sm:mb-8 text-[var(--theme-text)]/80 max-w-xl sm:max-w-2xl mx-auto leading-relaxed">
+      <p className="text-sm sm:text-base md:text-lg text-[var(--theme-text)]/80 max-w-xl sm:max-w-2xl mx-auto leading-relaxed">
         A place to share prayer requests and praises, stay connected with the group,
         and grow together in faith.
       </p>
