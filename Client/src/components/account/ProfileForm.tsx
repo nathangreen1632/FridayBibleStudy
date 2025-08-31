@@ -1,6 +1,6 @@
 // Client/src/components/account/ProfileForm.tsx
 import React, { useEffect, useMemo, useState } from 'react';
-import toast from 'react-hot-toast';
+import { toast } from 'react-hot-toast';
 import type { User } from '../../types/domain.types';
 
 type FormValues = {
