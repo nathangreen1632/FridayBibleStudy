@@ -1,12 +1,12 @@
 // Client/src/pages/board/ActiveBoard.page.tsx
 import React, { useEffect, useCallback } from 'react';
-import SingleBoard from '../../components/board/SingleBoard.board';
-import PrayerCard from '../../components/board/PrayerCard.board';
+import SingleBoard from '../../components/board/SingleColumnBoard.tsx';
+import PrayerCard from '../../components/PrayerCard.tsx';
 import { useBoardStore } from '../../stores/board.store';
 import { useSocketStore } from '../../stores/socket.store';
 import { toast } from 'react-hot-toast';
 import { useAuthStore } from '../../stores/auth.store';
-import type { ColumnKey } from '../../components/board/SortableCard.board';
+import type { ColumnKey } from '../../components/SortableCard.tsx';
 import { apiWithRecaptcha } from '../../helpers/secure-api.helper';
 
 // Only the two board columns are valid for in-column moves
