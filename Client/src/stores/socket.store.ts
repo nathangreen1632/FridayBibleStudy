@@ -5,11 +5,16 @@ import { getSocket } from '../lib/socket.lib';
 import { useBoardStore } from './board.store';
 import type { Prayer, Status } from '../types/domain.types';
 
+// NEW: keep Praises in sync with socket events
+import { praisesOnSocketUpsert, praisesOnSocketRemove } from './praises.store';
+
 type PrayerDTO = Prayer;
 
 type PrayerCreatedPayload = { prayer: PrayerDTO };
 type PrayerUpdatedPayload = { prayer: PrayerDTO };
 type PrayerMovedPayload   = { prayer: PrayerDTO; from: Status; to: Status };
+// If your backend emits deletes, this will just work; otherwise it's harmless.
+type PrayerDeletedPayload = { id: number };
 
 type Patch =
   | { type: 'upsert'; p: Prayer }
@@ -53,16 +58,29 @@ export const useSocketStore = create<SocketState>((set, get) => {
   s.on('connect',    () => set({ connected: true }));
   s.on('disconnect', () => set({ connected: false }));
 
-  // debounced optimistic updates
+  // Created
   s.on('prayer:created', (d: PrayerCreatedPayload) => {
     get().enqueue({ type: 'upsert', p: d.prayer });
+    // Mirror into Praises store safely
+    try { praisesOnSocketUpsert(d.prayer); } catch {}
   });
+
+  // Updated
   s.on('prayer:updated', (d: PrayerUpdatedPayload) => {
     get().enqueue({ type: 'upsert', p: d.prayer });
+    try { praisesOnSocketUpsert(d.prayer); } catch {}
   });
+
+  // Moved (status or position change)
   s.on('prayer:moved', (d: PrayerMovedPayload) => {
     get().enqueue({ type: 'upsert', p: d.prayer }); // fields may have changed
     get().enqueue({ type: 'move', id: d.prayer.id, to: d.to });
+    try { praisesOnSocketUpsert(d.prayer); } catch {}
+  });
+
+  // Deleted (optional; only if your backend emits this)
+  s.on('prayer:deleted', (d: PrayerDeletedPayload) => {
+    try { praisesOnSocketRemove(d.id); } catch {}
   });
 
   return {
