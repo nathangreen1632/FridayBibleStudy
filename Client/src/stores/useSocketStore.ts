@@ -2,11 +2,11 @@
 import { create } from 'zustand';
 import type { Socket } from 'socket.io-client';
 import { getSocket } from '../lib/socket.lib';
-import { useBoardStore } from './board.store';
+import { useBoardStore } from './useBoardStore.ts';
 import type { Prayer, Status } from '../types/domain.types';
 
 // NEW: keep Praises in sync with socket events
-import { praisesOnSocketUpsert, praisesOnSocketRemove } from './praises.store';
+import { praisesOnSocketUpsert, praisesOnSocketRemove } from './usePraisesStore.ts';
 
 type PrayerDTO = Prayer;
 
