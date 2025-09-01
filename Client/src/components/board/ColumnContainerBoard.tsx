@@ -1,8 +1,8 @@
-// Client/src/components/board/Column.board.tsx
+// Client/src/components/board/ColumnContainer.board.tsx
 import React, { useMemo } from 'react';
 import { useDroppable } from '@dnd-kit/core';
 import { SortableContext, verticalListSortingStrategy } from '@dnd-kit/sortable';
-import SortableCard, { type ColumnKey } from './SortableCard.board';
+import SortableCard, { type ColumnKey } from '../SortableCard.tsx';
 
 interface ColumnProps {
   title: string;
