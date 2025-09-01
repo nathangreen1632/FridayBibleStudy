@@ -1,12 +1,12 @@
 // Client/src/pages/board/ArchiveBoard.page.tsx
 import React, { useEffect, useCallback } from 'react';
-import SingleBoard from '../../components/board/SingleBoard.board';
-import PrayerCard from '../../components/board/PrayerCard.board';
+import SingleBoard from '../../components/board/SingleColumnBoard.tsx';
+import PrayerCard from '../../components/PrayerCard.tsx';
 import { useBoardStore } from '../../stores/board.store';
 import { useSocketStore } from '../../stores/socket.store';
 import { useAuthStore } from '../../stores/auth.store';
 import { toast } from 'react-hot-toast';
-import type { ColumnKey } from '../../components/board/SortableCard.board';
+import type { ColumnKey } from '../../components/SortableCard.tsx';
 import { apiWithRecaptcha } from '../../helpers/secure-api.helper';
 
 // Only the two board columns are reorderable within this store
