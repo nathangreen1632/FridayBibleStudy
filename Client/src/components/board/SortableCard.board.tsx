@@ -3,7 +3,7 @@ import React, { useMemo } from 'react';
 import { useSortable } from '@dnd-kit/sortable';
 import { CSS } from '@dnd-kit/utilities';
 
-export type ColumnKey = 'active' | 'archived';
+export type ColumnKey = 'active' | 'praise' | 'archived';
 
 interface SortableCardProps {
   id: number;
