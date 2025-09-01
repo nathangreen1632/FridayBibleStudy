@@ -1,6 +1,6 @@
 // Client/src/components/board/PrayerCard.board.tsx
 import React, { useMemo } from 'react';
-import type { Category } from '../../types/domain.types';
+import type { Category } from '../types/domain.types.ts';
 
 interface PrayerCardProps {
   id: number;
