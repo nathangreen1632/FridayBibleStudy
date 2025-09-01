@@ -3,7 +3,7 @@ import React, { useEffect, useCallback } from 'react';
 import SingleBoard from '../../components/board/SingleColumnBoard.tsx';
 import PrayerCard from '../../components/PrayerCard.tsx';
 import type { ColumnKey } from '../../components/SortableCard.tsx';
-import { usePraisesStore, usePraisesIds, usePraiseById } from '../../stores/praises.store';
+import { usePraisesStore, usePraisesIds, usePraiseById } from '../../stores/usePraisesStore.ts';
 
 // Small wrapper so we can safely use a hook per-item
 function PraiseCardFromStore({ id }: Readonly<{ id: number }>) {
