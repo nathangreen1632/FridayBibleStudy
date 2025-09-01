@@ -2,7 +2,7 @@
 import React from 'react';
 import AppRoutes from './AppRoutes';
 import { Toaster } from 'react-hot-toast';
-import Navbar from './components/nav/Navbar.tsx';
+import Navbar from './common/Navbar.tsx';
 import Footer from './common/Footer.tsx';
 
 export default function App(): React.ReactElement {
