@@ -1,7 +1,7 @@
 // Client/src/common/Navbar.tsx
 import React, { useState, useEffect, useRef } from 'react';
 import { NavLink, useNavigate, useLocation } from 'react-router-dom';
-import { useAuthStore } from '../stores/auth.store.ts';
+import { useAuthStore } from '../stores/useAuthStore.ts';
 import {
   Home,
   Mail,
