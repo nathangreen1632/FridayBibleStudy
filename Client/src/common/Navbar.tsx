@@ -1,7 +1,7 @@
-// Client/src/components/nav/Navbar.tsx
+// Client/src/common/Navbar.tsx
 import React, { useState, useEffect, useRef } from 'react';
 import { NavLink, useNavigate, useLocation } from 'react-router-dom';
-import { useAuthStore } from '../../stores/auth.store';
+import { useAuthStore } from '../stores/auth.store.ts';
 import {
   Home,
   Mail,
@@ -14,7 +14,7 @@ import {
   Archive as ArchiveIcon,
   Sparkles,     // praises
 } from 'lucide-react';
-import { useScrollLock } from '../../hooks/useScrollLock.ts';
+import { useScrollLock } from '../hooks/useScrollLock.ts';
 
 function linkClass(isActive: boolean): string {
   return [
