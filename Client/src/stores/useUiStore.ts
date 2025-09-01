@@ -1,3 +1,4 @@
+// Client/src/stores/useUiStore.ts
 import { create } from 'zustand';
 
 export type ModalKey = 'profile';
@@ -11,13 +12,34 @@ interface UiState {
 
 export const useUiStore = create<UiState>((set, get) => ({
   modals: {},
+
   openModal: (key) => {
-    const next = { ...get().modals, [key]: true };
-    set({ modals: next });
+    try {
+      const current = get().modals ?? {};
+      const next = { ...current, [key]: true };
+      set({ modals: next });
+    } catch {
+      // fallback: reset to just this modal
+      set({ modals: { [key]: true } });
+    }
   },
+
   closeModal: (key) => {
-    const next = { ...get().modals, [key]: false };
-    set({ modals: next });
+    try {
+      const current = get().modals ?? {};
+      const next = { ...current, [key]: false };
+      set({ modals: next });
+    } catch {
+      // fallback: ensure state at least exists
+      set({ modals: { [key]: false } });
+    }
   },
-  isOpen: (key) => Boolean(get().modals[key]),
+
+  isOpen: (key) => {
+    try {
+      return Boolean(get().modals?.[key]);
+    } catch {
+      return false;
+    }
+  },
 }));
