@@ -1,7 +1,7 @@
 // Client/src/pages/auth/Register.auth.tsx
 import React, { useEffect, useState, useMemo } from 'react';
 import { toast } from 'react-hot-toast';
-import { useAuthStore } from '../stores/auth.store.ts';
+import { useAuthStore } from '../stores/useAuthStore.ts';
 import { loadRecaptchaEnterprise, getRecaptchaToken } from '../lib/recaptcha.lib.ts';
 
 const SITE_KEY = import.meta.env.VITE_RECAPTCHA_SITE_KEY as string | undefined;
