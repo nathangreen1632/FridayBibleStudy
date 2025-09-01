@@ -8,9 +8,9 @@ import {
   closestCorners,
   type DragEndEvent,
 } from '@dnd-kit/core';
-import Column from './Column.board';
-import Dock from './Dock.board'; // ← added
-import type { ColumnKey } from './SortableCard.board';
+import Column from './ColumnContainerBoard.tsx';
+import Dock from '../../common/DockPanel.tsx'; // ← added
+import type { ColumnKey } from '../SortableCard.tsx';
 
 type SingleBoardProps = {
   title: string;
