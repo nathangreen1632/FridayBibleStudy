@@ -1,4 +1,4 @@
-// Client/src/components/board/Dock.board.tsx
+// Client/src/common/DockPanel.tsx
 import React from 'react';
 import { useDroppable } from '@dnd-kit/core';
 
