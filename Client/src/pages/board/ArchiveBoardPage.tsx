@@ -2,9 +2,9 @@
 import React, { useEffect, useCallback } from 'react';
 import SingleBoard from '../../components/board/SingleColumnBoard.tsx';
 import PrayerCard from '../../components/PrayerCard.tsx';
-import { useBoardStore } from '../../stores/board.store';
-import { useSocketStore } from '../../stores/socket.store';
-import { useAuthStore } from '../../stores/auth.store';
+import { useBoardStore } from '../../stores/useBoardStore.ts';
+import { useSocketStore } from '../../stores/useSocketStore.ts';
+import { useAuthStore } from '../../stores/useAuthStore.ts';
 import { toast } from 'react-hot-toast';
 import type { ColumnKey } from '../../components/SortableCard.tsx';
 import { apiWithRecaptcha } from '../../helpers/secure-api.helper';
