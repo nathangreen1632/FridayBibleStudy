@@ -7,7 +7,7 @@ import Login from './pages/LoginPage.tsx';
 
 import AccountPage from './pages/AccountPage.tsx';
 import ContactPageWrapper from './pages/contact/ContactPageWrapper.tsx';
-import { useAuthStore } from './stores/auth.store';
+import { useAuthStore } from './stores/useAuthStore.ts';
 
 // NEW: dedicated board pages
 import ActiveBoard from './pages/board/ActiveBoardPage.tsx';
