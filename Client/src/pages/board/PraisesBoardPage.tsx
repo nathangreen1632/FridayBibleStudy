@@ -1,8 +1,8 @@
 // Client/src/pages/board/PraisesBoard.page.tsx
 import React, { useEffect, useCallback } from 'react';
-import SingleBoard from '../../components/board/SingleBoard.board';
-import PrayerCard from '../../components/board/PrayerCard.board';
-import type { ColumnKey } from '../../components/board/SortableCard.board';
+import SingleBoard from '../../components/board/SingleColumnBoard.tsx';
+import PrayerCard from '../../components/PrayerCard.tsx';
+import type { ColumnKey } from '../../components/SortableCard.tsx';
 import { usePraisesStore, usePraisesIds, usePraiseById } from '../../stores/praises.store';
 
 // Small wrapper so we can safely use a hook per-item
