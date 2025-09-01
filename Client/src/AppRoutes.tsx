@@ -2,17 +2,17 @@
 import React, { useEffect } from 'react';
 import { Route, Routes, Navigate, useLocation } from 'react-router-dom';
 import HomePage from './pages/HomePage.tsx';
-import Register from './pages/auth/Register.auth';
-import Login from './pages/auth/Login.auth';
+import Register from './pages/RegisterPage.tsx';
+import Login from './pages/LoginPage.tsx';
 
-import ProfileAccount from './pages/account/Profile.account';
-import ContactPage from './pages/contact/ContactPage';
+import AccountPage from './pages/AccountPage.tsx';
+import ContactPageWrapper from './pages/contact/ContactPageWrapper.tsx';
 import { useAuthStore } from './stores/auth.store';
 
 // NEW: dedicated board pages
-import ActiveBoard from './pages/board/ActiveBoard.page';
-import ArchiveBoard from './pages/board/ArchiveBoard.page';
-import PraisesBoard from './pages/board/PraisesBoard.page';
+import ActiveBoard from './pages/board/ActiveBoardPage.tsx';
+import ArchiveBoard from './pages/board/ArchiveBoardPage.tsx';
+import PraisesBoard from './pages/board/PraisesBoardPage.tsx';
 
 function RequireAuth({ children }: Readonly<{ children: React.ReactElement }>): React.ReactElement {
   const { user, me } = useAuthStore();
@@ -30,7 +30,7 @@ export default function AppRoutes(): React.ReactElement {
       <Route path="/" element={<HomePage />} />
       <Route path="/register" element={<Register />} />
       <Route path="/login" element={<Login />} />
-      <Route path="/contact" element={<ContactPage />} />
+      <Route path="/contact" element={<ContactPageWrapper />} />
 
       {/* Default portal = Active Praises (single column) */}
       {/* If PortalBoard re-exports ActiveBoard, either of these lines works.
@@ -42,7 +42,7 @@ export default function AppRoutes(): React.ReactElement {
       <Route path="/board/archive" element={<RequireAuth><ArchiveBoard /></RequireAuth>} />
       <Route path="/board/praises" element={<RequireAuth><PraisesBoard /></RequireAuth>} />
 
-      <Route path="/profile" element={<RequireAuth><ProfileAccount /></RequireAuth>} />
+      <Route path="/profile" element={<RequireAuth><AccountPage /></RequireAuth>} />
 
       {/* Fallback */}
       <Route path="*" element={<Navigate to="/portal" replace />} />
