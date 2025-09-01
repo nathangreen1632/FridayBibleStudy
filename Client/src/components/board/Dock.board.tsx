@@ -56,9 +56,9 @@ export default function Dock(): React.ReactElement {
           'xl:w-64',
         ].join(' ')}
       >
-        <Zone id="dock-active" label="Send to Prayers" />
-        <Zone id="dock-praise" label="Send to Praises" />
-        <Zone id="dock-archive" label="Send to Archive" />
+        <Zone id="dock-active" label="Move to Prayers" />
+        <Zone id="dock-praise" label="Move to Praises" />
+        <Zone id="dock-archive" label="Move to Archive" />
       </aside>
     </div>
   );
