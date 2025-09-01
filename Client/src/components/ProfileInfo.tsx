@@ -1,7 +1,7 @@
 // Client/src/components/account/ProfileForm.tsx
 import React, { useEffect, useMemo, useState } from 'react';
 import { toast } from 'react-hot-toast';
-import type { User } from '../../types/domain.types';
+import type { User } from '../types/domain.types.ts';
 
 type FormValues = {
   name: string;
@@ -38,7 +38,7 @@ function normalizeFromUser(user: User): FormValues {
   };
 }
 
-export default function ProfileForm({
+export default function ProfileInfo({
                                       open,
                                       user,
                                       savedMsg,
