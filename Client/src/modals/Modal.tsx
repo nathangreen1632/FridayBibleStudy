@@ -1,7 +1,7 @@
 // Client/src/components/ui/Modal.tsx
 
 import React, { useEffect, useRef } from 'react';
-import {useScrollLock} from "../../hooks/useScrollLock.ts";
+import {useScrollLock} from "../hooks/useScrollLock.ts";
 
 type ModalProps = {
   open: boolean;

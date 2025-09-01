@@ -1,3 +1,4 @@
+// Client/src/common/ConfirmBar.tsx
 import React from 'react';
 
 type ConfirmBarProps = {

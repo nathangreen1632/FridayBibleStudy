@@ -1,4 +1,4 @@
-// Client/src/stores/board.store.ts
+// Client/src/stores/useBoardStore.ts
 import { create } from 'zustand';
 import { api } from '../helpers/http.helper';
 import { apiWithRecaptcha } from '../helpers/secure-api.helper';
@@ -27,6 +27,13 @@ function rebuildColumn(byId: Map<number, Item>, ids: number[], status: ColumnKey
     .filter((p): p is Item => !!p && p.status === status)
     .sort(sortByPosition)
     .map((p) => p.id);
+}
+
+function msgFrom(err: unknown, fallback: string): string {
+  if (err && typeof err === 'object' && 'message' in err && typeof (err as { message?: unknown }).message === 'string') {
+    return (err as { message: string }).message || fallback;
+  }
+  return fallback;
 }
 
 type BoardState = {
@@ -77,16 +84,19 @@ export const useBoardStore = create<BoardState>((set, get) => ({
     try {
       const data = await api<ListPrayersResponse>('/api/prayers?page=1&pageSize=20');
 
+      const items: Item[] = Array.isArray(data?.items) ? (data.items) : [];
       const byId = new Map<number, Item>();
-      data.items.forEach((it) => byId.set(it.id, it));
+      for (const it of items) {
+        if (it) byId.set(it.id, it);
+      }
 
-      const active = data.items
-        .filter((i) => i.status === 'active')
+      const active = items
+        .filter((i) => i?.status === 'active')
         .sort(sortByPosition)
         .map((i) => i.id);
 
-      const archived = data.items
-        .filter((i) => i.status === 'archived')
+      const archived = items
+        .filter((i) => i?.status === 'archived')
         .sort(sortByPosition)
         .map((i) => i.id);
 
@@ -94,12 +104,12 @@ export const useBoardStore = create<BoardState>((set, get) => ({
         byId,
         order: { active, archived },
         page: 1,
-        hasMore: data.items.length >= 20,
+        hasMore: items.length >= 20,
         loading: false,
         error: null,
       });
-    } catch (e: any) {
-      set({ loading: false, error: e?.message ?? 'Failed to load prayers' });
+    } catch (err: unknown) {
+      set({ loading: false, error: msgFrom(err, 'Failed to load prayers') });
     }
   },
 
@@ -109,7 +119,14 @@ export const useBoardStore = create<BoardState>((set, get) => ({
 
     // Guard: item must exist
     const item = byId.get(id);
-    if (!item) return false;
+    if (!item) {
+      set({ error: 'Item not found' });
+      return false;
+    }
+
+    // Bound newIndex to a safe range for the target column
+    const targetList = toStatus === 'active' ? order.active : order.archived;
+    const safeIndex = Math.max(0, Math.min(newIndex, targetList.length));
 
     // Capture previous state for rollback
     const prevById = new Map(byId);
@@ -122,19 +139,19 @@ export const useBoardStore = create<BoardState>((set, get) => ({
     try {
       if (toStatus === 'active') {
         nextOrder.archived = nextOrder.archived.filter((x) => x !== id);
-        nextOrder.active = moveIdWithin([...nextOrder.active, id], id, newIndex);
+        nextOrder.active = moveIdWithin([...nextOrder.active, id], id, safeIndex);
       } else {
         nextOrder.active = nextOrder.active.filter((x) => x !== id);
-        nextOrder.archived = moveIdWithin([...nextOrder.archived, id], id, newIndex);
+        nextOrder.archived = moveIdWithin([...nextOrder.archived, id], id, safeIndex);
       }
 
       // Update item’s status/position optimistically
-      const updated: Item = { ...item, status: toStatus, position: newIndex };
+      const updated: Item = { ...item, status: toStatus, position: safeIndex };
       nextById.set(id, updated);
 
-      set({ byId: nextById, order: nextOrder });
-    } catch {
-      set({ byId: prevById, order: prevOrder });
+      set({ byId: nextById, order: nextOrder, error: null });
+    } catch (err: unknown) {
+      set({ byId: prevById, order: prevOrder, error: msgFrom(err, 'Could not apply move locally') });
       return false;
     }
 
@@ -142,12 +159,12 @@ export const useBoardStore = create<BoardState>((set, get) => ({
     try {
       await apiWithRecaptcha(`/api/prayers/${id}`, 'prayer_update', {
         method: 'PATCH',
-        body: JSON.stringify({ status: toStatus, position: newIndex }),
+        body: JSON.stringify({ status: toStatus, position: safeIndex }),
       });
       return true;
-    } catch {
+    } catch (err: unknown) {
       // Roll back on failure
-      set({ byId: prevById, order: prevOrder });
+      set({ byId: prevById, order: prevOrder, error: msgFrom(err, 'Failed to save new position') });
       return false;
     }
   },
@@ -158,7 +175,6 @@ export const useBoardStore = create<BoardState>((set, get) => ({
       set((state) => {
         const byId = new Map(state.byId);
         const prev = byId.get(p.id);
-
         const merged: Item = { ...(prev ?? ({} as Item)), ...p };
         byId.set(p.id, merged);
 
@@ -180,10 +196,10 @@ export const useBoardStore = create<BoardState>((set, get) => ({
           order.archived = rebuildColumn(byId, order.archived, 'archived');
         }
 
-        return { byId, order };
+        return { byId, order, error: null };
       });
     } catch {
-      // ignore
+      // Ignore socket patch errors to avoid UI crashes
     }
   },
 
@@ -206,12 +222,17 @@ export const useBoardStore = create<BoardState>((set, get) => ({
         } else if (to === 'archived') {
           archived = [id, ...archived];
           archived = rebuildColumn(byId, archived, 'archived');
+        } else if (to === 'praise') {
+          // remove from both
+          // (this is defensive; your upsertPrayer handles praise too)
+          active = active.filter((x) => x !== id);
+          archived = archived.filter((x) => x !== id);
         }
 
-        return { byId, order: { active, archived } };
+        return { byId, order: { active, archived }, error: null };
       });
     } catch {
-      // ignore
+      // Ignore socket patch errors
     }
   },
 }));

@@ -2,21 +2,21 @@
 import React, { useEffect, useState } from 'react';
 import { toast } from 'react-hot-toast';
 import { ChevronDown } from 'lucide-react';
-import type { Category } from '../../types/domain.types';
-import { api } from '../../helpers/http.helper';
-import { loadRecaptchaEnterprise, getRecaptchaToken } from '../../lib/recaptcha.lib';
-import { useAuthStore } from '../../stores/auth.store';
-import { useUiStore } from '../../stores/ui.store';
-import Modal from '../../components/ui/Modal';
-import ConfirmBar from '../../components/ui/ConfirmBar';
-import ProfileForm from '../../components/account/ProfileForm';
+import type { Category } from '../types/domain.types.ts';
+import { api } from '../helpers/http.helper.ts';
+import { loadRecaptchaEnterprise, getRecaptchaToken } from '../lib/recaptcha.lib.ts';
+import { useAuthStore } from '../stores/useAuthStore.ts';
+import { useUiStore } from '../stores/useUiStore.ts';
+import Modal from '../modals/Modal.tsx';
+import ConfirmBar from '../common/ConfirmBar.tsx';
+import ProfileInfo from '../components/ProfileInfo.tsx';
 
 const SITE_KEY = import.meta.env.VITE_RECAPTCHA_SITE_KEY as string | undefined;
 
 // allow empty string for the placeholder until a real selection is made
 type CategoryOption = Category | '';
 
-export default function ProfileAccount(): React.ReactElement {
+export default function AccountPage(): React.ReactElement {
   const { user, me, updateProfile, loading } = useAuthStore();
   const { openModal, closeModal, isOpen } = useUiStore();
 
@@ -279,7 +279,7 @@ export default function ProfileAccount(): React.ReactElement {
         }
       >
         <p className="text-center opacity-80 text-sm sm:text-base mb-4">Update your contact and address details.</p>
-        <ProfileForm
+        <ProfileInfo
           open={isOpen('profile')}           // ⬅️ tell the form when it opens
           user={user as any}
           savedMsg={savedMsg}

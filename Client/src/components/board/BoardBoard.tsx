@@ -9,8 +9,8 @@ import {
   useSensor,
   useSensors,
 } from '@dnd-kit/core';
-import Column from './Column.board';
-import type { ColumnKey } from './SortableCard.board';
+import Column from './ColumnContainerBoard.tsx';
+import type { ColumnKey } from '../SortableCard.tsx';
 
 export interface BoardProps {
   activeIds: number[];
