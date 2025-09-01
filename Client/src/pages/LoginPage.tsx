@@ -2,8 +2,8 @@
 import React, { useEffect, useMemo, useState } from 'react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { toast } from 'react-hot-toast';
-import { useAuthStore } from '../../stores/auth.store';
-import { loadRecaptchaEnterprise, getRecaptchaToken } from '../../lib/recaptcha.lib';
+import { useAuthStore } from '../stores/auth.store.ts';
+import { loadRecaptchaEnterprise, getRecaptchaToken } from '../lib/recaptcha.lib.ts';
 
 const SITE_KEY = import.meta.env.VITE_RECAPTCHA_SITE_KEY as string | undefined;
 
