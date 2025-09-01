@@ -1,5 +1,5 @@
 // Client/src/helpers/secure-api.helper.ts
-import { loadRecaptchaEnterprise, getRecaptchaToken } from '../lib/recaptcha.lib';
+import {getRecaptchaToken, loadRecaptchaEnterprise} from '../lib/recaptcha.lib';
 
 const SITE_KEY = import.meta.env.VITE_RECAPTCHA_SITE_KEY as string | undefined;
 
@@ -42,14 +42,12 @@ export async function apiWithRecaptcha(
       (mergedHeaders as Record<string, string>)['x-recaptcha-token'] = token;
     }
 
-    const res = await fetch(input, {
+    // Never throw; pass the Response back to the caller to handle .ok/.json()
+    return await fetch(input, {
       credentials: 'include',
       ...init,
       headers: mergedHeaders,
     });
-
-    // Never throw; pass the Response back to the caller to handle .ok/.json()
-    return res;
   } catch {
     // Network or other unexpected failure: return a synthetic Response so callers don’t crash
     return new Response(
