@@ -2,7 +2,7 @@
 import { create } from 'zustand';
 import { useShallow } from 'zustand/react/shallow';
 import { api } from '../helpers/http.helper';
-import { apiWithRecaptcha } from '../helpers/secure-api.helper'; // ⬅️ add
+import { apiWithRecaptcha } from '../helpers/secure-api.helper';
 import type { Prayer, Status } from '../types/domain.types';
 
 type PraisesState = {
@@ -67,10 +67,14 @@ export const usePraisesStore = create<PraisesState>((set, get) => ({
     set({ loading: true, error: null });
     try {
       const res = await api<{ items: Prayer[] }>('/api/prayers?status=praise&page=1&pageSize=200');
+      const items = Array.isArray(res?.items) ? res.items : [];
+
       const byId = new Map<number, Prayer>();
-      res.items.forEach((it) => byId.set(it.id, it));
-      const order = sortIdsByPosition(res.items);
-      set({ byId, order, loading: false });
+      for (const it of items) {
+        if (it && typeof it.id === 'number') byId.set(it.id, it);
+      }
+      const order = sortIdsByPosition(items);
+      set({ byId, order, loading: false, error: null });
 
       // After load, check if normalization would help
       const positions = order
@@ -82,7 +86,11 @@ export const usePraisesStore = create<PraisesState>((set, get) => ({
         setTimeout(() => { void get().normalizePositions(STEP_DEFAULT); }, 200);
       }
     } catch (e: unknown) {
-      set({ loading: false, error: (e as { message?: string })?.message ?? 'Failed to load praises' });
+      const msg =
+        (e && typeof e === 'object' && 'message' in e && typeof (e as { message?: unknown }).message === 'string')
+          ? (e as { message: string }).message
+          : 'Failed to load praises';
+      set({ loading: false, error: msg });
     }
   },
 
@@ -141,8 +149,8 @@ export const usePraisesStore = create<PraisesState>((set, get) => ({
     const byId = s.byId; // re-read in case something changed
     const prevId = nextOrder[toIndex - 1];
     const nextId = nextOrder[toIndex + 1];
-    const prevPos = typeof prevId === 'number' ? byId.get(prevId)?.position : undefined;
-    const nextPos = typeof nextId === 'number' ? byId.get(nextId)?.position : undefined;
+    const prevPos = byId.get(prevId)?.position;
+    const nextPos = byId.get(nextId)?.position;
 
     let newPos: number;
     if (typeof prevPos === 'number' && typeof nextPos === 'number') {
@@ -164,18 +172,17 @@ export const usePraisesStore = create<PraisesState>((set, get) => ({
     }
 
     try {
-      const r = (await apiWithRecaptcha(
+      const r = await apiWithRecaptcha(
         `/api/prayers/${id}`,
         'prayer_update',
         {
           method: 'PATCH',
           body: JSON.stringify({ position: newPos }),
         }
-      )) as Response; // <-- assert Response
-
+      );
 
       if (!r.ok) {
-        // rollback order + position
+        // rollback...
         set({ order: prevOrder });
         if (before) {
           const cur = get();
@@ -186,7 +193,12 @@ export const usePraisesStore = create<PraisesState>((set, get) => ({
         return false;
       }
 
-      const saved = (await r.json()) as Prayer | undefined;
+      let saved: Prayer | undefined;
+      try {
+        saved = (await r.json()) as Prayer | undefined;
+      } catch {
+        saved = undefined;
+      }
       if (saved) {
         const cur = get();
         const merged = new Map(cur.byId);
@@ -231,7 +243,7 @@ export const usePraisesStore = create<PraisesState>((set, get) => ({
     }
 
     try {
-      await apiWithRecaptcha(
+      const r = await apiWithRecaptcha(
         `/api/prayers/${id}`,
         'prayer_update',
         {
@@ -240,8 +252,38 @@ export const usePraisesStore = create<PraisesState>((set, get) => ({
         }
       );
 
+      if (!r.ok) {
+        // rollback if we had it before
+        if (existed) {
+          const s2 = get();
+          const backBy = new Map(s2.byId);
+          backBy.set(id, existed);
+          const backOrder = [...s2.order, id];
+          const items = backOrder
+            .map((x) => backBy.get(x))
+            .filter(Boolean) as Prayer[];
+          set({ byId: backBy, order: sortIdsByPosition(items) });
+        }
+        return;
+      }
 
-
+      // Best-effort to merge saved payload, if provided
+      try {
+        const saved = (await r.json()) as Prayer | undefined;
+        if (saved?.status === 'praise') {
+          // if server still says praise, reinsert in correct order
+          const cur = get();
+          const mergedBy = new Map(cur.byId);
+          mergedBy.set(saved.id, saved);
+          const ids = [...cur.order, saved.id];
+          const items = ids
+            .map((x) => mergedBy.get(x))
+            .filter(Boolean) as Prayer[];
+          set({ byId: mergedBy, order: sortIdsByPosition(items) });
+        }
+      } catch {
+        // ignore body parse
+      }
     } catch {
       // Roll back if we had it before
       if (existed) {
@@ -278,28 +320,31 @@ export const usePraisesStore = create<PraisesState>((set, get) => ({
     // Persist sequentially (best-effort)
     for (const u of updates) {
       try {
-        const r = (await apiWithRecaptcha(
+        const r = await apiWithRecaptcha(
           `/api/prayers/${u.id}`,
           'prayer_update',
           {
             method: 'PATCH',
             body: JSON.stringify({ position: u.position }),
           }
-        )) as Response; // <-- assert Response
-
+        );
 
         if (r.ok) {
-          const saved = (await r.json()) as Prayer | undefined;
-          if (saved) {
-            const cur = get();
-            const merged = new Map(cur.byId);
-            const prev = merged.get(saved.id);
-            merged.set(saved.id, prev ? { ...prev, ...saved } : saved);
-            set({ byId: merged });
+          try {
+            const saved = (await r.json()) as Prayer | undefined;
+            if (saved) {
+              const cur = get();
+              const merged = new Map(cur.byId);
+              const prev = merged.get(saved.id);
+              merged.set(saved.id, prev ? { ...prev, ...saved } : saved);
+              set({ byId: merged });
+            }
+          } catch {
+            // ignore JSON parse issues; local optimistic state remains usable
           }
         }
       } catch {
-        // ignore; local order remains usable
+        // ignore; local order remains usable even if one PATCH fails
       }
     }
   },
@@ -316,9 +361,17 @@ export function usePraiseById(id: number) {
 
 // ---- Socket-side helpers (used by socket.store.ts) ----
 export function praisesOnSocketUpsert(p: Prayer) {
-  usePraisesStore.getState().upsert(p);
+  try {
+    usePraisesStore.getState().upsert(p);
+  } catch {
+    // ignore
+  }
 }
 
 export function praisesOnSocketRemove(id: number) {
-  usePraisesStore.getState().remove(id);
+  try {
+    usePraisesStore.getState().remove(id);
+  } catch {
+    // ignore
+  }
 }
