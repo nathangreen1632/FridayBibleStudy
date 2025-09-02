@@ -47,9 +47,9 @@ export default function GravatarModal(props: Readonly<{
             href={mainPage}
             target="_blank"
             rel="noopener noreferrer"
-            className="text-[var(--theme-border-red)] underline hover:opacity-90"
+            className="text-[var(--theme-error)] underline hover:opacity-90"
           >
-            main page
+            Main Page
           </a>.
         </p>
       </div>
