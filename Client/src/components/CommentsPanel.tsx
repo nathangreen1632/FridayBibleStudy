@@ -159,7 +159,7 @@ export default function CommentsPanel(props: Readonly<{
       />
 
       {open && (
-        <div className="px-3 pb-3 pt-2 space-y-3">
+        <div className="bg-[var(--theme-text)] px-3 pb-3 pt-2 space-y-3">
           <RootComposer
             disabled={isClosed}
             value={content}
@@ -202,7 +202,7 @@ function ThreadList(props: Readonly<{
           remove={props.remove}
         />
       ))}
-      {t.rootOrder.length === 0 && <div className="text-sm opacity-70">No comments yet.</div>}
+      {t.rootOrder.length === 0 && <div className="text-[var(--theme-text-white)] text-sm opacity-70">No comments yet.</div>}
     </div>
   );
 }
