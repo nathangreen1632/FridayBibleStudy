@@ -27,7 +27,7 @@ export default function ContactFormView({
         <label className="block">
           <span className="block uppercase tracking-wider text-[11px] sm:text-xs mb-1 text-[var(--theme-accent)]/80">Name</span>
           <input
-            className="w-full rounded-xl px-3 py-2 bg-[var(--theme-card-alt)] text-[var(--theme-text)] border border-[var(--theme-border)] text-sm sm:text-base shadow-[0_2px_6px_var(--theme-shadow)] focus:outline-none focus:ring-2 focus:ring-[var(--theme-link)] focus:ring-offset-2 focus:ring-offset-[var(--theme-surface)] focus:shadow-[inset_0_0_0_1px_var(--theme-border),_0_4px_12px_var(--theme-shadow)]"
+            className="w-full rounded-xl px-3 py-2 bg-[var(--theme-textbox)] text-[var(--theme-text)] border border-[var(--theme-border)] text-sm sm:text-base shadow-[0_2px_6px_var(--theme-shadow)] focus:outline-none focus:ring-2 focus:ring-[var(--theme-link)] focus:ring-offset-2 focus:ring-offset-[var(--theme-surface)] focus:shadow-[inset_0_0_0_1px_var(--theme-border),_0_4px_12px_var(--theme-shadow)] placeholder:text-[var(--theme-placeholder)]"
             value={form.name}
             onChange={(e) => onChange('name', e.target.value)}
             placeholder="Your full name"
@@ -39,7 +39,7 @@ export default function ContactFormView({
           <span className="block uppercase tracking-wider text-[11px] sm:text-xs mb-1 text-[var(--theme-accent)]/80">Email</span>
           <input
             type="email"
-            className="w-full rounded-xl px-3 py-2 bg-[var(--theme-card-alt)] text-[var(--theme-text)] border border-[var(--theme-border)] text-sm sm:text-base shadow-[0_2px_6px_var(--theme-shadow)] focus:outline-none focus:ring-2 focus:ring-[var(--theme-link)] focus:ring-offset-2 focus:ring-offset-[var(--theme-surface)] focus:shadow-[inset_0_0_0_1px_var(--theme-border),_0_4px_12px_var(--theme-shadow)]"
+            className="w-full rounded-xl px-3 py-2 bg-[var(--theme-textbox)] text-[var(--theme-text)] border border-[var(--theme-border)] text-sm sm:text-base shadow-[0_2px_6px_var(--theme-shadow)] focus:outline-none focus:ring-2 focus:ring-[var(--theme-link)] focus:ring-offset-2 focus:ring-offset-[var(--theme-surface)] focus:shadow-[inset_0_0_0_1px_var(--theme-border),_0_4px_12px_var(--theme-shadow)] placeholder:text-[var(--theme-placeholder)]"
             value={form.email}
             onChange={(e) => onChange('email', e.target.value)}
             placeholder="you@example.com"
@@ -50,7 +50,7 @@ export default function ContactFormView({
         <label className="block">
           <span className="block uppercase tracking-wider text-[11px] sm:text-xs mb-1 text-[var(--theme-accent)]/80">Message</span>
           <textarea
-            className="w-full min-h-[120px] sm:min-h-[140px] rounded-xl px-3 py-2 bg-[var(--theme-card-alt)] text-[var(--theme-text)] border border-[var(--theme-border)] text-sm sm:text-base leading-relaxed shadow-[0_2px_6px_var(--theme-shadow)] focus:outline-none focus:ring-2 focus:ring-[var(--theme-link)] focus:ring-offset-2 focus:ring-offset-[var(--theme-surface)] focus:shadow-[inset_0_0_0_1px_var(--theme-border),_0_4px_12px_var(--theme-shadow)] custom-scrollbar"
+            className="w-full min-h-[120px] sm:min-h-[140px] rounded-xl px-3 py-2 bg-[var(--theme-textbox)] text-[var(--theme-text)] border border-[var(--theme-border)] text-sm sm:text-base leading-relaxed shadow-[0_2px_6px_var(--theme-shadow)] focus:outline-none focus:ring-2 focus:ring-[var(--theme-link)] focus:ring-offset-2 focus:ring-offset-[var(--theme-surface)] focus:shadow-[inset_0_0_0_1px_var(--theme-border),_0_4px_12px_var(--theme-shadow)] custom-scrollbar placeholder:text-[var(--theme-placeholder)]/80"
             value={form.message}
             onChange={(e) => onChange('message', e.target.value)}
             placeholder="How can we help?"
@@ -64,23 +64,23 @@ export default function ContactFormView({
           disabled={!canSubmit}
           title={!messageHasText ? 'Please enter a message first' : undefined}
           className="
-            w-full mt-2 rounded-2xl px-4 py-2.5 sm:py-3 font-semibold text-sm sm:text-base
-            bg-[var(--theme-link)] text-[var(--theme-text-white)]
-            hover:bg-[var(--theme-link-hover)]
-            shadow-[0_2px_6px_var(--theme-shadow)]
-            hover:shadow-[0_6px_14px_var(--theme-shadow)]
-            transition
-            duration-150
-            ease-out
-            active:translate-y-[1px]
-            active:scale-[0.98]
-            active:shadow-[0_1px_3px_var(--theme-shadow)]
-            disabled:opacity-60
-            disabled:cursor-not-allowed
-            disabled:active:translate-y-0
-            disabled:active:scale-100
-            disabled:active:shadow-[0_2px_6px_var(--theme-shadow)]
-          "
+          w-full mt-2 rounded-2xl px-4 py-2.5 sm:py-3 font-semibold text-sm sm:text-base
+          bg-[var(--theme-button)] text-[var(--theme-text-white)]
+          hover:bg-[var(--theme-link-hover)]
+          shadow-[0_2px_6px_var(--theme-shadow)]
+          hover:shadow-[0_6px_14px_var(--theme-shadow)]
+          transition
+          duration-150
+          ease-out
+          active:translate-y-[1px]
+          active:scale-[0.98]
+          active:shadow-[0_1px_3px_var(--theme-shadow)]
+          disabled:opacity-60
+          disabled:cursor-not-allowed
+          disabled:active:translate-y-0
+          disabled:active:scale-100
+          disabled:active:shadow-[0_2px_6px_var(--theme-shadow)]
+        "
           aria-disabled={!canSubmit}
         >
           {submitting ? 'Sending…' : 'Send Message'}
