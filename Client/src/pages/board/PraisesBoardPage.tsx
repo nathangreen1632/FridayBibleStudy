@@ -1,22 +1,25 @@
 // Client/src/pages/board/PraisesBoard.page.tsx
 import React, { useEffect, useCallback } from 'react';
-import SingleBoard from '../../components/board/SingleColumnBoard.tsx';
-import PrayerCard from '../../components/PrayerCard.tsx';
-import type { ColumnKey } from '../../components/SortableCard.tsx';
-import { usePraisesStore, usePraisesIds, usePraiseById } from '../../stores/usePraisesStore.ts';
+import SingleBoard from '../../components/board/SingleColumnBoard';
+import PrayerCardWithComments from '../../components/PrayerCardWithComments';
+import type { ColumnKey } from '../../components/SortableCard';
+import { usePraisesStore, usePraisesIds, usePraiseById } from '../../stores/usePraisesStore';
+import { useSocketStore } from '../../stores/useSocketStore';
+import { useAuthStore } from '../../stores/useAuthStore';
 
 // Small wrapper so we can safely use a hook per-item
-function PraiseCardFromStore({ id }: Readonly<{ id: number }>) {
+function PraiseCardFromStore({ id, groupId }: Readonly<{ id: number; groupId: number | null }>) {
   const p = usePraiseById(id);
   if (!p) return null;
   return (
-    <PrayerCard
+    <PrayerCardWithComments
       id={p.id}
       title={p.title}
       content={p.content}
       author={p.author?.name ?? null}
       category={p.category}
       createdAt={p.createdAt}
+      groupId={groupId}
     />
   );
 }
@@ -27,11 +30,26 @@ export default function PraisesBoard(): React.ReactElement {
   const movePrayer  = usePraisesStore((s) => s.movePrayer);
   const ids         = usePraisesIds();
 
+  // auth & sockets (match Active/Archive pages)
+  const user      = useAuthStore((s) => s.user);
+  const joinGroup = useSocketStore((s) => s.joinGroup);
+  const groupId   = user?.groupId ?? 1;
+
+  // initial load
   useEffect(() => { void fetchInitial(); }, [fetchInitial]);
 
+  // join the user's group room for real-time events
+  useEffect(() => {
+    try {
+      if (groupId) joinGroup(groupId);
+    } catch {
+      // ignore; UI remains usable without socket
+    }
+  }, [groupId, joinGroup]);
+
   const renderCard = useCallback(
-    (id: number, _column: ColumnKey, _index: number) => <PraiseCardFromStore id={id} />,
-    []
+    (id: number, _column: ColumnKey, _index: number) => <PraiseCardFromStore id={id} groupId={groupId ?? null} />,
+    [groupId]
   );
 
   return (
