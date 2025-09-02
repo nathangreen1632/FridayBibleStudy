@@ -32,28 +32,30 @@ export default function Dock(): React.ReactElement {
     <div
       className={[
         'relative mt-8',
-        'w-full max-w-3xl mx-auto px-3 sm:px-4 md:px-0',
+        // match App.tsx container width
+        'w-full mx-auto px-3 sm:px-4 md:px-0',
+        'max-w-4xl 2xl:max-w-[80rem]',
         'sticky bottom-8',
-        'xl:static xl:w-auto xl:max-w-none xl:mx-0 xl:px-0 xl:bottom-auto',
+        // rail switches on only at >=1440px
+        'min-[1440px]:static min-[1440px]:w-auto min-[1440px]:max-w-none min-[1440px]:mx-0 min-[1440px]:px-0 min-[1440px]:bottom-auto',
       ].join(' ')}
     >
       <aside
         aria-label="Board actions"
         className={[
-          // ORIGINAL mobile-first backdrop, but centered vertically
+          // mobile-first backdrop, centered content
           'w-full',
           'rounded-2xl bg-[var(--theme-surface)]/80 backdrop-blur',
           'border border-[var(--theme-border)] shadow-md',
           'px-3 py-3',
-          'flex items-center justify-center gap-3', // ← center vertically
-          // removed: 'pb-[env(safe-area-inset-bottom)]',
+          'flex items-center justify-center gap-3',
 
-          // Desktop rail
-          'xl:fixed xl:right-4 xl:top-1/2 xl:-translate-y-1/2',
-          'xl:inset-x-auto xl:bottom-auto',
-          'xl:flex-col xl:items-stretch xl:gap-4',
-          'xl:px-4 xl:py-4',
-          'xl:w-64',
+          // Desktop rail (>=1440px)
+          'min-[1440px]:fixed min-[1440px]:right-4 min-[1440px]:top-1/2 min-[1440px]:-translate-y-1/2',
+          'min-[1440px]:inset-x-auto min-[1440px]:bottom-auto',
+          'min-[1440px]:flex-col min-[1440px]:items-stretch min-[1440px]:gap-4',
+          'min-[1440px]:px-4 min-[1440px]:py-4',
+          'min-[1440px]:w-64',
         ].join(' ')}
       >
         <Zone id="dock-active" label="Move to Prayers" />
