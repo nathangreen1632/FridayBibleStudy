@@ -92,13 +92,13 @@ function RootComposer(props: Readonly<{
       <div className="flex justify-end">
         <button
           type="button"
-          className="px-3 py-1 rounded-lg text-sm"
-          style={{ background: 'var(--theme-button-blue)', color: 'var(--theme-text-white)' }}
           onClick={props.onSubmit}
           disabled={!props.value.trim() || props.disabled}
+          className="px-3 py-1 rounded-lg text-base border border-[var(--theme-border)] bg-[var(--theme-button-dark)] text-[var(--theme-text)] hover:bg-[var(--theme-card)] transition-colors disabled:opacity-60 disabled:cursor-not-allowed"
         >
           Post
         </button>
+
       </div>
     </div>
   );
