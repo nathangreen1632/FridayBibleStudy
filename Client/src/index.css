@@ -27,12 +27,14 @@
     --theme-strip: var(--c-b);
     --theme-strip-text: var(--c-e);
     --theme-textbox: var(--c-f);
+    --theme-placeholder: var(--c-e);
 
     /* buttons */
     --theme-button: var(--c-e);
     --theme-button-blue: var(--c-d);
     --theme-button-blue-hover: var(--c-c);
     --theme-button-gray: var(--c-c);
+    --theme-button-dark: var(--c-a);
 
     /* extended buttons / links */
     --theme-link: var(--c-j);
@@ -84,12 +86,14 @@
     --theme-strip: var(--c-d);
     --theme-strip-text: var(--c-a);
     --theme-textbox: var(--c-f);
+    --theme-placeholder: var(--c-e);
 
     /* buttons */
     --theme-button: var(--c-a);
     --theme-button-blue: var(--c-b);
     --theme-button-blue-hover: var(--c-a);
     --theme-button-gray: var(--c-b);
+    --theme-button-dark: var(--c-e);
 
     /* extended buttons / links */
     --theme-link: var(--c-j);
