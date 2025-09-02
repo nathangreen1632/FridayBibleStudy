@@ -1,9 +1,9 @@
 // Server/src/controllers/comments.controller.ts
 import type { Request, Response, Router } from 'express';
 import { Router as makeRouter } from 'express';
-import { Op, QueryTypes } from 'sequelize'; // ✅ import QueryTypes directly
+import { Op, QueryTypes } from 'sequelize';
 import { requireAuth } from '../middleware/auth.middleware.js';
-import { recaptchaGuard } from '../middleware/recaptcha.middleware.js'; // ✅ use explicit guard
+import { recaptchaGuard } from '../middleware/recaptcha.middleware.js';
 import { Comment, CommentRead, Prayer, User, GroupMember } from '../models/index.js';
 import { emitToGroup } from '../config/socket.config.js';
 import { sequelize } from '../config/sequelize.config.js';
@@ -11,8 +11,25 @@ import { sequelize } from '../config/sequelize.config.js';
 type SafeUser = { id: number; role: 'classic' | 'admin'; groupId?: number | null; name?: string; email?: string };
 
 function actor(req: Request): SafeUser | null {
-  const u = (req as any).user as SafeUser | undefined;
-  return u ?? null;
+  // Map middleware's { userId, role, ... } to our local { id, role, ... }
+  const u = (req as any).user as {
+    userId?: number;
+    role?: 'classic' | 'admin';
+    groupId?: number | null;
+    name?: string;
+    email?: string;
+  } | undefined;
+
+  if (!u || typeof u.userId !== 'number') return null;
+  if (u.role !== 'classic' && u.role !== 'admin') return null;
+
+  return {
+    id: u.userId,
+    role: u.role,
+    groupId: u.groupId ?? null,
+    name: u.name,
+    email: u.email,
+  };
 }
 
 function safeMessage(e: unknown, fb: string): string {
@@ -20,8 +37,25 @@ function safeMessage(e: unknown, fb: string): string {
   return fb;
 }
 
-function mapComment(c: Comment) {
+/** ---------- user-name enrichment helpers ---------- */
+
+type UserLite = { name?: string | null; email?: string | null };
+
+async function loadUserMap(ids: number[]): Promise<Map<number, UserLite>> {
+  const uniq = Array.from(new Set(ids.filter((v): v is number => Number.isFinite(v))));
+  if (!uniq.length) return new Map();
+  const rows = await User.findAll({
+    attributes: ['id', 'name', 'email'],
+    where: { id: { [Op.in]: uniq } },
+  });
+  const m = new Map<number, UserLite>();
+  for (const u of rows as any[]) m.set(Number(u.id), { name: u.name ?? null, email: u.email ?? null });
+  return m;
+}
+
+function mapComment(c: Comment, users?: Map<number, UserLite>) {
   const plain = c.get({ plain: true }) as any;
+  const u = users?.get(plain.authorId);
   return {
     id: plain.id,
     prayerId: plain.prayerId,
@@ -29,6 +63,7 @@ function mapComment(c: Comment) {
     threadRootId: plain.threadRootId ?? null,
     depth: plain.depth ?? 0,
     authorId: plain.authorId,
+    authorName: u?.name ?? null, // ✅ include name (client will fall back to email/“You”)
     content: plain.deletedAt ? '[deleted]' : (plain.content || ''),
     createdAt: plain.createdAt,
     updatedAt: plain.updatedAt ?? null,
@@ -36,7 +71,8 @@ function mapComment(c: Comment) {
   };
 }
 
-// Quote an identifier for Postgres; also supports { schema, tableName } from Sequelize getTableName()
+/** -------- Postgres table quoting helpers -------- */
+
 function quoteIdent(x: string) {
   return `"${x.replace(/"/g, '""')}"`;
 }
@@ -74,7 +110,6 @@ commentsRouter.get('/list', requireAuth, async (req: Request, res: Response) => 
       return res.status(200).json({ items: [], cursor: null, hasMore: false, commentCount: 0, lastCommentAt: null, isCommentsClosed: false });
     }
 
-    // Use the actual table name as registered by Sequelize (handles schema-qualified names)
     const CT = tableRefFromModel(Comment);
 
     const sql = `
@@ -99,22 +134,32 @@ commentsRouter.get('/list', requireAuth, async (req: Request, res: Response) => 
 
     const roots = (await sequelize.query(sql, {
       replacements: { prayerId, limit, cursor },
-      type: QueryTypes.SELECT, // ✅ correct usage
+      type: QueryTypes.SELECT,
       mapToModel: true,
       model: Comment,
     })) as unknown as Array<Comment & { last_activity_at?: Date }>;
 
-    const items: Array<{ root: any; repliesPreview: any[]; hasMoreReplies: boolean }> = [];
+    // Collect replies + author ids in one pass to avoid repeated user lookups
+    const repliesByRoot = new Map<number, Comment[]>();
+    const authorIds = new Set<number>();
     for (const r of roots) {
+      authorIds.add((r as any).authorId);
       const last3 = await Comment.findAll({
         where: { threadRootId: r.id, deletedAt: null, depth: { [Op.gt]: 0 } },
         order: [['createdAt', 'DESC']],
         limit: 3,
       });
-      // Avoid ES2023 toReversed() for broader Node targets
-      const preview = last3.slice().reverse().map(mapComment);
+      repliesByRoot.set(r.id, last3);
+      for (const rr of last3 as any[]) authorIds.add(rr.authorId);
+    }
+    const userMap = await loadUserMap([...authorIds]);
+
+    const items: Array<{ root: any; repliesPreview: any[]; hasMoreReplies: boolean }> = [];
+    for (const r of roots) {
+      const previewRows = repliesByRoot.get(r.id) ?? [];
+      const preview = previewRows.slice().reverse().map((row) => mapComment(row, userMap));
       const count = await Comment.count({ where: { threadRootId: r.id, deletedAt: null, depth: { [Op.gt]: 0 } } });
-      items.push({ root: mapComment(r), repliesPreview: preview, hasMoreReplies: count > preview.length });
+      items.push({ root: mapComment(r, userMap), repliesPreview: preview, hasMoreReplies: count > preview.length });
     }
 
     const newCursor = roots.length
@@ -149,7 +194,8 @@ commentsRouter.get('/replies', requireAuth, async (req: Request, res: Response) 
       limit,
     });
 
-    return res.status(200).json({ items: rows.map(mapComment), cursor: null, hasMore: false });
+    const userMap = await loadUserMap(rows.map((r: any) => Number(r.authorId)));
+    return res.status(200).json({ items: rows.map((r) => mapComment(r, userMap)), cursor: null, hasMore: false });
   } catch (e) {
     return res.status(200).json({ items: [], cursor: null, hasMore: false, error: safeMessage(e, 'error') });
   }
@@ -159,7 +205,7 @@ commentsRouter.get('/replies', requireAuth, async (req: Request, res: Response) 
 commentsRouter.post(
   '/create',
   requireAuth,
-  recaptchaGuard('comment_create'), // ✅ explicit action
+  recaptchaGuard('comment_create'),
   async (req: Request, res: Response) => {
     try {
       const u = actor(req);
@@ -203,16 +249,21 @@ commentsRouter.post(
 
       const latestAt = inserted.createdAt || new Date();
       await Prayer.update(
-        {
-          commentCount: (prayer.commentCount ?? 0) + 1,
-          lastCommentAt: latestAt,
-        },
+        { commentCount: (prayer.commentCount ?? 0) + 1, lastCommentAt: latestAt },
         { where: { id: pid } }
       );
 
+      // prepare user map for author name
+      const uRow = await User.findByPk(u.id, { attributes: ['id', 'name', 'email'] });
+      const userMap = new Map<number, UserLite>([
+        [u.id, { name: (uRow as any)?.name ?? null, email: (uRow as any)?.email ?? null }],
+      ]);
+
+      const payloadComment = mapComment(inserted, userMap);
+
       emitToGroup(prayer.groupId, 'comment:created', {
         prayerId: pid,
-        comment: mapComment(inserted),
+        comment: payloadComment,
         newCount: (prayer.commentCount ?? 0) + 1,
         lastCommentAt: latestAt,
       });
@@ -243,7 +294,7 @@ commentsRouter.post(
         }
       } catch {}
 
-      return res.status(200).json({ ok: true, comment: mapComment(inserted), cid: cid ?? null });
+      return res.status(200).json({ ok: true, comment: payloadComment, cid: cid ?? null });
     } catch (e) {
       return res.status(200).json({ ok: false, error: safeMessage(e, 'create failed') });
     }
@@ -254,7 +305,7 @@ commentsRouter.post(
 commentsRouter.patch(
   '/:commentId',
   requireAuth,
-  recaptchaGuard('comment_update'), // ✅ explicit action
+  recaptchaGuard('comment_update'),
   async (req: Request, res: Response) => {
     try {
       const u = actor(req);
@@ -278,8 +329,11 @@ commentsRouter.patch(
       const updated = await Comment.findByPk(commentId);
       if (!updated) return res.status(200).json({ ok: false, error: 'update failed' });
 
-      emitToGroup(prayer.groupId, 'comment:updated', { prayerId: c.prayerId, comment: mapComment(updated) });
-      return res.status(200).json({ ok: true, comment: mapComment(updated) });
+      const authorMap = await loadUserMap([c.authorId]);
+      const payload = mapComment(updated, authorMap);
+
+      emitToGroup(prayer.groupId, 'comment:updated', { prayerId: c.prayerId, comment: payload });
+      return res.status(200).json({ ok: true, comment: payload });
     } catch (e) {
       return res.status(200).json({ ok: false, error: safeMessage(e, 'update failed') });
     }
@@ -290,7 +344,7 @@ commentsRouter.patch(
 commentsRouter.delete(
   '/:commentId',
   requireAuth,
-  recaptchaGuard('comment_delete'), // ✅ explicit action
+  recaptchaGuard('comment_delete'),
   async (req: Request, res: Response) => {
     try {
       const u = actor(req);
@@ -342,7 +396,7 @@ commentsRouter.delete(
 commentsRouter.post(
   '/seen',
   requireAuth,
-  recaptchaGuard('comment_seen'), // ✅ explicit action
+  recaptchaGuard('comment_seen'),
   async (req: Request, res: Response) => {
     try {
       const u = actor(req);
@@ -363,7 +417,7 @@ commentsRouter.post(
 commentsRouter.patch(
   '/closed',
   requireAuth,
-  recaptchaGuard('comment_closed_toggle'), // ✅ explicit action (admin)
+  recaptchaGuard('comment_closed_toggle'),
   async (req: Request, res: Response) => {
     try {
       const u = actor(req);
