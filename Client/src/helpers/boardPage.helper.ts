@@ -1,4 +1,5 @@
-import { useCallback, useEffect } from 'react';
+// Client/src/helpers/boardPage.helper.tsx
+import React,{ useCallback, useEffect } from 'react';
 import type { ColumnKey } from '../components/SortableCard';
 import PrayerCardWithComments from '../components/PrayerCardWithComments';
 import type { Prayer } from '../types/domain.types';
@@ -84,17 +85,16 @@ export function usePrayerCardRenderer(byId: Map<number, Prayer>, groupId?: numbe
         const item = byId.get(id);
         if (!item) return null;
 
-        return (
-          <PrayerCardWithComments
-            id={item.id}
-            title={item.title}
-            content={item.content}
-            author={item.author?.name ?? null}
-            category={item.category}
-            createdAt={item.createdAt}
-            groupId={groupId ?? null}
-          />
-        );
+        // inside usePrayerCardRenderer (only change in the file)
+        return React.createElement(PrayerCardWithComments, {
+          id: item.id,
+          title: item.title,
+          content: item.content,
+          author: item.author?.name ?? null,
+          category: item.category,
+          createdAt: item.createdAt,
+          groupId: groupId ?? null,
+        });
       } catch {
         return null;
       }
