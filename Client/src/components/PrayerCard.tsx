@@ -77,19 +77,19 @@ export default function PrayerCard(props: Readonly<PrayerCardProps>): React.Reac
       data-created={createdAt}
     >
       <header className="flex items-center justify-between gap-2">
-        <h4 className="font-semibold text-[var(--theme-text-white)] text-sm sm:text-base truncate">
+        <h2 className="font-semibold text-[var(--theme-text-white)] text-sm sm:text-2xl truncate">
           {display.safeTitle}
-        </h4>
-        <span className="text-[var(--theme-text-white)] text-[11px] sm:text-xs opacity-60 whitespace-nowrap">
+        </h2>
+        <span className="text-[var(--theme-text-white)] text-[11px] sm:text-base opacity-60 whitespace-nowrap">
           {display.safeDate}
         </span>
       </header>
 
-      <p className="text-[var(--theme-text-white)] text-xs sm:text-sm mt-2 opacity-90 whitespace-pre-line leading-relaxed">
+      <p className="text-[var(--theme-text-white)] text-xs sm:text-lg mt-2 opacity-90 whitespace-pre-line leading-relaxed">
         {display.safeContent}
       </p>
 
-      <div className="text-[var(--theme-text-white)] text-xs sm:text-sm mt-2 opacity-80">
+      <div className="text-[var(--theme-text-white)] text-xs sm:text-base mt-2 opacity-80">
         Author: {display.safeAuthor}
       </div>
       <div className="text-[var(--theme-text-white)] text-[11px] sm:text-xs mt-2 opacity-60">
