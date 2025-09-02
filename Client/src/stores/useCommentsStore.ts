@@ -3,6 +3,7 @@ import { create } from 'zustand';
 import { api } from '../helpers/http.helper';
 import { apiWithRecaptcha } from '../helpers/secure-api.helper';
 import type { Comment, ListRepliesResponse, ListRootThreadsResponse } from '../types/comment.types';
+import { useAuthStore } from './useAuthStore'; // NEW: use current user for optimistic author
 
 type ReplyPage = { cursor?: string | null; hasMore: boolean; loading: boolean; error?: string | null };
 type ThreadState = {
@@ -57,6 +58,21 @@ function msg(e: unknown, fb: string) {
   return e && typeof e === 'object' && 'message' in e ? String((e as any).message || fb) : fb;
 }
 
+// Secure ID helpers (no Math.random)
+function secureHex(bytes = 16): string {
+  const arr = new Uint8Array(bytes);
+  globalThis.crypto.getRandomValues(arr);
+  return Array.from(arr, b => b.toString(16).padStart(2, '0')).join('');
+}
+
+function makeCid(): string {
+  const c = globalThis.crypto as Crypto | undefined;
+  if (c && typeof c.randomUUID === 'function') return `cid_${c.randomUUID()}`;
+  if (c && typeof c.getRandomValues === 'function') return `cid_${secureHex(16)}`;
+  // ultra-rare fallback (no randomness; avoids Math.random to satisfy Sonar)
+  return `cid_${Date.now().toString(36)}`;
+}
+
 export const useCommentsStore = create<CommentsState>((set, get) => ({
   counts: new Map(),
   lastCommentAt: new Map(),
@@ -97,19 +113,33 @@ export const useCommentsStore = create<CommentsState>((set, get) => ({
       params.set('limit', String(limit));
       params.set('prayerId', String(prayerId));
 
-      // NEW PATH: /api/comments/list
       const data = await api<ListRootThreadsResponse>(`/api/comments/list?${params.toString()}`);
 
       for (const item of data.items) {
-        t.byId.set(item.root.id, item.root);
+        // merge to preserve any local fields like authorName if server omits
+        const prevRoot = t.byId.get(item.root.id);
+        t.byId.set(item.root.id, {
+          ...prevRoot,
+          ...item.root,
+          authorName: item.root.authorName ?? prevRoot?.authorName ?? null,
+        });
         const arr = (item.repliesPreview || []).map((r) => {
-          t.byId.set(r.id, r);
+          const prev = t.byId.get(r.id);
+          t.byId.set(r.id, { ...prev, ...r, authorName: r.authorName ?? prev?.authorName ?? null });
           return r.id;
         });
         t.repliesOrderByRoot.set(item.root.id, arr);
       }
+
+      // --- DEDUPED push of roots
       const newRoots = data.items.map((i) => i.root.id);
-      t.rootOrder = t.rootOrder.concat(newRoots);
+      const seen = new Set(t.rootOrder);
+      for (const id of newRoots) {
+        if (!seen.has(id)) {
+          seen.add(id);
+          t.rootOrder.push(id);
+        }
+      }
 
       t.rootPage.cursor = data.cursor ?? null;
       t.rootPage.hasMore = data.hasMore;
@@ -155,13 +185,18 @@ export const useCommentsStore = create<CommentsState>((set, get) => ({
       params.set('limit', String(limit));
       params.set('rootId', String(rootId));
 
-      // NEW PATH: /api/comments/replies
       const data = await api<ListRepliesResponse>(`/api/comments/replies?${params.toString()}`);
 
-      for (const c of data.items) t.byId.set(c.id, c);
+      for (const c of data.items) {
+        const prev = t.byId.get(c.id);
+        t.byId.set(c.id, { ...prev, ...c, authorName: c.authorName ?? prev?.authorName ?? null });
+      }
+
+      // --- DEDUPED merge of replies
       const current = t.repliesOrderByRoot.get(rootId) || [];
-      const merged = [...current, ...data.items.map((c) => c.id)];
-      t.repliesOrderByRoot.set(rootId, merged);
+      const incoming = data.items.map((c) => c.id);
+      const setIds = new Set([...current, ...incoming]);
+      t.repliesOrderByRoot.set(rootId, Array.from(setIds));
 
       page.cursor = data.cursor ?? null;
       page.hasMore = data.hasMore;
@@ -182,15 +217,43 @@ export const useCommentsStore = create<CommentsState>((set, get) => ({
 
   // Create (optimistic), then reconcile with server id
   create: async (prayerId, content, opts) => {
-    try {
-      const cid = opts?.cid || `cid_${Date.now()}_${Math.random().toString(36).slice(2)}`;
-      const parentId = opts?.parentId;
+    // NOTE: dedupe + reconciliation improvements
+    let depth = 0;
+    let rootId: number | string | null = null;
+    let cid = opts?.cid ?? makeCid();
+    const parentId = opts?.parentId;
 
+    // helper — remove optimistic entry
+    const rollbackOptimistic = (
+      pId: number,
+      tempCid: number | string,
+      d: 0 | 1,
+      rId?: number | string | null
+    ) => {
+      try {
+        const s = get();
+        const threads = new Map(s.threadsByPrayer);
+        const t = threads.get(pId);
+        if (!t) return;
+
+        t.byId.delete(tempCid as any);
+
+        if (d === 0) {
+          t.rootOrder = t.rootOrder.filter((x: any) => x !== tempCid);
+          t.repliesOrderByRoot.delete(tempCid as any);
+        } else if (rId != null) {
+          const arr = t.repliesOrderByRoot.get(rId) || [];
+          t.repliesOrderByRoot.set(rId, arr.filter((x: any) => x !== tempCid));
+        }
+
+        set({ threadsByPrayer: threads });
+      } catch {}
+    };
+
+    try {
       const threads = new Map(get().threadsByPrayer);
       const t = ensureThread(threads, prayerId);
 
-      let depth = 0;
-      let rootId: number | string | null = null;
       if (parentId) {
         const parent = t.byId.get(parentId);
         if (parent) {
@@ -199,13 +262,16 @@ export const useCommentsStore = create<CommentsState>((set, get) => ({
         }
       }
 
+      // author from auth store for optimistic entry
+      const me = useAuthStore.getState().user as { id?: number; name?: string; email?: string } | null;
       const optimistic: Comment = {
         id: -1,
         prayerId,
         parentId: parentId ?? null,
         threadRootId: typeof rootId === 'number' ? rootId : null,
         depth,
-        authorId: 0,
+        authorId: Number(me?.id ?? 0),
+        authorName: me?.name ?? me?.email ?? 'You',
         content,
         createdAt: new Date().toISOString(),
       };
@@ -222,27 +288,45 @@ export const useCommentsStore = create<CommentsState>((set, get) => ({
       }
       set({ threadsByPrayer: threads });
 
-      // NEW PATH: /api/comments/create
       const r = await apiWithRecaptcha(`/api/comments/create`, 'comment_create', {
         method: 'POST',
         body: JSON.stringify({ prayerId, content, parentId, cid }),
       });
-      if (!r.ok) return;
+
+      if (!r.ok) {
+        rollbackOptimistic(prayerId, cid, depth === 0 ? 0 : 1, rootId);
+        return;
+      }
 
       const parsed = (await r.json().catch(() => null)) as
-        | { ok?: boolean; comment?: Comment; cid?: string }
+        | { ok?: boolean; comment?: Comment; cid?: string; error?: string }
         | null;
-      if (!parsed || !parsed.ok || !parsed.comment) return;
 
-      // ✅ Narrow to a guaranteed value to satisfy TS (prevents TS18048)
+      if (!parsed || !parsed.ok || !parsed.comment) {
+        rollbackOptimistic(prayerId, cid, depth === 0 ? 0 : 1, rootId);
+        return;
+      }
+
       const saved = parsed.comment;
 
       const threads2 = new Map(get().threadsByPrayer);
       const t2 = ensureThread(threads2, prayerId);
 
-      const old = t2.byId.get(cid) || saved;
+      // if the socket already inserted saved.id, just drop the cid
+      const serverAlreadyPresent = t2.byId.has(saved.id);
+      if (serverAlreadyPresent) {
+        rollbackOptimistic(prayerId, cid, depth === 0 ? 0 : 1, rootId);
+        return;
+      }
+
+      // otherwise, swap cid -> saved.id
+      const old = t2.byId.get(cid);
       t2.byId.delete(cid);
-      t2.byId.set(saved.id, { ...old, ...saved });
+      t2.byId.set(saved.id, {
+        ...(old ?? {}),
+        ...saved,
+        authorName: saved.authorName ?? old?.authorName ?? null,
+      });
 
       if (depth === 0) {
         t2.rootOrder = t2.rootOrder.map((x) => (x === cid ? saved.id : x));
@@ -259,7 +343,8 @@ export const useCommentsStore = create<CommentsState>((set, get) => ({
 
       set({ threadsByPrayer: threads2 });
     } catch {
-      // ignore; optimistic entry remains (UI can show it and later sync from socket)
+      // network/parse error → rollback optimistic entry
+      rollbackOptimistic(prayerId, cid, depth === 0 ? 0 : 1, rootId);
     }
   },
 
@@ -276,7 +361,12 @@ export const useCommentsStore = create<CommentsState>((set, get) => ({
       const threads = new Map(get().threadsByPrayer);
       for (const [, t] of threads) {
         if (t.byId.has(commentId)) {
-          t.byId.set(commentId, { ...(t.byId.get(commentId) as Comment), ...body.comment });
+          const prev = t.byId.get(commentId) as Comment;
+          t.byId.set(commentId, {
+            ...prev,
+            ...body.comment,
+            authorName: body.comment.authorName ?? prev?.authorName ?? null,
+          });
           set({ threadsByPrayer: threads });
           break;
         }
@@ -306,7 +396,6 @@ export const useCommentsStore = create<CommentsState>((set, get) => ({
   markSeen: async (prayerId) => {
     try {
       const at = new Date().toISOString();
-      // NEW PATH: /api/comments/seen
       const r = await apiWithRecaptcha(`/api/comments/seen`, 'comment_seen', {
         method: 'POST',
         body: JSON.stringify({ prayerId, at }),
@@ -332,7 +421,39 @@ export const useCommentsStore = create<CommentsState>((set, get) => ({
     try {
       const threads = new Map(get().threadsByPrayer);
       const t = ensureThread(threads, p.prayerId);
-      t.byId.set(p.comment.id, p.comment);
+
+      // remove a matching optimistic placeholder before inserting server copy
+      for (const [k, v] of t.byId) {
+        if ((typeof v?.id === 'number' && v.id < 0) && v.content === p.comment.content) {
+          const sameDepth = (v.depth ?? 0) === (p.comment.depth ?? 0);
+          const sameAuthor = v.authorId === p.comment.authorId;
+          const sameParentOrRoot =
+            (v.depth ?? 0) === 0
+              ? true
+              : (v.parentId ?? null) === (p.comment.parentId ?? null) ||
+              (v.threadRootId ?? null) === (p.comment.threadRootId ?? null);
+          if (sameDepth && sameAuthor && sameParentOrRoot) {
+            if ((v.depth ?? 0) === 0) {
+              t.rootOrder = t.rootOrder.filter((x) => x !== k);
+              t.repliesOrderByRoot.delete(k);
+            } else {
+              const rId = p.comment.threadRootId!;
+              const arr = t.repliesOrderByRoot.get(rId) || [];
+              t.repliesOrderByRoot.set(rId, arr.filter((x) => x !== k));
+            }
+            t.byId.delete(k);
+            break;
+          }
+        }
+      }
+
+      // insert/merge server comment
+      const prev = t.byId.get(p.comment.id);
+      t.byId.set(p.comment.id, {
+        ...prev,
+        ...p.comment,
+        authorName: p.comment.authorName ?? prev?.authorName ?? null,
+      });
 
       if (p.comment.depth === 0) {
         t.rootOrder = [p.comment.id, ...t.rootOrder.filter((x) => x !== p.comment.id)];
@@ -340,7 +461,9 @@ export const useCommentsStore = create<CommentsState>((set, get) => ({
       } else {
         const root = p.comment.threadRootId!;
         const arr = t.repliesOrderByRoot.get(root) || [];
-        t.repliesOrderByRoot.set(root, [...arr, p.comment.id]);
+        if (!arr.includes(p.comment.id)) {
+          t.repliesOrderByRoot.set(root, [...arr, p.comment.id]);
+        }
         t.rootOrder = [root, ...t.rootOrder.filter((x) => x !== root)];
       }
 
@@ -359,7 +482,12 @@ export const useCommentsStore = create<CommentsState>((set, get) => ({
       const threads = new Map(get().threadsByPrayer);
       const t = ensureThread(threads, p.prayerId);
       if (t.byId.has(p.comment.id)) {
-        t.byId.set(p.comment.id, p.comment);
+        const prev = t.byId.get(p.comment.id) as Comment;
+        t.byId.set(p.comment.id, {
+          ...prev,
+          ...p.comment,
+          authorName: p.comment.authorName ?? prev?.authorName ?? null,
+        });
         set({ threadsByPrayer: threads });
       }
     } catch {}
