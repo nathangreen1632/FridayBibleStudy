@@ -51,7 +51,7 @@ function HeaderRow(props: Readonly<{
     <button
       type="button"
       onClick={props.toggle}
-      className="w-full flex items-center justify-between px-3 py-2 rounded-xl border"
+      className="w-full flex items-center justify-between px-3 py-2 rounded-xl border cursor-pointer"
       style={{ borderColor: 'var(--theme-border)', background: 'var(--theme-surface)', color: 'var(--theme-text)' }}
     >
       <div className="flex items-center gap-2">
@@ -76,8 +76,8 @@ function RootComposer(props: Readonly<{
     <div className="space-y-2">
       <textarea
         ref={localRef}
-        className="w-full rounded-lg p-2 border text-sm"
-        style={{ borderColor: 'var(--theme-border)', background: 'var(--theme-surface)', color: 'var(--theme-text)' }}
+        className="w-full rounded-lg p-2 border text-sm placeholder-[var(--theme-placeholder)]/60"
+        style={{ borderColor: 'var(--theme-border)', background: 'var(--theme-textbox)', color: 'var(--theme-text)' }}
         placeholder={props.disabled ? 'Comments are closed by an admin' : 'Write a comment…'}
         value={props.value}
         onChange={(e) => props.onChange(e.target.value)}
@@ -91,7 +91,7 @@ function RootComposer(props: Readonly<{
           type="button"
           onClick={props.onSubmit}
           disabled={!props.value.trim() || props.disabled}
-          className="px-3 py-1 rounded-lg text-base border border-[var(--theme-border)] bg-[var(--theme-button-dark)] text-[var(--theme-text)] hover:bg-[var(--theme-card)] transition-colors disabled:opacity-60 disabled:cursor-not-allowed"
+          className="px-3 py-1 rounded-lg text-base border border-[var(--theme-border)] bg-[var(--theme-button-dark)] text-[var(--theme-text)] hover:bg-[var(--theme-card)] transition-colors cursor-pointer disabled:opacity-60 disabled:cursor-not-allowed"
         >
           Post
         </button>
@@ -152,7 +152,7 @@ export default function CommentsPanel(props: Readonly<{
       />
 
       {open && (
-        <div className="bg-[var(--theme-text)] px-3 pb-3 pt-2 space-y-3">
+        <div className="bg-[var(--theme-accent)] px-3 pb-3 pt-2 space-y-3 rounded-2xl">
           <RootComposer
             disabled={isClosed}
             value={content}
@@ -219,7 +219,7 @@ function Thread(props: Readonly<{
   if (!t || !root) return null;
 
   return (
-    <div className="rounded-xl border p-2" style={{ borderColor: 'var(--theme-border)', background: 'var(--theme-card)' }}>
+    <div className="rounded-xl border p-2" style={{ borderColor: 'var(--theme-border)', background: 'var(--theme-surface)' }}>
       <CommentItem comment={root} update={props.update} remove={props.remove} />
       <div className="pl-4 mt-2 space-y-2">
         {replies.map((r) => (
@@ -228,7 +228,7 @@ function Thread(props: Readonly<{
         {page.hasMore && (
           <button
             type="button"
-            className="text-sm underline"
+            className="text-sm underline cursor-pointer"
             onClick={() => { if (typeof props.rootId === 'number') { void props.fetchReplies(props.prayerId, props.rootId, 10); } }}
           >
             Show older replies…
@@ -237,8 +237,8 @@ function Thread(props: Readonly<{
 
         <div className="space-y-2">
           <textarea
-            className="w-full rounded-lg p-2 border text-sm"
-            style={{ borderColor: 'var(--theme-border)', background: 'var(--theme-surface)', color: 'var(--theme-text)' }}
+            className="w-full rounded-lg p-2 border text-sm placeholder:text-[var(--theme-placeholder)]/60"
+            style={{ borderColor: 'var(--theme-border)', background: 'var(--theme-textbox)', color: 'var(--theme-text)' }}
             placeholder="Reply…"
             value={replyText}
             onChange={(e) => setReplyText(e.target.value)}
@@ -248,7 +248,7 @@ function Thread(props: Readonly<{
           <div className="flex justify-end">
             <button
               type="button"
-              className="px-3 py-1 rounded-lg text-sm"
+              className="px-3 py-1 rounded-lg text-sm cursor-pointer"
               style={{ background: 'var(--theme-button-blue)', color: 'var(--theme-text-white)' }}
               onClick={() => {
                 if (!replyText.trim() || typeof props.rootId !== 'number') return;
@@ -284,12 +284,12 @@ function CommentItem(props: Readonly<{
   const displayTime = c.id < 0 ? 'sending…' : new Date(c.createdAt).toLocaleString();
 
   return (
-    <div className="rounded-lg p-2" style={{ background: 'var(--theme-surface)' }}>
-      <div className="text-xs opacity-70 flex justify-between">
+    <div className="rounded-lg p-2" style={{ background: 'var(--theme-accent)' }}>
+      <div className="text-[var(--theme-text-white)] text-xs opacity-70 flex justify-between">
         <span>{displayAuthor} · {displayTime}</span>
         {c.deletedAt && <span className="text-[var(--theme-error)]">deleted</span>}
       </div>
-      {!edit && <div className="text-sm whitespace-pre-wrap mt-1">{c.content}</div>}
+      {!edit && <div className="text-[var(--theme-text-white)] text-sm whitespace-pre-wrap mt-1">{c.content}</div>}
       {edit && (
         <>
           <textarea
@@ -302,14 +302,14 @@ function CommentItem(props: Readonly<{
           />
           <div className="flex gap-2 justify-end mt-2">
             <button
-              className="px-3 py-1 rounded-lg text-sm"
+              className="px-3 py-1 rounded-lg text-sm cursor-pointer"
               style={{ background: 'var(--theme-button-blue)', color: 'var(--theme-text-white)' }}
               onClick={() => { setEdit(false); if (text.trim()) { void props.update(c.id, text.trim()); } }}
             >
               Save
             </button>
             <button
-              className="px-3 py-1 rounded-lg text-sm"
+              className="px-3 py-1 rounded-lg text-sm cursor-pointer"
               style={{ background: 'var(--theme-button-gray)', color: 'var(--theme-text-white)' }}
               onClick={() => setEdit(false)}
             >
@@ -319,9 +319,9 @@ function CommentItem(props: Readonly<{
         </>
       )}
       {!edit && (
-        <div className="flex gap-3 mt-2">
-          <button className="text-xs underline" onClick={() => setEdit(true)}>Edit</button>
-          <button className="text-xs underline" onClick={() => { void props.remove(c.id); }}>Delete</button>
+        <div className="text-[var(--theme-text-white)] flex gap-3 mt-2">
+          <button className="text-xs underline cursor-pointer" onClick={() => setEdit(true)}>Edit</button>
+          <button className="text-xs underline cursor-pointer" onClick={() => { void props.remove(c.id); }}>Delete</button>
         </div>
       )}
     </div>
@@ -339,7 +339,7 @@ function RootPager(props: Readonly<{ prayerId: number }>) {
     <div className="flex justify-center">
       <button
         type="button"
-        className="px-3 py-1 rounded-lg text-sm"
+        className="px-3 py-1 rounded-lg text-sm cursor-pointer"
         style={{ background: 'var(--theme-button-gray)', color: 'var(--theme-text-white)' }}
         onClick={() => { void fetchRootPage(props.prayerId, 1); }}
       >
