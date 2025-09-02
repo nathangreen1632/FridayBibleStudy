@@ -1,4 +1,4 @@
-// Client/src/components/board/PrayerCard.board.tsx
+// Client/src/components/board/PrayerCard.tsx
 import React, { useMemo } from 'react';
 import type { Category } from '../types/domain.types.ts';
 
