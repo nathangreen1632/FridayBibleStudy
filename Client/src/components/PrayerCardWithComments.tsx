@@ -13,7 +13,7 @@ export default function PrayerCardWithComments(props: Readonly<{
   groupId?: number | null;
 }>): React.ReactElement {
   return (
-    <div className="rounded-2xl shadow-md" style={{ background: 'var(--theme-card)' }}>
+    <div className="rounded-2xl shadow-md" style={{ background: 'var(--theme-text)' }}>
       <PrayerCard
         id={props.id}
         title={props.title}
@@ -22,7 +22,7 @@ export default function PrayerCardWithComments(props: Readonly<{
         category={props.category}    // now matches Category
         createdAt={props.createdAt}
       />
-      <div className="px-3 pb-3">
+      <div className="bg-[var(--theme-text)] rounded-2xl px-3 pb-3">
         <CommentsPanel prayerId={props.id} groupId={props.groupId ?? null} />
       </div>
     </div>
