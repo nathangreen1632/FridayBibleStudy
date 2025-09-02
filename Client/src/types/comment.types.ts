@@ -5,6 +5,7 @@ export type Comment = {
   threadRootId: number | null;
   depth: number;
   authorId: number;
+  authorName?: string | null;
   content: string;
   createdAt: string;
   updatedAt?: string | null;
