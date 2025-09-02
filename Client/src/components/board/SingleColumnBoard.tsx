@@ -53,7 +53,7 @@ export default function SingleBoard({
 
   return (
     <DndContext sensors={sensors} collisionDetection={closestCorners} onDragEnd={onDragEnd}>
-      <div className="mx-auto max-w-3xl px-3 sm:px-4 md:px-0">
+      <div className="mx-auto max-w-4xl px-4 sm:px-5 md:px-1 lg:px-0">
         <Column title={title} column={column} ids={ids} renderCard={renderCard} />
       </div>
 
