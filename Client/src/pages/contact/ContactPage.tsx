@@ -68,7 +68,7 @@ export default function ContactPage(): React.ReactElement {
   }
 
   return (
-    <div className="min-h-[88vh] bg-[var(--theme-bg)] text-[var(--theme-text)] flex items-start sm:items-center justify-center p-3 sm:p-6">
+    <div className="min-h-[50vh] bg-[var(--theme-bg)] text-[var(--theme-text)] flex items-start sm:items-center justify-center p-3 sm:p-6">
       <ContactFormView
         form={form}
         submitting={submitting}
