@@ -1,5 +1,7 @@
+// Client/src/components/CommentsPanel.tsx
 import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { useCommentsStore } from '../stores/useCommentsStore';
+import { useAuthStore } from '../stores/useAuthStore'; // ⬅️ NEW: read current user
 import type { Comment } from '../types/comment.types';
 import { ChevronDown, BellDot, Lock } from 'lucide-react';
 
@@ -15,28 +17,24 @@ function StopDragGroup(props: Readonly<{
   useEffect(() => {
     const el = ref.current;
     if (!el) return;
-
     const stop = (e: Event) => e.stopPropagation();
-    // capture-phase listeners so we intercept before DnD handlers
-    el.addEventListener('pointerdown', stop, true);
-    el.addEventListener('mousedown', stop, true);
-    el.addEventListener('touchstart', stop, true);
+
+    // NEW (passive capture listeners):
+    const opts = { capture: true, passive: true } as AddEventListenerOptions;
+    el.addEventListener('pointerdown', stop, opts);
+    el.addEventListener('mousedown', stop, opts);
+    el.addEventListener('touchstart', stop, opts);
 
     return () => {
-      el.removeEventListener('pointerdown', stop, true);
-      el.removeEventListener('mousedown', stop, true);
-      el.removeEventListener('touchstart', stop, true);
+      el.removeEventListener('pointerdown', stop, opts);
+      el.removeEventListener('mousedown', stop, opts);
+      el.removeEventListener('touchstart', stop, opts);
     };
   }, []);
 
+
   return (
-    <section
-      ref={ref as any}
-      role="text"
-      aria-label={props.label}
-      className={props.className}
-      style={props.style}
-    >
+    <section ref={ref as any} role="text" aria-label={props.label} className={props.className} style={props.style}>
       {props.children}
     </section>
   );
@@ -83,7 +81,6 @@ function RootComposer(props: Readonly<{
         placeholder={props.disabled ? 'Comments are closed by an admin' : 'Write a comment…'}
         value={props.value}
         onChange={(e) => props.onChange(e.target.value)}
-        // still fine to keep these; they’re on native controls
         onPointerDown={(e) => e.stopPropagation()}
         onFocus={(e) => e.stopPropagation()}
         disabled={props.disabled}
@@ -98,7 +95,6 @@ function RootComposer(props: Readonly<{
         >
           Post
         </button>
-
       </div>
     </div>
   );
@@ -146,10 +142,7 @@ export default function CommentsPanel(props: Readonly<{
   };
 
   return (
-    <StopDragGroup
-      label="Comments panel"
-      className="mt-2 rounded-2xl shadow-sm"
-    >
+    <StopDragGroup label="Comments panel" className="mt-2 rounded-2xl shadow-sm">
       <HeaderRow
         open={open}
         toggle={() => setOpen((v) => !v)}
@@ -279,13 +272,21 @@ function CommentItem(props: Readonly<{
   remove: (id: number) => Promise<void>;
 }>) {
   const c = props.comment;
+  const me = useAuthStore((s) => s.user); // ⬅️ who am I?
   const [edit, setEdit] = useState(false);
   const [text, setText] = useState(c.content);
+
+  // ⬇️ Friendly author display (never show raw temp id)
+  const displayAuthor =
+    c.authorName ??
+    (c.authorId && me?.id === c.authorId ? 'You' : (c.authorId ? `User #${c.authorId}` : 'Someone'));
+
+  const displayTime = c.id < 0 ? 'sending…' : new Date(c.createdAt).toLocaleString();
 
   return (
     <div className="rounded-lg p-2" style={{ background: 'var(--theme-surface)' }}>
       <div className="text-xs opacity-70 flex justify-between">
-        <span>#{c.id} · {new Date(c.createdAt).toLocaleString()}</span>
+        <span>{displayAuthor} · {displayTime}</span>
         {c.deletedAt && <span className="text-[var(--theme-error)]">deleted</span>}
       </div>
       {!edit && <div className="text-sm whitespace-pre-wrap mt-1">{c.content}</div>}
