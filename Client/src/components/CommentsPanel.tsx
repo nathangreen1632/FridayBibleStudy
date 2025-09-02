@@ -48,7 +48,7 @@ function HeaderRow(props: Readonly<{
   count: number;
   hasNew: boolean;
   isClosed: boolean;
-}>) {
+}>): React.ReactElement {
   return (
     <button
       type="button"
@@ -72,7 +72,7 @@ function RootComposer(props: Readonly<{
   value: string;
   onChange: (v: string) => void;
   onSubmit: () => void;
-}>) {
+}>): React.ReactElement {
   const localRef = useRef<HTMLTextAreaElement | null>(null);
   return (
     <div className="space-y-2">
