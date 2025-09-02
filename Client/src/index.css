@@ -24,6 +24,9 @@
     --theme-text-white: var(--c-a);
     --theme-accent: var(--c-e);
     --theme-border: var(--c-c);
+    --theme-strip: var(--c-b);
+    --theme-strip-text: var(--c-e);
+    --theme-textbox: var(--c-f);
 
     /* buttons */
     --theme-button: var(--c-e);
@@ -78,6 +81,9 @@
     --theme-text-white: var(--c-e);
     --theme-accent: var(--c-a);
     --theme-border: var(--c-b);
+    --theme-strip: var(--c-d);
+    --theme-strip-text: var(--c-a);
+    --theme-textbox: var(--c-f);
 
     /* buttons */
     --theme-button: var(--c-a);
