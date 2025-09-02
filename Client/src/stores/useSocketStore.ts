@@ -3,9 +3,11 @@ import { create } from 'zustand';
 import type { Socket } from 'socket.io-client';
 import { getSocket } from '../lib/socket.lib';
 import { useBoardStore } from './useBoardStore.ts';
+import { useCommentsStore } from './useCommentsStore.ts';
 import type { Prayer, Status } from '../types/domain.types';
+import type { Comment } from '../types/comment.types';
 
-// NEW: keep Praises in sync with socket events
+// Keep Praises in sync with socket events
 import { praisesOnSocketUpsert, praisesOnSocketRemove } from './usePraisesStore.ts';
 
 type PrayerDTO = Prayer;
@@ -13,7 +15,6 @@ type PrayerDTO = Prayer;
 type PrayerCreatedPayload = { prayer: PrayerDTO };
 type PrayerUpdatedPayload = { prayer: PrayerDTO };
 type PrayerMovedPayload   = { prayer: PrayerDTO; from: Status; to: Status };
-// If your backend emits deletes, this will just work; otherwise it's harmless.
 type PrayerDeletedPayload = { id: number };
 
 type Patch =
@@ -80,28 +81,47 @@ export const useSocketStore = create<SocketState>((set, get) => {
       s.on('connect',    () => set({ connected: true }));
       s.on('disconnect', () => set({ connected: false }));
 
-      // Created
+      // ---- PRAYER events ----
       s.on('prayer:created', (d: PrayerCreatedPayload) => {
         try { get().enqueue({ type: 'upsert', p: d.prayer }); } catch {}
         try { praisesOnSocketUpsert(d.prayer); } catch {}
       });
 
-      // Updated
       s.on('prayer:updated', (d: PrayerUpdatedPayload) => {
         try { get().enqueue({ type: 'upsert', p: d.prayer }); } catch {}
         try { praisesOnSocketUpsert(d.prayer); } catch {}
       });
 
-      // Moved (status or position change)
       s.on('prayer:moved', (d: PrayerMovedPayload) => {
         try { get().enqueue({ type: 'upsert', p: d.prayer }); } catch {}
         try { get().enqueue({ type: 'move', id: d.prayer.id, to: d.to }); } catch {}
         try { praisesOnSocketUpsert(d.prayer); } catch {}
       });
 
-      // Deleted (optional; only if your backend emits this)
+      // (optional) only if your backend emits this
       s.on('prayer:deleted', (d: PrayerDeletedPayload) => {
         try { praisesOnSocketRemove(d.id); } catch {}
+      });
+
+      // ---- COMMENT events ----
+      s.on('comment:created', (p: { prayerId: number; comment: Comment; newCount: number; lastCommentAt: string | null }) => {
+        try { useCommentsStore.getState().onCreated(p); } catch {}
+      });
+
+      s.on('comment:updated', (p: { prayerId: number; comment: Comment }) => {
+        try { useCommentsStore.getState().onUpdated(p); } catch {}
+      });
+
+      s.on('comment:deleted', (p: { prayerId: number; commentId: number; newCount: number; lastCommentAt: string | null }) => {
+        try { useCommentsStore.getState().onDeleted(p); } catch {}
+      });
+
+      s.on('prayer:commentsClosed', (p: { prayerId: number; isCommentsClosed: boolean }) => {
+        try { useCommentsStore.getState().onClosedChanged(p); } catch {}
+      });
+
+      s.on('prayer:commentCount', (p: { prayerId: number; newCount: number; lastCommentAt: string | null }) => {
+        try { useCommentsStore.getState().onCountChanged(p); } catch {}
       });
     } catch {
       // Listener wiring should never crash the app
