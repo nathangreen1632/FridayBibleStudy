@@ -9,6 +9,10 @@ import { Attachment } from './attachment.model.js';
 import { OtpToken } from './otpToken.model.js';
 import { PrayerParticipant } from './prayerParticipant.model.js';
 
+// 👇 NEW: comments models
+import { Comment } from './comment.model.js';
+import { CommentRead } from './commentRead.model.js';
+
 function initAll(s: Sequelize): void {
   // init models
   User.initModel(s);
@@ -19,6 +23,10 @@ function initAll(s: Sequelize): void {
   Attachment.initModel(s);
   OtpToken.initModel(s);
   PrayerParticipant.initModel(s);
+
+  // 👇 NEW: init comment-related models
+  Comment.initModel(s);
+  CommentRead.initModel(s);
 
   // associations (+ cascades)
   GroupMember.belongsTo(User,  { foreignKey: 'userId',  onDelete: 'CASCADE', onUpdate: 'CASCADE' });
@@ -56,6 +64,20 @@ function initAll(s: Sequelize): void {
     onDelete: 'CASCADE',
     onUpdate: 'CASCADE'
   });
+
+  // 👇 NEW: comments associations
+  // - Each comment belongs to a prayer and (optionally) to a parent/root comment for threading
+  // - Also link to author for convenience; add Prayer.hasMany for cascade visibility
+  Comment.belongsTo(Prayer, { foreignKey: 'prayerId', onDelete: 'CASCADE', onUpdate: 'CASCADE' });
+  Prayer.hasMany(Comment,   { foreignKey: 'prayerId', as: 'comments', onDelete: 'CASCADE', onUpdate: 'CASCADE' });
+
+  Comment.belongsTo(User,   { foreignKey: 'authorId', as: 'author', onDelete: 'CASCADE', onUpdate: 'CASCADE' });
+
+  Comment.belongsTo(Comment, { foreignKey: 'parentId',     as: 'parent', onDelete: 'SET NULL', onUpdate: 'CASCADE' });
+  Comment.belongsTo(Comment, { foreignKey: 'threadRootId', as: 'root',   onDelete: 'SET NULL', onUpdate: 'CASCADE' });
+
+  // Track per-user last seen time for comments on a prayer
+  CommentRead.belongsTo(Prayer, { foreignKey: 'prayerId', onDelete: 'CASCADE', onUpdate: 'CASCADE' });
 }
 
 initAll(sequelize);
@@ -69,5 +91,8 @@ export {
   PrayerUpdate,
   Attachment,
   OtpToken,
-  PrayerParticipant
+  PrayerParticipant,
+  // 👇 NEW: export comment models
+  Comment,
+  CommentRead,
 };
