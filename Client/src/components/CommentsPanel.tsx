@@ -77,7 +77,7 @@ function RootComposer(props: Readonly<{
       <textarea
         ref={localRef}
         className="w-full rounded-lg p-2 border text-sm placeholder-[var(--theme-placeholder)]/60"
-        style={{ borderColor: 'var(--theme-border)', background: 'var(--theme-textbox)', color: 'var(--theme-text)' }}
+        style={{ borderColor: 'var(--theme-border)', background: 'var(--theme-textbox)', color: 'var(--theme-placeholder)' }}
         placeholder={props.disabled ? 'Comments are closed by an admin' : 'Write a comment…'}
         value={props.value}
         onChange={(e) => props.onChange(e.target.value)}
@@ -91,7 +91,7 @@ function RootComposer(props: Readonly<{
           type="button"
           onClick={props.onSubmit}
           disabled={!props.value.trim() || props.disabled}
-          className="px-3 py-1 rounded-lg text-base border border-[var(--theme-border)] bg-[var(--theme-button-dark)] text-[var(--theme-text)] hover:bg-[var(--theme-card)] transition-colors cursor-pointer disabled:opacity-60 disabled:cursor-not-allowed"
+          className="px-3 py-1 rounded-lg text-base border border-[var(--theme-border)] bg-[var(--theme-button-dark)] text-[var(--theme-text)] hover:bg-[var(--theme-button-hover)] transition-colors cursor-pointer disabled:cursor-not-allowed"
         >
           Post
         </button>
@@ -238,7 +238,7 @@ function Thread(props: Readonly<{
         <div className="space-y-2">
           <textarea
             className="w-full rounded-lg p-2 border text-sm placeholder:text-[var(--theme-placeholder)]/60"
-            style={{ borderColor: 'var(--theme-border)', background: 'var(--theme-textbox)', color: 'var(--theme-text)' }}
+            style={{ borderColor: 'var(--theme-border)', background: 'var(--theme-textbox)', color: 'var(--theme-placeholder)' }}
             placeholder="Reply…"
             value={replyText}
             onChange={(e) => setReplyText(e.target.value)}
