@@ -64,7 +64,7 @@ export default function Login(): React.ReactElement {
     const { success, message } = await login(email, password /* , recaptchaToken */);
     if (success) {
       toast.success('Welcome back!');
-      const to = (loc.state)?.from ?? '/profile';
+      const to = (loc.state)?.from ?? '/portal';
       nav(to, { replace: true });
     } else {
       const msg = message ?? 'Login failed';
@@ -139,8 +139,8 @@ export default function Login(): React.ReactElement {
         <button
           type="submit"
           disabled={disabled}
-          className="w-full rounded-xl bg-[var(--theme-button)] px-4 py-2.5 sm:py-3 text-[var(--theme-text-white)] text-sm sm:text-base font-semibold
-                     hover:bg-[var(--theme-hover)] disabled:opacity-60 disabled:cursor-not-allowed"
+          className="w-full rounded-xl bg-[var(--theme-button-gray)] px-4 py-2.5 sm:py-3 text-[var(--theme-textbox)] text-sm sm:text-base font-semibold
+                     hover:bg-[var(--theme-button-hover)] disabled:opacity-60 disabled:cursor-not-allowed"
         >
           {loading ? '…' : 'Sign in'}
         </button>
