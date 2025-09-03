@@ -60,7 +60,7 @@ export default function Dock(): React.ReactElement {
       >
         <Zone id="dock-active" label="Move to Prayers" />
         <Zone id="dock-praise" label="Move to Praises" />
-        <Zone id="dock-archive" label="Move to Archive" />
+        <Zone id="dock-archive" label="Move to Archived" />
       </aside>
     </div>
   );
