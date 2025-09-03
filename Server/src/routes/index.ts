@@ -6,6 +6,7 @@ import adminRouter from './admin.route.js';
 import exportRouter from './export.route.js';
 import contactRouter from './contact.route.js';
 import commentsRouter from './comments.route.js';
+import healthRouter from './health.route.js';
 
 const router: Router = Router();
 
@@ -16,5 +17,6 @@ router.use('/export',  exportRouter);
 router.use('/groups',  groupsRouter);
 router.use('/prayers', prayersRouter);
 router.use('/comments', commentsRouter);
+router.use('/health', healthRouter);
 
 export default router;
