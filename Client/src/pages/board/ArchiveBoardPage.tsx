@@ -3,7 +3,6 @@ import SingleBoard from '../../components/board/SingleColumnBoard';
 import { useBoardStore } from '../../stores/useBoardStore';
 import { useSocketStore } from '../../stores/useSocketStore';
 import { useAuthStore } from '../../stores/useAuthStore';
-import type { ColumnKey } from '../../components/SortableCard';
 import {
   useBoardBootstrap,
   useJoinGroup,
@@ -37,8 +36,8 @@ export default function ArchiveBoard(): React.ReactElement {
 
   // helpers
   const moveToPraise = useMoveToPraise();
-  const renderCard   = usePrayerCardRenderer(byId as unknown as Map<number, any>);
   const onMove       = useOnMove(move as (id: number, to: BoardColumnKey, idx: number) => Promise<boolean>);
+  const renderCard   = usePrayerCardRenderer(byId as unknown as Map<number, any>, groupId);
 
   // archived-only (single column)
   const archivedIds = order.archived ?? [];
@@ -56,7 +55,7 @@ export default function ArchiveBoard(): React.ReactElement {
         title="Archived"
         column="archived"
         ids={archivedIds}
-        renderCard={renderCard as (id: number, c: ColumnKey, i: number) => React.ReactNode}
+        renderCard={renderCard}
         onMoveWithin={(id, toIndex) => { void onMove(id, 'archived', toIndex); }}
         onDockDrop={(dock, id) => {
           if (dock === 'dock-active')  { void onMove(id, 'active', 0); }

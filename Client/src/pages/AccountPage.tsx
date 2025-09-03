@@ -180,8 +180,8 @@ export default function AccountPage(): React.ReactElement {
                 placeholder="Brief title"
                 value={prayer.title}
                 onChange={e => setPrayer({ ...prayer, title: e.target.value })}
-                className="block w-full rounded-xl border border-[var(--theme-border)] bg-[var(--theme-surface)] px-3 py-2 text-sm sm:text-base
-                           text-[var(--theme-text)] focus:outline-none focus:ring-2 focus:ring-[var(--theme-focus)]"
+                className="block w-full rounded-xl border border-[var(--theme-border)] bg-[var(--theme-textbox)] px-3 py-2 text-sm sm:text-base
+                           text-[var(--theme-placeholder)] focus:outline-none focus:ring-2 focus:ring-[var(--theme-focus)] placeholder:text-[var(--theme-placeholder)]/80"
               />
             </label>
 
@@ -193,11 +193,23 @@ export default function AccountPage(): React.ReactElement {
                 <select
                   required
                   value={prayer.category}
-                  onChange={e => setPrayer({ ...prayer, category: e.target.value as CategoryOption })}
-                  className="block w-full appearance-none pr-10 rounded-xl border border-[var(--theme-border)] bg-[var(--theme-surface)] px-3 py-2
-                             text-sm sm:text-base text-[var(--theme-text)] focus:outline-none focus:ring-2 focus:ring-[var(--theme-focus)]"
+                  onChange={e =>
+                    setPrayer({ ...prayer, category: e.target.value as CategoryOption })
+                  }
+                  className={[
+                    'block w-full appearance-none pr-10 rounded-xl border border-[var(--theme-border)] bg-[var(--theme-textbox)] px-3 py-2',
+                    'text-sm sm:text-base',
+                    // ↓ when empty, show faded placeholder; otherwise normal text
+                    !prayer.category
+                      ? 'text-[var(--theme-placeholder)]/70'
+                      : 'text-[var(--theme-placeholder)]',
+                    'focus:outline-none focus:ring-2 focus:ring-[var(--theme-focus)]',
+                  ].join(' ')}
                 >
-                  <option value="">Select Prayer Type</option>
+                  {/* Disabled placeholder shows greyed in the dropdown, and as the initial value */}
+                  <option value="">
+                    Select Prayer Type
+                  </option>
                   <option value="birth">Birth</option>
                   <option value="long-term">Long-term</option>
                   <option value="praise">Praise</option>
@@ -207,11 +219,12 @@ export default function AccountPage(): React.ReactElement {
                 </select>
 
                 <ChevronDown
-                  className="pointer-events-none absolute right-3 top-1/2 -translate-y-1/2 h-4 w-4 text-[var(--theme-accent)]"
+                  className="pointer-events-none absolute right-3 top-1/2 -translate-y-1/2 h-4 w-4 text-[var(--theme-placeholder)]"
                   aria-hidden="true"
                 />
               </div>
             </label>
+
 
             {/* Content */}
             <label className="block text-xs sm:text-sm font-medium">
@@ -222,8 +235,8 @@ export default function AccountPage(): React.ReactElement {
                 placeholder="Write your prayer or praise here…"
                 value={prayer.content}
                 onChange={e => setPrayer({ ...prayer, content: e.target.value })}
-                className="block w-full rounded-xl border border-[var(--theme-border)] bg-[var(--theme-surface)] px-3 py-2 text-sm sm:text-base leading-relaxed
-                           text-[var(--theme-text)] focus:outline-none focus:ring-2 focus:ring-[var(--theme-focus)]"
+                className="block w-full rounded-xl border border-[var(--theme-border)] bg-[var(--theme-textbox)] px-3 py-2 text-sm sm:text-base leading-relaxed
+                           text-[var(--theme-placeholder)] focus:outline-none focus:ring-2 focus:ring-[var(--theme-focus)] placeholder:text-[var(--theme-placeholder)]/70 custom-scrollbar"
               />
             </label>
 

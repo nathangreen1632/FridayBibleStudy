@@ -3,7 +3,6 @@ import SingleBoard from '../../components/board/SingleColumnBoard';
 import { useBoardStore } from '../../stores/useBoardStore';
 import { useSocketStore } from '../../stores/useSocketStore';
 import { useAuthStore } from '../../stores/useAuthStore';
-import type { ColumnKey } from '../../components/SortableCard';
 import {
   useBoardBootstrap,
   useJoinGroup,
@@ -37,8 +36,8 @@ export default function ActiveBoard(): React.ReactElement {
 
   // helpers
   const moveToPraise = useMoveToPraise();
-  const renderCard   = usePrayerCardRenderer(byId as unknown as Map<number, any>); // Map is already correct
   const onMove       = useOnMove(move as (id: number, to: BoardColumnKey, idx: number) => Promise<boolean>);
+  const renderCard   = usePrayerCardRenderer(byId as unknown as Map<number, any>, groupId);
 
   // active-only (single column)
   const activeIds = order.active;
@@ -56,12 +55,12 @@ export default function ActiveBoard(): React.ReactElement {
         title="Prayers"
         column="active"
         ids={activeIds}
-        renderCard={renderCard as (id: number, c: ColumnKey, i: number) => React.ReactNode}
-        onMoveWithin={(id, toIndex) => { onMove(id, 'active', toIndex); }}
+        renderCard={renderCard}
+        onMoveWithin={(id, toIndex) => { void onMove(id, 'active', toIndex); }}
         onDockDrop={(dock, id) => {
           // Stay on the same page (no navigation)
-          if (dock === 'dock-archive') { onMove(id, 'archived', 0); }
-          if (dock === 'dock-praise')  { moveToPraise(id); } // server-persisted
+          if (dock === 'dock-archive') { void onMove(id, 'archived', 0); }
+          if (dock === 'dock-praise')  { void moveToPraise(id); } // server-persisted
         }}
       />
       {/* Dock removed here; it's rendered inside SingleBoard's DndContext */}

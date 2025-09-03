@@ -18,10 +18,24 @@ export interface PrayerAttributes {
   impersonatedByAdminId?: number | null;
   createdAt: Date;
   updatedAt: Date;
+
+  // 👇 Added for comments feature
+  commentCount?: number;
+  lastCommentAt?: Date | null;
+  isCommentsClosed?: boolean;
 }
+
 export type PrayerCreation = Optional<
   PrayerAttributes,
-  'id' | 'status' | 'position' | 'impersonatedByAdminId' | 'createdAt' | 'updatedAt'
+  | 'id'
+  | 'status'
+  | 'position'
+  | 'impersonatedByAdminId'
+  | 'createdAt'
+  | 'updatedAt'
+  | 'commentCount'
+  | 'lastCommentAt'
+  | 'isCommentsClosed'
 >;
 
 export class Prayer extends Model<PrayerAttributes, PrayerCreation> implements PrayerAttributes {
@@ -36,6 +50,12 @@ export class Prayer extends Model<PrayerAttributes, PrayerCreation> implements P
   declare impersonatedByAdminId: number | null;
   declare createdAt: Date;
   declare updatedAt: Date;
+
+  // 👇 Added fields
+  declare commentCount?: number;
+  declare lastCommentAt?: Date | null;
+  declare isCommentsClosed?: boolean;
+
   declare attachments?: AttachmentAttributes[];
   declare updates?: PrayerUpdateAttributes[];
 
@@ -49,18 +69,23 @@ export class Prayer extends Model<PrayerAttributes, PrayerCreation> implements P
         content: { type: DataTypes.TEXT, allowNull: false },
         category: {
           type: DataTypes.ENUM('prayer', 'long-term', 'salvation', 'pregnancy', 'birth', 'praise'),
-          allowNull: false
+          allowNull: false,
         },
         // Updated ENUM values here:
         status: {
           type: DataTypes.ENUM('active', 'praise', 'archived'),
           allowNull: false,
-          defaultValue: 'active'
+          defaultValue: 'active',
         },
         position: { type: DataTypes.INTEGER, allowNull: false, defaultValue: 0 },
         impersonatedByAdminId: { type: DataTypes.INTEGER, allowNull: true },
         createdAt: DataTypes.DATE,
-        updatedAt: DataTypes.DATE
+        updatedAt: DataTypes.DATE,
+
+        // 👇 Added columns for comments meta
+        commentCount: { type: DataTypes.INTEGER, allowNull: false, defaultValue: 0 },
+        lastCommentAt: { type: DataTypes.DATE, allowNull: true },
+        isCommentsClosed: { type: DataTypes.BOOLEAN, allowNull: false, defaultValue: false },
       },
       { sequelize, tableName: 'prayers' }
     );

@@ -19,22 +19,99 @@ function setCookie(res: Response, token: string): void {
 }
 
 export async function register(req: Request, res: Response): Promise<void> {
-  const { name, phone, email, password } = req.body as { name: string; phone: string; email: string; password: string };
-  const exists = await User.findOne({ where: { email } });
-  if (exists) { res.status(409).json({ error: 'Email already registered' }); return; }
+  const {name, phone, email, password} = req.body as { name: string; phone: string; email: string; password: string };
+  const exists = await User.findOne({where: {email}});
+  if (exists) {
+    res.status(409).json({error: 'Email already registered'});
+    return;
+  }
   const passwordHash = await hashPassword(password);
-  const user = await User.create({ name, phone, email, passwordHash });
-  const token = signJwt({ userId: user.id, role: user.role });
+  const user = await User.create({name, phone, email, passwordHash});
+  const token = signJwt({userId: user.id, role: user.role});
   setCookie(res, token);
 
-  // Verification email (simple)
+  // Verification email (styled with theme colors + larger text for readability)
   await sendEmail({
     to: email,
-    subject: 'Welcome to Friday Night Bible Study',
-    html: `<p>Hi ${user.name}, your account has been created.</p>`
+    subject: 'Welcome to Friday Bible Study',
+    html: `
+  <div style="background-color:#CCDAD1; padding:20px; font-family:Inter, sans-serif;">
+    <div style="max-width:600px; margin:0 auto; background-color:#9CAEA9; border-radius:12px; padding:24px; color:#38302E; line-height:1.7; font-size:16px;">
+
+      <!-- Dark-mode helper (email-safe). If unsupported, the link stays blue. -->
+      <style>
+        @media (prefers-color-scheme: dark) {
+          .fallback-link { color: #ffffff !important; }
+        }
+      </style>
+
+      <h2 style="margin-top:0; color:#38302E; font-size:22px;">Welcome to Friday Bible Study</h2>
+
+      <p>Hi ${user.name},</p>
+
+      <p>
+        Welcome to <strong>Friday Bible Study</strong>! Your account has been created successfully!
+      </p>
+
+      <p>
+        This program is designed to help you stay connected with your study group. 
+        You can add prayer requests, share updates, and celebrate praises together. 
+        Everything is organized on boards so you can easily see what’s active, what’s long-term, 
+        and what has been moved to praises.
+      </p>
+
+      <p>
+        The boards use simple drag-and-drop. Click and hold on a prayer card, then drag it to a new spot 
+        or into a different list (for example, from Active to Praises). This helps keep everything organized 
+        in a way that feels natural and easy.
+      </p>
+
+      <p>Once you log in, here are a few things you can do:</p>
+      <ul style="padding-left:20px; margin-top:0.5em; margin-bottom:1em;">
+        <li><strong>Update your profile</strong> — add your phone, email, address, and spouse name so your group can stay in touch.</li>
+        <li><strong>Prayer Board</strong> — post new prayer requests or updates and move them to “Praises” when God answers.</li>
+        <li><strong>Categories</strong> — filter by categories such as Prayer, Praise, Long-Term, Salvation, Pregnancy, or Birth.</li>
+        <li><strong>Media</strong> — attach photos to requests so your group can walk with you visually.</li>
+        <li><strong>Search</strong> — quickly find specific requests or praises you have created to keep them up to date.</li>
+      </ul>
+
+      <!-- Centered button (always Michigan Blue) -->
+      <p style="margin: 1.5em 0; text-align:center;">
+        <a href="https://www.fridaybiblestudy.org/login"
+           style="display:inline-block; background-color:#00274C; color:#ffffff; 
+                  text-decoration:none; padding:14px 24px; border-radius:8px; 
+                  font-weight:600; font-size:16px; 
+                  width:auto; text-align:center; box-sizing:border-box;">
+          Log In to Friday Bible Study
+        </a>
+      </p>
+
+      <!-- Centered fallback text -->
+      <p style="font-size:15px; color:#38302E; margin-top:1em; text-align:center;">
+        If the button above doesn’t work, copy and paste this link into your browser:<br>
+        <a href="https://www.fridaybiblestudy.org/login" 
+           class="fallback-link"
+           style="color:#2563EB; font-size:15px; text-decoration:none;">
+          https://www.fridaybiblestudy.org/login
+        </a>
+      </p>
+
+      <p style="margin-top:1em;">
+        We’re so glad you’re here. Please log in and take a few minutes to set up your profile so others can connect with you.
+      </p>
+
+      <p style="margin-top:1em;">
+        Grace and peace,<br>
+        <br>
+        The Friday Bible Study Team
+      </p>
+
+    </div>
+  </div>
+  `
   });
 
-  res.json({ id: user.id, name: user.name, email: user.email, role: user.role });
+  res.json({id: user.id, name: user.name, email: user.email, role: user.role});
 }
 
 export async function login(req: Request, res: Response): Promise<void> {

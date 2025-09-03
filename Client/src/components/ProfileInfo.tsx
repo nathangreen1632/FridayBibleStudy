@@ -102,8 +102,8 @@ export default function ProfileInfo({
           placeholder="Your full name"
           value={form.name}
           onChange={e => setForm({ ...form, name: e.target.value })}
-          className="block w-full rounded-xl border border-[var(--theme-border)] bg-[var(--theme-surface)] px-3 py-2 text-sm sm:text-base
-                     text-[var(--theme-text)] focus:outline-none focus:ring-2 focus:ring-[var(--theme-focus)]"
+          className="block w-full rounded-xl border border-[var(--theme-border)] bg-[var(--theme-textbox)] px-3 py-2 text-sm sm:text-base
+                     text-[var(--theme-placeholder)] focus:outline-none focus:ring-2 focus:ring-[var(--theme-focus)]"
         />
       </label>
 
@@ -120,8 +120,8 @@ export default function ProfileInfo({
           onChange={e => setForm({ ...form, phone: formatPhone(e.target.value) })}
           pattern="^\d{3}-\d{3}-\d{4}$"
           title="Format: 555-123-4567"
-          className="block w-full rounded-xl border border-[var(--theme-border)] bg-[var(--theme-surface)] px-3 py-2 text-sm sm:text-base
-                     text-[var(--theme-text)] focus:outline-none focus:ring-2 focus:ring-[var(--theme-focus)]"
+          className="block w-full rounded-xl border border-[var(--theme-border)] bg-[var(--theme-textbox)] px-3 py-2 text-sm sm:text-base
+                     text-[var(--theme-placeholder)] focus:outline-none focus:ring-2 focus:ring-[var(--theme-focus)]"
         />
       </label>
 
@@ -132,8 +132,8 @@ export default function ProfileInfo({
           placeholder="123 Main St"
           value={form.addressStreet}
           onChange={e => setForm({ ...form, addressStreet: e.target.value })}
-          className="block w-full rounded-xl border border-[var(--theme-border)] bg-[var(--theme-surface)] px-3 py-2 text-sm sm:text-base
-                     text-[var(--theme-text)] focus:outline-none focus:ring-2 focus:ring-[var(--theme-focus)]"
+          className="block w-full rounded-xl border border-[var(--theme-border)] bg-[var(--theme-textbox)] px-3 py-2 text-sm sm:text-base
+                     text-[var(--theme-placeholder)] focus:outline-none focus:ring-2 focus:ring-[var(--theme-focus)]"
         />
       </label>
 
@@ -145,8 +145,8 @@ export default function ProfileInfo({
             placeholder="City"
             value={form.addressCity}
             onChange={e => setForm({ ...form, addressCity: e.target.value })}
-            className="block w-full rounded-xl border border-[var(--theme-border)] bg-[var(--theme-surface)] px-3 py-2 text-sm sm:text-base
-                       text-[var(--theme-text)] focus:outline-none focus:ring-2 focus:ring-[var(--theme-focus)]"
+            className="block w-full rounded-xl border border-[var(--theme-border)] bg-[var(--theme-textbox)] px-3 py-2 text-sm sm:text-base
+                       text-[var(--theme-placeholder)] focus:outline-none focus:ring-2 focus:ring-[var(--theme-focus)]"
           />
         </label>
 
@@ -156,8 +156,8 @@ export default function ProfileInfo({
             placeholder="State"
             value={form.addressState}
             onChange={e => setForm({ ...form, addressState: e.target.value })}
-            className="block w-full rounded-xl border border-[var(--theme-border)] bg-[var(--theme-surface)] px-3 py-2 text-sm sm:text-base
-                       text-[var(--theme-text)] focus:outline-none focus:ring-2 focus:ring-[var(--theme-focus)]"
+            className="block w-full rounded-xl border border-[var(--theme-border)] bg-[var(--theme-textbox)] px-3 py-2 text-sm sm:text-base
+                       text-[var(--theme-placeholder)] focus:outline-none focus:ring-2 focus:ring-[var(--theme-focus)]"
           />
         </label>
 
@@ -167,8 +167,8 @@ export default function ProfileInfo({
             placeholder="ZIP"
             value={form.addressZip}
             onChange={e => setForm({ ...form, addressZip: e.target.value })}
-            className="block w-full rounded-xl border border-[var(--theme-border)] bg-[var(--theme-surface)] px-3 py-2 text-sm sm:text-base
-                       text-[var(--theme-text)] focus:outline-none focus:ring-2 focus:ring-[var(--theme-focus)]"
+            className="block w-full rounded-xl border border-[var(--theme-border)] bg-[var(--theme-textbox)] px-3 py-2 text-sm sm:text-base
+                       text-[var(--theme-placeholder)] focus:outline-none focus:ring-2 focus:ring-[var(--theme-focus)]"
           />
         </label>
       </div>
@@ -180,8 +180,8 @@ export default function ProfileInfo({
           placeholder="Spouse name"
           value={form.spouseName}
           onChange={e => setForm({ ...form, spouseName: e.target.value })}
-          className="block w-full rounded-xl border border-[var(--theme-border)] bg-[var(--theme-surface)] px-3 py-2 text-sm sm:text-base
-                     text-[var(--theme-text)] focus:outline-none focus:ring-2 focus:ring-[var(--theme-focus)]"
+          className="block w-full rounded-xl border border-[var(--theme-border)] bg-[var(--theme-textbox)] px-3 py-2 text-sm sm:text-base
+                     text-[var(--theme-placeholder)] focus:outline-none focus:ring-2 focus:ring-[var(--theme-focus)]"
         />
       </label>
 

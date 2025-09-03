@@ -157,7 +157,7 @@ export default function Board({
         "
       >
         <Column
-          title="Active Praises"
+          title="Praises"
           column="active"
           ids={activeIds}
           renderCard={renderCard}

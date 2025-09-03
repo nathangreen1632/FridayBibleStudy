@@ -1,6 +1,7 @@
-import { useCallback, useEffect } from 'react';
+// Client/src/helpers/boardPage.helper.tsx
+import React,{ useCallback, useEffect } from 'react';
 import type { ColumnKey } from '../components/SortableCard';
-import PrayerCard from '../components/PrayerCard';
+import PrayerCardWithComments from '../components/PrayerCardWithComments';
 import type { Prayer } from '../types/domain.types';
 import { apiWithRecaptcha } from './secure-api.helper';
 import { toast } from 'react-hot-toast';
@@ -57,8 +58,8 @@ export function useMoveToPraise() {
         try {
           const body = await r.json().catch(() => ({}));
           const msg =
-            (body && typeof body === 'object' && 'error' in body && typeof (body).error === 'string')
-              ? (body).error
+            (body && typeof body === 'object' && 'error' in body && typeof (body as any).error === 'string')
+              ? (body as any).error
               : 'Failed to move to Praise';
           toast.error(msg);
         } catch {
@@ -73,31 +74,32 @@ export function useMoveToPraise() {
 }
 
 /**
- * Stable renderer for a PrayerCard, given a byId map from the store.
+ * Stable renderer for a PrayerCard *with comments*, given a byId map from the store.
+ * Accepts an optional groupId so the Comments panel can join the right socket room.
  * Safe: returns null on any issue.
  */
-export function usePrayerCardRenderer(byId: Map<number, Prayer>) {
+export function usePrayerCardRenderer(byId: Map<number, Prayer>, groupId?: number | null) {
   return useCallback(
     (id: number, _column: ColumnKey, _index: number) => {
       try {
         const item = byId.get(id);
         if (!item) return null;
 
-        return (
-          <PrayerCard
-            id={item.id}
-            title={item.title}
-            content={item.content}
-            author={item.author?.name ?? null}
-            category={item.category}
-            createdAt={item.createdAt}
-          />
-        );
+        // inside usePrayerCardRenderer (only change in the file)
+        return React.createElement(PrayerCardWithComments, {
+          id: item.id,
+          title: item.title,
+          content: item.content,
+          author: item.author?.name ?? null,
+          category: item.category,
+          createdAt: item.createdAt,
+          groupId: groupId ?? null,
+        });
       } catch {
         return null;
       }
     },
-    [byId]
+    [byId, groupId]
   );
 }
 
