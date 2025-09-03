@@ -9,6 +9,10 @@ export interface Env {
   PORT: number;
   DATABASE_URL: string;
 
+  GROUP_NAME: string;
+  GROUP_SLUG: string;
+  MIGRATE_FROM_GROUP_SLUG: string;
+
   JWT_SECRET: string;
   JWT_COOKIE_NAME: string;
   JWT_FIXED_EXP_HOURS: number;
@@ -19,12 +23,10 @@ export interface Env {
   ADMIN_EMAIL: string;
   AUDIT_CC: string;
 
-  // reCAPTCHA Enterprise
   RECAPTCHA_PROJECT_ID: string;
   RECAPTCHA_SITE_KEY: string;
   RECAPTCHA_MIN_SCORE: number;
 
-  // Google service account (B64 JSON + on-disk path)
   GOOGLE_CREDENTIALS_B64: string;
   SERVICE_ACCOUNT_KEY_PATH: string;
 
@@ -37,6 +39,10 @@ export const env: Env = {
   NODE_ENV: parseNodeEnv(),
   PORT: int('PORT', 3001),
   DATABASE_URL: req('DATABASE_URL'),
+
+  GROUP_NAME: opt('GROUP_NAME', 'Friday Bible Study'),
+  GROUP_SLUG: opt('GROUP_SLUG', 'friday-bible-study'),
+  MIGRATE_FROM_GROUP_SLUG: opt('MIGRATE_FROM_GROUP_SLUG', ''),
 
   JWT_SECRET: req('JWT_SECRET'),
   JWT_COOKIE_NAME: opt('JWT_COOKIE_NAME', 'auth'),

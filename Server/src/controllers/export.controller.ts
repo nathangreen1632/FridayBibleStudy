@@ -1,3 +1,4 @@
+// Server/src/controllers/export.controller.ts
 import type { Request, Response } from 'express';
 import { Prayer, Attachment, Group, User } from '../models/index.js';
 import { buildPrayersPdf } from '../services/pdf.service.js';
@@ -27,11 +28,11 @@ export async function exportFilteredToGroup(req: Request, res: Response): Promis
   const pdf = await buildPrayersPdf(data);
 
   const group = await Group.findOne();
-  const to = group?.groupEmail ?? '**CHANGE_ME_GROUP_EMAIL@EXAMPLE.COM**';
+  const to = group?.groupEmail ?? '';
 
   await sendEmail({
     to,
-    subject: 'Friday Night Bible Study — Prayers Export',
+    subject: 'Friday Bible Study — Prayers Export',
     html: `<p>Attached is the exported prayers list.</p>`,
     attachments: [{ filename: 'prayers.pdf', content: pdf }]
   });

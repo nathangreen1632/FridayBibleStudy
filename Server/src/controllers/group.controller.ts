@@ -1,13 +1,18 @@
+// Server/src/controllers/group.controller.ts
 import type { Request, Response } from 'express';
 import { Group } from '../models/index.js';
+import { env } from '../config/env.config.js';
 
 export async function getGroup(_req: Request, res: Response): Promise<void> {
   let g = await Group.findOne();
-  g ??= await Group.create({
-    name: 'Friday Night Bible Study',
-    slug: 'friday-night-bible-study',
-    groupEmail: '**CHANGE_ME_GROUP_EMAIL@EXAMPLE.COM**'
-  });
+  if (!g) {
+    g = await Group.create({
+      name: 'Friday Bible Study',
+      slug: 'friday-bible-study',
+      groupEmail: env.GROUP_EMAIL, // use configured email
+    });
+    console.log('[db] seeded Group:', g.slug);
+  }
   res.json(g);
 }
 
