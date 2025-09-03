@@ -98,6 +98,11 @@ function RootComposer(props: Readonly<{
   );
 }
 
+// Helps TS narrow after filtering Map.get() results
+function isLiveComment(c: Comment | undefined | null): c is Comment {
+  return Boolean(c && !c.deletedAt);
+}
+
 export default function CommentsPanel(props: Readonly<{
   prayerId: number;
   groupId?: number | null;
@@ -106,10 +111,11 @@ export default function CommentsPanel(props: Readonly<{
   const { prayerId } = props;
   const [open, setOpen] = useState(!!props.initiallyOpen);
 
-  const counts        = useCommentsStore((s) => s.counts.get(prayerId) || 0);
-  const lastCommentAt = useCommentsStore((s) => s.lastCommentAt.get(prayerId) || null);
-  const lastSeenAt    = useCommentsStore((s) => s.unseen.get(prayerId) || null);
-  const isClosed      = useCommentsStore((s) => s.closed.get(prayerId) || false);
+  // CHANGED: don’t default to 0; we’ll compute displayCount below
+  const countFromStore = useCommentsStore((s) => s.counts.get(prayerId));
+  const lastCommentAt  = useCommentsStore((s) => s.lastCommentAt.get(prayerId) || null);
+  const lastSeenAt     = useCommentsStore((s) => s.unseen.get(prayerId) || null);
+  const isClosed       = useCommentsStore((s) => s.closed.get(prayerId) || false);
 
   // IMPORTANT: do NOT default to [] here — keep undefined/null stable to avoid infinite effects
   const rootOrder = useCommentsStore((s) => s.threadsByPrayer.get(prayerId)?.rootOrder);
@@ -120,6 +126,14 @@ export default function CommentsPanel(props: Readonly<{
   const update        = useCommentsStore((s) => s.update);
   const remove        = useCommentsStore((s) => s.remove);
   const markSeen      = useCommentsStore((s) => s.markSeen);
+
+  // NEW: Hydrate header counts/flags even when collapsed (first mount or prayer change)
+  useEffect(() => {
+    const hasCounts = useCommentsStore.getState().counts.has(prayerId);
+    if (!hasCounts) {
+      void fetchRootPage(prayerId, 1); // lightweight fetch: fills counts/lastCommentAt/closed
+    }
+  }, [prayerId, fetchRootPage]);
 
   // Collapse-on-outside-click
   const containerRef = useRef<HTMLDivElement | null>(null);
@@ -172,20 +186,33 @@ export default function CommentsPanel(props: Readonly<{
     setContent('');
   };
 
-  // Strict DESC by createdAt (newest first)
-  const itemsDesc = useMemo(() => {
+  // Strict DESC by createdAt (newest first) and hide deleted
+  const itemsDesc: Comment[] = useMemo(() => {
     const ids = Array.isArray(rootOrder) ? rootOrder : [];
     const list = ids
       .map((id) => byId?.get(id))
-      .filter(Boolean) as Comment[];
+      .filter(isLiveComment);
+
     list.sort((a, b) => {
       const ta = Date.parse(a.createdAt || '');
       const tb = Date.parse(b.createdAt || '');
       if (Number.isNaN(ta) || Number.isNaN(tb)) return 0;
       return tb - ta; // DESC
     });
+
     return list;
   }, [rootOrder, byId]);
+
+  function computeDisplayCount(
+    countFromStore: number | undefined,
+    rootOrder?: Array<number | string>
+  ): number {
+    if (typeof countFromStore === 'number') return countFromStore;
+    if (Array.isArray(rootOrder)) return rootOrder.length;
+    return 0;
+  }
+  const displayCount = computeDisplayCount(countFromStore, rootOrder);
+
 
   return (
     <div ref={containerRef}>
@@ -193,7 +220,7 @@ export default function CommentsPanel(props: Readonly<{
         <HeaderRow
           open={open}
           toggle={() => setOpen((v) => !v)}
-          count={counts}
+          count={displayCount}
           hasNew={hasNew}
           isClosed={isClosed}
         />
