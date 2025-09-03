@@ -250,20 +250,23 @@ export const useCommentsStore = create<CommentsState>((set, get) => ({
     try {
       const r = await apiWithRecaptcha(`/api/comments/${commentId}`, 'comment_delete', { method: 'DELETE' });
       if (!r.ok) return;
+
       const body = (await r.json().catch(() => null)) as { ok?: boolean; commentId?: number } | null;
       if (!body?.ok) return;
 
       const threads = new Map(get().threadsByPrayer);
       for (const [, t] of threads) {
         if (t.byId.has(commentId)) {
-          const prev = t.byId.get(commentId) as Comment;
-          t.byId.set(commentId, { ...prev, deletedAt: new Date().toISOString(), content: '[deleted]' });
+          // Hard-remove locally so UI updates instantly
+          t.byId.delete(commentId);
+          t.rootOrder = t.rootOrder.filter((x) => x !== commentId);
           set({ threadsByPrayer: threads });
           break;
         }
       }
     } catch {}
   },
+
 
   markSeen: async (prayerId) => {
     try {
@@ -338,9 +341,11 @@ export const useCommentsStore = create<CommentsState>((set, get) => ({
     try {
       const threads = new Map(get().threadsByPrayer);
       const t = ensureThread(threads, p.prayerId);
-      const prev = t.byId.get(p.commentId);
-      if (prev) {
-        t.byId.set(p.commentId, { ...prev, deletedAt: new Date().toISOString(), content: '[deleted]' });
+
+      if (t.byId.has(p.commentId)) {
+        // Mirror server deletion across all clients
+        t.byId.delete(p.commentId);
+        t.rootOrder = t.rootOrder.filter((x) => x !== p.commentId);
       }
 
       const counts = new Map(get().counts);
@@ -352,6 +357,7 @@ export const useCommentsStore = create<CommentsState>((set, get) => ({
       set({ threadsByPrayer: threads, counts, lastCommentAt: lastCA });
     } catch {}
   },
+
 
   onClosedChanged: (p) => {
     try {
