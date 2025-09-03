@@ -26,8 +26,15 @@ function patternToRegex(p: string): RegExp {
   return new RegExp(`^${esc}$`);
 }
 
-function stripTrailingSlash(x: string) {
-  return x.length > 1 ? x.replace(/\/+$/, '') : x;
+function stripTrailingSlash(x: string): string {
+  if (x.length <= 1) return x;
+
+  let i = x.length - 1;
+  // 47 = "/"
+  while (i > 0 && x.charCodeAt(i) === 47) {
+    i--;
+  }
+  return x.slice(0, i + 1);
 }
 
 function normalizePaths(req: Request): string[] {
