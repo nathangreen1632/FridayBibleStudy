@@ -63,24 +63,7 @@ export default function ContactFormView({
           onClick={onSubmit}
           disabled={!canSubmit}
           title={!messageHasText ? 'Please enter a message first' : undefined}
-          className="
-          w-full mt-2 rounded-2xl px-4 py-2.5 sm:py-3 font-semibold text-sm sm:text-base
-          bg-[var(--theme-button)] text-[var(--theme-text-white)]
-          hover:bg-[var(--theme-link-hover)]
-          shadow-[0_2px_6px_var(--theme-shadow)]
-          hover:shadow-[0_6px_14px_var(--theme-shadow)]
-          transition
-          duration-150
-          ease-out
-          active:translate-y-[1px]
-          active:scale-[0.98]
-          active:shadow-[0_1px_3px_var(--theme-shadow)]
-          disabled:opacity-60
-          disabled:cursor-not-allowed
-          disabled:active:translate-y-0
-          disabled:active:scale-100
-          disabled:active:shadow-[0_2px_6px_var(--theme-shadow)]
-        "
+          className="w-full mt-2 rounded-2xl px-4 py-2.5 sm:py-3 font-semibold text-sm sm:text-base bg-[var(--theme-button)] text-[var(--theme-text-white)] hover:bg-[var(--theme-button-hover)] hover:text-[var(--theme-textbox)] disabled:cursor-not-allowed"
           aria-disabled={!canSubmit}
         >
           {submitting ? 'Sending…' : 'Send Message'}
