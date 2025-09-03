@@ -1,7 +1,7 @@
 // Client/src/components/CommentsPanel.tsx
 import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { useCommentsStore } from '../stores/useCommentsStore';
-import { useAuthStore } from '../stores/useAuthStore'; // ⬅️ NEW: read current user
+import { useAuthStore } from '../stores/useAuthStore';
 import type { Comment } from '../types/comment.types';
 import { ChevronDown, BellDot, Lock } from 'lucide-react';
 
@@ -19,19 +19,16 @@ function StopDragGroup(props: Readonly<{
     if (!el) return;
     const stop = (e: Event) => e.stopPropagation();
 
-    // NEW (passive capture listeners):
     const opts = { capture: true, passive: true } as AddEventListenerOptions;
     el.addEventListener('pointerdown', stop, opts);
     el.addEventListener('mousedown', stop, opts);
     el.addEventListener('touchstart', stop, opts);
-
     return () => {
       el.removeEventListener('pointerdown', stop, opts);
       el.removeEventListener('mousedown', stop, opts);
       el.removeEventListener('touchstart', stop, opts);
     };
   }, []);
-
 
   return (
     <section ref={ref as any} role="text" aria-label={props.label} className={props.className} style={props.style}>
@@ -47,6 +44,7 @@ function HeaderRow(props: Readonly<{
   hasNew: boolean;
   isClosed: boolean;
 }>): React.ReactElement {
+  const chevronClass = props.open ? 'rotate-180' : '';
   return (
     <button
       type="button"
@@ -55,8 +53,8 @@ function HeaderRow(props: Readonly<{
       style={{ borderColor: 'var(--theme-border)', background: 'var(--theme-surface)', color: 'var(--theme-text)' }}
     >
       <div className="flex items-center gap-2">
-        <ChevronDown className={`transition-transform ${props.open ? 'rotate-180' : ''}`} />
-        <span className="font-semibold">Comments</span>
+        <ChevronDown className={`transition-transform ${chevronClass}`} />
+        <span className="font-semibold">Updates</span>
         <span className="text-xs opacity-80">({props.count})</span>
         {props.hasNew && <BellDot className="w-4 h-4" color="#ef4444" />}
         {props.isClosed && <Lock className="w-4 h-4 opacity-80" />}
@@ -78,7 +76,7 @@ function RootComposer(props: Readonly<{
         ref={localRef}
         className="w-full rounded-lg p-2 border text-sm placeholder-[var(--theme-placeholder)]/60"
         style={{ borderColor: 'var(--theme-border)', background: 'var(--theme-textbox)', color: 'var(--theme-placeholder)' }}
-        placeholder={props.disabled ? 'Comments are closed by an admin' : 'Write a comment…'}
+        placeholder={props.disabled ? 'Updates are closed by an admin' : 'Write an update…'}
         value={props.value}
         onChange={(e) => props.onChange(e.target.value)}
         onPointerDown={(e) => e.stopPropagation()}
@@ -113,155 +111,121 @@ export default function CommentsPanel(props: Readonly<{
   const lastSeenAt    = useCommentsStore((s) => s.unseen.get(prayerId) || null);
   const isClosed      = useCommentsStore((s) => s.closed.get(prayerId) || false);
 
-  const threads       = useCommentsStore((s) => s.threadsByPrayer.get(prayerId));
+  // IMPORTANT: do NOT default to [] here — keep undefined/null stable to avoid infinite effects
+  const rootOrder = useCommentsStore((s) => s.threadsByPrayer.get(prayerId)?.rootOrder);
+  const byId      = useCommentsStore((s) => s.threadsByPrayer.get(prayerId)?.byId);
+
   const fetchRootPage = useCommentsStore((s) => s.fetchRootPage);
-  const fetchReplies  = useCommentsStore((s) => s.fetchReplies);
   const create        = useCommentsStore((s) => s.create);
   const update        = useCommentsStore((s) => s.update);
   const remove        = useCommentsStore((s) => s.remove);
   const markSeen      = useCommentsStore((s) => s.markSeen);
 
+  // Collapse-on-outside-click
+  const containerRef = useRef<HTMLDivElement | null>(null);
   useEffect(() => {
-    if (open) {
-      if (!threads || threads.rootOrder.length === 0) { void fetchRootPage(prayerId, 10); }
+    if (!open) return;
+
+    const onPointerDown = (ev: Event) => {
+      const root = containerRef.current;
+      const target = ev.target as Node | null;
+      if (!root || !target) return;
+      if (!root.contains(target)) setOpen(false);
+    };
+
+    document.addEventListener('pointerdown', onPointerDown, true);
+    return () => {
+      document.removeEventListener('pointerdown', onPointerDown, true);
+    };
+  }, [open]);
+
+  // Fetch only when opening and list isn't loaded yet
+  useEffect(() => {
+    if (!open) return;
+    const hasAny = Array.isArray(rootOrder) && rootOrder.length > 0;
+    if (!hasAny) { void fetchRootPage(prayerId, 10); }
+  }, [open, rootOrder, prayerId, fetchRootPage]);
+
+  // Mark seen ONLY on transition from closed -> open (prevents instant clearing after new posts)
+  const prevOpenRef = useRef<boolean>(open);
+  useEffect(() => {
+    const wasOpen = prevOpenRef.current;
+    if (!wasOpen && open) {
       void markSeen(prayerId);
     }
-  }, [open, threads, prayerId, fetchRootPage, markSeen]);
+    prevOpenRef.current = open;
+  }, [open, markSeen, prayerId]);
 
-  const hasNew = useMemo(() => {
-    if (!lastCommentAt || !lastSeenAt) return false;
-    return new Date(lastCommentAt).getTime() > new Date(lastSeenAt).getTime();
-  }, [lastCommentAt, lastSeenAt]);
+  // compute hasNew without nested ternaries
+  let hasNew = false;
+  if (lastCommentAt && lastSeenAt) {
+    hasNew = new Date(lastCommentAt).getTime() > new Date(lastSeenAt).getTime();
+  }
 
   const [content, setContent] = useState('');
 
   const submitRoot = () => {
-    if (!content.trim() || isClosed) return;
-    void create(prayerId, content.trim(), {});
+    const trimmed = content.trim();
+    if (!trimmed || isClosed) return;
+    // Optimistic insert via store; socket will reconcile id
+    void create(prayerId, trimmed, {});
     setContent('');
   };
 
-  return (
-    <StopDragGroup label="Comments panel" className="mt-2 rounded-2xl shadow-sm">
-      <HeaderRow
-        open={open}
-        toggle={() => setOpen((v) => !v)}
-        count={counts}
-        hasNew={hasNew}
-        isClosed={isClosed}
-      />
-
-      {open && (
-        <div className="bg-[var(--theme-accent)] px-3 pb-3 pt-2 space-y-3 rounded-2xl">
-          <RootComposer
-            disabled={isClosed}
-            value={content}
-            onChange={setContent}
-            onSubmit={submitRoot}
-          />
-
-          <ThreadList
-            prayerId={prayerId}
-            fetchReplies={fetchReplies}
-            update={update}
-            remove={remove}
-          />
-
-          <RootPager prayerId={prayerId} />
-        </div>
-      )}
-    </StopDragGroup>
-  );
-}
-
-function ThreadList(props: Readonly<{
-  prayerId: number;
-  fetchReplies: (prayerId: number, rootId: number, limit?: number) => Promise<void>;
-  update: (commentId: number, content: string) => Promise<void>;
-  remove: (commentId: number) => Promise<void>;
-}>) {
-  const t = useCommentsStore((s) => s.threadsByPrayer.get(props.prayerId));
-  if (!t) return null;
+  // Strict DESC by createdAt (newest first)
+  const itemsDesc = useMemo(() => {
+    const ids = Array.isArray(rootOrder) ? rootOrder : [];
+    const list = ids
+      .map((id) => byId?.get(id))
+      .filter(Boolean) as Comment[];
+    list.sort((a, b) => {
+      const ta = Date.parse(a.createdAt || '');
+      const tb = Date.parse(b.createdAt || '');
+      if (Number.isNaN(ta) || Number.isNaN(tb)) return 0;
+      return tb - ta; // DESC
+    });
+    return list;
+  }, [rootOrder, byId]);
 
   return (
-    <div className="space-y-4">
-      {t.rootOrder.map((rootId) => (
-        <Thread
-          key={String(rootId)}
-          prayerId={props.prayerId}
-          rootId={rootId}
-          fetchReplies={props.fetchReplies}
-          update={props.update}
-          remove={props.remove}
+    <div ref={containerRef}>
+      <StopDragGroup label="Updates panel" className="mt-2 rounded-2xl shadow-sm">
+        <HeaderRow
+          open={open}
+          toggle={() => setOpen((v) => !v)}
+          count={counts}
+          hasNew={hasNew}
+          isClosed={isClosed}
         />
-      ))}
-      {t.rootOrder.length === 0 && <div className="text-[var(--theme-text-white)] text-sm opacity-70">No comments yet.</div>}
-    </div>
-  );
-}
 
-function Thread(props: Readonly<{
-  prayerId: number;
-  rootId: number | string;
-  fetchReplies: (prayerId: number, rootId: number, limit?: number) => Promise<void>;
-  update: (commentId: number, content: string) => Promise<void>;
-  remove: (commentId: number) => Promise<void>;
-}>) {
-  const t = useCommentsStore((s) => s.threadsByPrayer.get(props.prayerId));
-  const root = t?.byId.get(props.rootId);
-  const replies = (t?.repliesOrderByRoot.get(props.rootId) || [])
-    .map((id) => t?.byId.get(id))
-    .filter(Boolean) as Comment[];
-  const page = t?.replyPageByRoot.get(props.rootId) || { hasMore: false, loading: false, error: null };
+        {open && (
+          <div className="bg-[var(--theme-accent)] px-3 pb-3 pt-2 space-y-3 rounded-2xl">
+            {/* Root-only list (no replies) — strict DESC by createdAt */}
+            <div className="space-y-4">
+              {itemsDesc.map((c) => (
+                <div
+                  key={String(c.id)}
+                  className="rounded-xl border p-2"
+                  style={{ borderColor: 'var(--theme-border)', background: 'var(--theme-surface)' }}
+                >
+                  <CommentItem comment={c} update={update} remove={remove} />
+                </div>
+              ))}
+              {itemsDesc.length === 0 && (
+                <div className="text-[var(--theme-text-white)] text-sm opacity-70">No updates yet.</div>
+              )}
+            </div>
 
-  const [replyText, setReplyText] = useState('');
-
-  if (!t || !root) return null;
-
-  return (
-    <div className="rounded-xl border p-2" style={{ borderColor: 'var(--theme-border)', background: 'var(--theme-surface)' }}>
-      <CommentItem comment={root} update={props.update} remove={props.remove} />
-      <div className="pl-4 mt-2 space-y-2">
-        {replies.map((r) => (
-          <CommentItem key={r.id} comment={r} update={props.update} remove={props.remove} />
-        ))}
-        {page.hasMore && (
-          <button
-            type="button"
-            className="text-sm underline cursor-pointer"
-            onClick={() => { if (typeof props.rootId === 'number') { void props.fetchReplies(props.prayerId, props.rootId, 10); } }}
-          >
-            Show older replies…
-          </button>
-        )}
-
-        <div className="space-y-2">
-          <textarea
-            className="w-full rounded-lg p-2 border text-sm placeholder:text-[var(--theme-placeholder)]/60"
-            style={{ borderColor: 'var(--theme-border)', background: 'var(--theme-textbox)', color: 'var(--theme-placeholder)' }}
-            placeholder="Reply…"
-            value={replyText}
-            onChange={(e) => setReplyText(e.target.value)}
-            onPointerDown={(e) => e.stopPropagation()}
-            rows={2}
-          />
-          <div className="flex justify-end">
-            <button
-              type="button"
-              className="px-3 py-1 rounded-lg text-sm cursor-pointer"
-              style={{ background: 'var(--theme-button-blue)', color: 'var(--theme-text-white)' }}
-              onClick={() => {
-                if (!replyText.trim() || typeof props.rootId !== 'number') return;
-                void useCommentsStore.getState().create(root.prayerId, replyText.trim(), { parentId: root.id });
-                setReplyText('');
-              }}
-              disabled={!replyText.trim()}
-            >
-              Reply
-            </button>
+            {/* Composer at the bottom */}
+            <RootComposer
+              disabled={isClosed}
+              value={content}
+              onChange={setContent}
+              onSubmit={submitRoot}
+            />
           </div>
-        </div>
-      </div>
+        )}
+      </StopDragGroup>
     </div>
   );
 }
@@ -272,14 +236,19 @@ function CommentItem(props: Readonly<{
   remove: (id: number) => Promise<void>;
 }>) {
   const c = props.comment;
-  const me = useAuthStore((s) => s.user); // ⬅️ who am I?
+  const me = useAuthStore((s) => s.user);
   const [edit, setEdit] = useState(false);
   const [text, setText] = useState(c.content);
 
-  // ⬇️ Friendly author display (never show raw temp id)
-  const displayAuthor =
-    c.authorName ??
-    (c.authorId && me?.id === c.authorId ? 'You' : (c.authorId ? `User #${c.authorId}` : 'Someone'));
+  // No nested ternaries
+  let displayAuthor = 'Someone';
+  if (c.authorName) {
+    displayAuthor = c.authorName;
+  } else if (c.authorId && me?.id === c.authorId) {
+    displayAuthor = 'You';
+  } else if (c.authorId) {
+    displayAuthor = `User #${c.authorId}`;
+  }
 
   const displayTime = c.id < 0 ? 'sending…' : new Date(c.createdAt).toLocaleString();
 
@@ -324,27 +293,6 @@ function CommentItem(props: Readonly<{
           <button className="text-xs underline cursor-pointer" onClick={() => { void props.remove(c.id); }}>Delete</button>
         </div>
       )}
-    </div>
-  );
-}
-
-function RootPager(props: Readonly<{ prayerId: number }>) {
-  const t = useCommentsStore((s) => s.threadsByPrayer.get(props.prayerId));
-  const fetchRootPage = useCommentsStore((s) => s.fetchRootPage);
-  if (!t) return null;
-  if (t.rootPage.loading) return <div className="text-sm opacity-70">Loading comments…</div>;
-  if (!t.rootPage.hasMore) return null;
-
-  return (
-    <div className="flex justify-center">
-      <button
-        type="button"
-        className="px-3 py-1 rounded-lg text-sm cursor-pointer"
-        style={{ background: 'var(--theme-button-gray)', color: 'var(--theme-text-white)' }}
-        onClick={() => { void fetchRootPage(props.prayerId, 1); }}
-      >
-        Load more
-      </button>
     </div>
   );
 }
