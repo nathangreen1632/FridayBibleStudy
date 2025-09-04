@@ -16,7 +16,8 @@ export function cspMiddleware(_req: Request, res: Response, next: NextFunction) 
       "style-src 'self' 'unsafe-inline'",
 
       // Images & fonts (vite assets may use data: / blob:)
-      "img-src 'self' data: blob: https://www.gstatic.com",
+      // + Gravatar (avatars can come from www.gravatar.com or secure.gravatar.com; wildcard covers both)
+      "img-src 'self' data: blob: https://www.gstatic.com https://*.gravatar.com",
       "font-src 'self' data: https://www.gstatic.com",
 
       // XHR/fetch/websockets + reCAPTCHA Enterprise endpoint
