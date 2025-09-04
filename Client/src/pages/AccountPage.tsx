@@ -135,7 +135,7 @@ export default function AccountPage(): React.ReactElement {
 
   if (!user) {
     return (
-      <div className="min-h-[70vh] bg-[var(--theme-bg)] text-[var(--theme-text)] flex items-center justify-center p-4 sm:p-6">
+      <div className="min-h-[80vh] bg-[var(--theme-bg)] text-[var(--theme-text)] flex items-center justify-center p-4 sm:p-6">
         <div className="rounded-2xl border border-[var(--theme-border)] bg-[var(--theme-surface)] shadow-[0_4px_14px_0_var(--theme-shadow)] px-4 py-3 sm:px-6 sm:py-5 text-sm sm:text-base">
           Loading…
         </div>
@@ -144,7 +144,7 @@ export default function AccountPage(): React.ReactElement {
   }
 
   return (
-    <div className="min-h-[88vh] bg-[var(--theme-bg)] text-[var(--theme-text)]">
+    <div className="min-h-[80vh] bg-[var(--theme-bg)] text-[var(--theme-text)]">
       <div className="mx-auto max-w-4xl px-3 sm:px-6 py-6 sm:py-8 space-y-6 sm:space-y-8">
 
         {/* Page Header */}
@@ -156,7 +156,7 @@ export default function AccountPage(): React.ReactElement {
           <button
             type="button"
             onClick={openProfile}
-            className="rounded-xl bg-[var(--theme-button)] text-[var(--theme-text-white)] px-4 py-2 text-sm sm:text-base hover:bg-[var(--theme-hover)]"
+            className="rounded-xl bg-[var(--theme-button)] text-[var(--theme-text-white)] hover:bg-[var(--theme-button-hover)] hover:text-[var(--theme-textbox)] px-4 py-2 text-sm sm:text-base"
           >
             Edit My Profile
           </button>
@@ -165,10 +165,10 @@ export default function AccountPage(): React.ReactElement {
         {/* Post a Prayer */}
         <section className="bg-[var(--theme-surface)] border border-[var(--theme-border)] rounded-2xl shadow-md md:shadow-[0_4px_14px_0_var(--theme-shadow)] p-4 sm:p-6 md:p-8">
           <header className="mb-4 sm:mb-6">
-            <h2 className="text-xl sm:text-2xl font-semibold text-[var(--theme-accent)] text-center sm:text-left">
+            <h2 className="text-xl sm:text-2xl text-center font-semibold text-[var(--theme-accent)] sm:text-center">
               Post a Prayer
             </h2>
-            <p className="opacity-80 text-center sm:text-left text-sm sm:text-base">Share a prayer request or praise with the group.</p>
+            <p className="opacity-80 text-center sm:text-center text-sm sm:text-base">Share a prayer request or praise with the group</p>
           </header>
 
           <form className="space-y-4" onSubmit={postPrayer}>
@@ -244,7 +244,7 @@ export default function AccountPage(): React.ReactElement {
             <div className="pt-2">
               <button
                 className="w-full sm:w-auto rounded-xl bg-[var(--theme-button)] px-5 py-2.5 text-[var(--theme-text-white)] text-sm sm:text-base font-semibold
-                           hover:bg-[var(--theme-hover)] disabled:opacity-60 disabled:cursor-not-allowed"
+                           hover:bg-[var(--theme-button-hover)] hover:text-[var(--theme-textbox)] disabled:opacity-60 disabled:cursor-not-allowed"
                 type="submit"
                 disabled={posting}
               >
@@ -272,14 +272,14 @@ export default function AccountPage(): React.ReactElement {
           ) : (
             <>
               <button
-                className="rounded-xl bg-[var(--theme-button-gray)] text-[var(--theme-text-white)] px-4 py-2 hover:bg-[var(--theme-button-blue-hover)]"
+                className="rounded-xl bg-[var(--theme-button)] text-[var(--theme-text-white)] px-4 py-2 hover:bg-[var(--theme-button-hover)] hover:text-[var(--theme-textbox)]"
                 type="button"
                 onClick={requestCloseProfile}
               >
                 Close
               </button>
               <button
-                className="rounded-xl bg-[var(--theme-button)] text-[var(--theme-text-white)] px-4 py-2 hover:bg-[var(--theme-hover)] disabled:opacity-60"
+                className="rounded-xl bg-[var(--theme-button)] text-[var(--theme-text-white)] px-4 py-2 hover:bg-[var(--theme-button-hover)] hover:text-[var(--theme-textbox)] disabled:opacity-60 disabled:cursor-not-allowed"
                 type="submit"
                 form="profile-form"
                 disabled={loading || saving || !formDirty}

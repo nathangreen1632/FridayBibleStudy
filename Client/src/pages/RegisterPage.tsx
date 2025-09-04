@@ -136,7 +136,7 @@ export default function Register(): React.ReactElement {
   }
 
   return (
-    <div className="min-h-[83vh] bg-[var(--theme-bg)] text-[var(--theme-text)] flex items-center justify-center p-2 sm:p-4">
+    <div className="min-h-[80vh] bg-[var(--theme-bg)] text-[var(--theme-text)] flex items-center justify-center p-2 sm:p-4">
       {/* Global <Toaster /> is rendered in App.tsx */}
 
       <form
@@ -146,7 +146,7 @@ export default function Register(): React.ReactElement {
       >
         <header className="space-y-1 text-center">
           <h1 className="text-2xl sm:text-3xl font-semibold text-[var(--theme-accent)]">Create your account</h1>
-          <p className="text-sm sm:text-md opacity-80">Join the Friday Bible Study community.</p>
+          <p className="text-sm sm:text-md opacity-80">Join the Friday Bible Study community</p>
         </header>
 
         {/* Name */}
@@ -159,7 +159,7 @@ export default function Register(): React.ReactElement {
             value={form.name}
             onChange={(e) => setForm({ ...form, name: e.target.value })}
             className="block w-full rounded-xl border border-[var(--theme-border)] bg-[var(--theme-textbox)] px-3 py-2 text-sm sm:text-base
-                       text-[var(--theme-text)] focus:outline-none focus:ring-2 focus:ring-[var(--theme-focus)] placeholder:text-[var(--theme-placeholder)]"
+                       text-[var(--theme-placeholder)] focus:outline-none focus:ring-2 focus:ring-[var(--theme-focus)] placeholder:text-[var(--theme-placeholder)]"
             placeholder="Your full name"
           />
         </label>
@@ -180,7 +180,7 @@ export default function Register(): React.ReactElement {
             pattern="^\d{3}-\d{3}-\d{4}$"
             title="Format: 555-123-4567"
             className="block w-full rounded-xl border border-[var(--theme-border)] bg-[var(--theme-textbox)] px-3 py-2 text-sm sm:text-base
-                       text-[var(--theme-text)] focus:outline-none focus:ring-2 focus:ring-[var(--theme-focus)] placeholder:text-[var(--theme-placeholder)]"
+                       text-[var(--theme-placeholder)] focus:outline-none focus:ring-2 focus:ring-[var(--theme-focus)] placeholder:text-[var(--theme-placeholder)]"
           />
         </label>
 
@@ -195,7 +195,7 @@ export default function Register(): React.ReactElement {
             value={form.email}
             onChange={(e) => setForm({ ...form, email: e.target.value })}
             className="block w-full rounded-xl border border-[var(--theme-border)] bg-[var(--theme-textbox)] px-3 py-2 text-sm sm:text-base
-                       text-[var(--theme-text)] focus:outline-none focus:ring-2 focus:ring-[var(--theme-focus)] placeholder:text-[var(--theme-placeholder)]"
+                       text-[var(--theme-placeholder)] focus:outline-none focus:ring-2 focus:ring-[var(--theme-focus)] placeholder:text-[var(--theme-placeholder)]"
             placeholder="you@example.com"
           />
         </label>
@@ -207,12 +207,12 @@ export default function Register(): React.ReactElement {
             <input
               required
               type={showPw ? 'text' : 'password'}
-              name="password"
+              name="newPassword"
               autoComplete="new-password"
               value={form.password}
               onChange={(e) => setForm({ ...form, password: e.target.value })}
               className="block w-full rounded-xl border border-[var(--theme-border)] bg-[var(--theme-textbox)] px-3 py-2 pr-16 text-sm sm:text-base
-                         text-[var(--theme-text)] focus:outline-none focus:ring-2 focus:ring-[var(--theme-focus)] placeholder:text-[var(--theme-placeholder)]"
+                         text-[var(--theme-placeholder)] focus:outline-none focus:ring-2 focus:ring-[var(--theme-focus)] placeholder:text-[var(--theme-placeholder)]"
               placeholder="Minimum 8 characters"
             />
             <button
@@ -232,12 +232,12 @@ export default function Register(): React.ReactElement {
           <div className="relative">
             <input
               required
-              autoComplete="off"
-              name="confirm"
+              autoComplete="new-password"
+              name="newPasswordConfirm"
               type={showConfirm ? 'text' : 'password'}
               value={form.confirmPassword}
               onChange={(e) => setForm({ ...form, confirmPassword: e.target.value })}
-              className={`block w-full rounded-xl bg-[var(--theme-textbox)] px-3 py-2 pr-16 text-sm sm:text-base text-[var(--theme-text)]
+              className={`block w-full rounded-xl bg-[var(--theme-textbox)] px-3 py-2 pr-16 text-sm sm:text-base text-[var(--theme-placeholder)]
                           border ${getConfirmBorderColorClass()}
                           focus:outline-none focus:ring-2 focus:ring-[var(--theme-focus)]
                           focus:ring-offset-2 focus:ring-offset-[var(--theme-bg)] placeholder:text-[var(--theme-placeholder)]`}
@@ -277,7 +277,7 @@ export default function Register(): React.ReactElement {
         <button
           disabled={loading || !ready || !passwordsMatch}
           className="w-full rounded-2xl bg-[var(--theme-button)] px-4 py-2.5 sm:py-3 text-[var(--theme-text-white)] text-sm sm:text-base font-semibold
-                     hover:bg-[var(--theme-button-hover)] hover:text-[var(--theme-textbox)] disabled:cursor-not-allowed"
+                     hover:bg-[var(--theme-button-hover)] hover:text-[var(--theme-textbox)] disabled:opacity-60 disabled:cursor-not-allowed"
         >
           {loading ? '…' : 'Create account'}
         </button>

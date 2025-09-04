@@ -89,7 +89,7 @@ function RootComposer(props: Readonly<{
           type="button"
           onClick={props.onSubmit}
           disabled={!props.value.trim() || props.disabled}
-          className="px-3 py-1 rounded-lg text-base border border-[var(--theme-border)] bg-[var(--theme-button-dark)] text-[var(--theme-text)] hover:bg-[var(--theme-button-hover)] transition-colors cursor-pointer disabled:cursor-not-allowed"
+          className="px-3 py-1 rounded-lg text-base border border-[var(--theme-border)] bg-[var(--theme-button-dark)] text-[var(--theme-text)] hover:bg-[var(--theme-button-hover)] hover:text-[var(--theme-textbox)] transition-colors cursor-pointer disabled:cursor-not-allowed"
         >
           Post
         </button>

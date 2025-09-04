@@ -248,8 +248,13 @@ commentsRouter.post(
       }
 
       const latestAt = inserted.createdAt || new Date();
+
+      // ✅ count only ROOT updates
+      const rootDelta = inserted.depth === 0 ? 1 : 0;
+      const newCount = (prayer.commentCount ?? 0) + rootDelta;
+
       await Prayer.update(
-        { commentCount: (prayer.commentCount ?? 0) + 1, lastCommentAt: latestAt },
+        { commentCount: newCount, lastCommentAt: latestAt },
         { where: { id: pid } }
       );
 
@@ -264,12 +269,12 @@ commentsRouter.post(
       emitToGroup(prayer.groupId, 'comment:created', {
         prayerId: pid,
         comment: payloadComment,
-        newCount: (prayer.commentCount ?? 0) + 1,
+        newCount,
         lastCommentAt: latestAt,
       });
       emitToGroup(prayer.groupId, 'prayer:commentCount', {
         prayerId: pid,
-        newCount: (prayer.commentCount ?? 0) + 1,
+        newCount,
         lastCommentAt: latestAt,
       });
 
@@ -365,23 +370,28 @@ commentsRouter.delete(
 
       await Comment.update({ deletedAt: new Date() }, { where: { id: commentId } });
 
-      const newCount = Math.max((prayer.commentCount ?? 1) - 1, 0);
+      // ✅ decrement only if deleting a ROOT comment
+      const base = prayer.commentCount ?? 0;
+      const rootDelta = c.depth === 0 ? -1 : 0;
+      const newCount = Math.max(base + rootDelta, 0);
+
       const last = await Comment.findOne({
         where: { prayerId: c.prayerId, deletedAt: null },
         order: [['createdAt', 'DESC']],
       });
       const lastAt = last?.createdAt ?? null;
+
       await Prayer.update({ commentCount: newCount, lastCommentAt: lastAt }, { where: { id: c.prayerId } });
 
       emitToGroup(prayer.groupId, 'comment:deleted', {
         prayerId: c.prayerId,
         commentId: c.id,
-        newCount: newCount,
+        newCount,
         lastCommentAt: lastAt,
       });
       emitToGroup(prayer.groupId, 'prayer:commentCount', {
         prayerId: c.prayerId,
-        newCount: newCount,
+        newCount,
         lastCommentAt: lastAt,
       });
 

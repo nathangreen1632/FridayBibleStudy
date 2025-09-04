@@ -74,7 +74,7 @@ export default function Login(): React.ReactElement {
   }
 
   return (
-    <div className="min-h-[83vh] bg-[var(--theme-bg)] text-[var(--theme-text)] flex items-center justify-center p-3 sm:p-4">
+    <div className="min-h-[80vh] bg-[var(--theme-bg)] text-[var(--theme-text)] flex items-center justify-center p-3 sm:p-4">
       {/* Global <Toaster /> is rendered in App.tsx */}
 
       <form
@@ -96,8 +96,8 @@ export default function Login(): React.ReactElement {
             autoComplete="email"
             value={email}
             onChange={(e) => setEmail(e.target.value)}
-            className="block w-full rounded-xl border border-[var(--theme-border)] bg-[var(--theme-surface)] px-3 py-2 text-sm sm:text-base
-                       text-[var(--theme-text)] focus:outline-none focus:ring-2 focus:ring-[var(--theme-focus)]"
+            className="block w-full rounded-xl border border-[var(--theme-border)] bg-[var(--theme-textbox)] px-3 py-2 text-sm sm:text-base
+                       text-[var(--theme-placeholder)] focus:outline-none focus:ring-2 focus:ring-[var(--theme-focus)] placeholder:text-[var(--theme-placeholder)]"
             placeholder="you@example.com"
           />
         </label>
@@ -112,15 +112,15 @@ export default function Login(): React.ReactElement {
               autoComplete="current-password"
               value={password}
               onChange={(e) => setPassword(e.target.value)}
-              className="block w-full rounded-xl border border-[var(--theme-border)] bg-[var(--theme-surface)] px-3 py-2 pr-16 text-sm sm:text-base
-                         text-[var(--theme-text)] focus:outline-none focus:ring-2 focus:ring-[var(--theme-focus)]"
+              className="block w-full rounded-xl border border-[var(--theme-border)] bg-[var(--theme-textbox)] px-3 py-2 pr-16 text-sm sm:text-base
+                         text-[var(--theme-placeholder)] focus:outline-none focus:ring-2 focus:ring-[var(--theme-focus)] placeholder:text-[var(--theme-placeholder)]"
               placeholder="Your password"
             />
             <button
               type="button"
               onClick={() => setShowPw((s) => !s)}
               className="absolute right-2 top-1/2 -translate-y-1/2 rounded-md px-3 py-1.5 text-xs sm:text-sm font-semibold
-                         text-[var(--theme-text)] hover:bg-[var(--theme-card-hover)]"
+                         text-[var(--theme-placeholder)] hover:bg-[var(--theme-card-hover)]"
             >
               {showPw ? 'Hide' : 'Show'}
             </button>
@@ -139,8 +139,8 @@ export default function Login(): React.ReactElement {
         <button
           type="submit"
           disabled={disabled}
-          className="w-full rounded-xl bg-[var(--theme-button-gray)] px-4 py-2.5 sm:py-3 text-[var(--theme-textbox)] text-sm sm:text-base font-semibold
-                     hover:bg-[var(--theme-button-hover)] disabled:opacity-60 disabled:cursor-not-allowed"
+          className="w-full rounded-xl bg-[var(--theme-button)] px-4 py-2.5 sm:py-3 text-[var(--theme-text-white)] text-sm sm:text-base font-semibold
+                     hover:bg-[var(--theme-button-hover)] hover:text-[var(--theme-textbox)] disabled:opacity-60 disabled:cursor-not-allowed"
         >
           {loading ? '…' : 'Sign in'}
         </button>

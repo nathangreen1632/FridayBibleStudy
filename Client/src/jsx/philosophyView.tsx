@@ -3,7 +3,7 @@ import { Link } from "react-router-dom";
 
 export default function PhilosophyView(): React.ReactElement {
   return (
-    <section className="pt-4 sm:pt-6 pb-6 sm:pb-10 px-3 sm:px-6 max-w-6xl mx-auto text-center text-[var(--theme-text)]">
+    <section className="pt-2 sm:pt-3 pb-3 sm:pb-5 px-3 sm:px-6 max-w-6xl mx-auto text-center text-[var(--theme-text)]">
       {/* Card container */}
       <div className="rounded-2xl sm:rounded-3xl overflow-hidden bg-[var(--theme-surface)] shadow-md md:shadow-[0_4px_14px_0_var(--theme-shadow)]">
         <div className="w-full h-[220px] sm:h-[360px] md:h-[480px] lg:h-[540px] xl:h-[600px] 2xl:h-[650px] overflow-hidden">
@@ -29,13 +29,13 @@ export default function PhilosophyView(): React.ReactElement {
       <div className="mt-4 flex flex-col sm:flex-row justify-center gap-3 sm:gap-4">
         <Link
           to="/portal"
-          className="inline-block w-full sm:w-auto text-center px-5 sm:px-6 py-2.5 sm:py-3 border border-[var(--theme-border)] bg-[var(--theme-surface)] text-[var(--theme-text)] rounded-xl font-medium hover:bg-[var(--theme-button-hover)] hover:text-[var(--theme-button-blue-hover)] transition focus:outline-none focus:ring-2 focus:ring-[var(--theme-focus)]/30"
+          className="inline-block w-full sm:w-auto text-center px-5 sm:px-6 py-2.5 sm:py-3 border border-[var(--theme-border)] bg-[var(--theme-surface)] text-[var(--theme-text)] rounded-xl font-medium hover:bg-[var(--theme-button-hover)] hover:text-[var(--theme-textbox)] transition focus:outline-none focus:ring-2 focus:ring-[var(--theme-focus)]/30"
         >
           Login to Portal
         </Link>
         <Link
           to="/register"
-          className="inline-block w-full sm:w-auto text-center px-5 sm:px-6 py-2.5 sm:py-3 border border-[var(--theme-border)] bg-[var(--theme-surface)] text-[var(--theme-text)] rounded-xl font-medium hover:bg-[var(--theme-button-hover)] hover:text-[var(--theme-button-blue-hover)] transition focus:outline-none focus:ring-2 focus:ring-[var(--theme-focus)]/30"
+          className="inline-block w-full sm:w-auto text-center px-5 sm:px-6 py-2.5 sm:py-3 border border-[var(--theme-border)] bg-[var(--theme-surface)] text-[var(--theme-text)] rounded-xl font-medium hover:bg-[var(--theme-button-hover)] hover:text-[var(--theme-textbox)] transition focus:outline-none focus:ring-2 focus:ring-[var(--theme-focus)]/30"
         >
           Create Account
         </Link>
