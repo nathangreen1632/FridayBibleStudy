@@ -103,7 +103,7 @@ export default function ProfileInfo({
           value={form.name}
           onChange={e => setForm({ ...form, name: e.target.value })}
           className="block w-full rounded-xl border border-[var(--theme-border)] bg-[var(--theme-textbox)] px-3 py-2 text-sm sm:text-base
-                     text-[var(--theme-placeholder)] focus:outline-none focus:ring-2 focus:ring-[var(--theme-focus)]"
+                     text-[var(--theme-placeholder)] focus:outline-none focus:ring-2 focus:ring-[var(--theme-focus)] placeholder:text-[var(--theme-placeholder)]"
         />
       </label>
 
@@ -121,7 +121,7 @@ export default function ProfileInfo({
           pattern="^\d{3}-\d{3}-\d{4}$"
           title="Format: 555-123-4567"
           className="block w-full rounded-xl border border-[var(--theme-border)] bg-[var(--theme-textbox)] px-3 py-2 text-sm sm:text-base
-                     text-[var(--theme-placeholder)] focus:outline-none focus:ring-2 focus:ring-[var(--theme-focus)]"
+                     text-[var(--theme-placeholder)] focus:outline-none focus:ring-2 focus:ring-[var(--theme-focus)] placeholder:text-[var(--theme-placeholder)]"
         />
       </label>
 
@@ -133,7 +133,7 @@ export default function ProfileInfo({
           value={form.addressStreet}
           onChange={e => setForm({ ...form, addressStreet: e.target.value })}
           className="block w-full rounded-xl border border-[var(--theme-border)] bg-[var(--theme-textbox)] px-3 py-2 text-sm sm:text-base
-                     text-[var(--theme-placeholder)] focus:outline-none focus:ring-2 focus:ring-[var(--theme-focus)]"
+                     text-[var(--theme-placeholder)] focus:outline-none focus:ring-2 focus:ring-[var(--theme-focus)] placeholder:text-[var(--theme-placeholder)]"
         />
       </label>
 
@@ -146,7 +146,7 @@ export default function ProfileInfo({
             value={form.addressCity}
             onChange={e => setForm({ ...form, addressCity: e.target.value })}
             className="block w-full rounded-xl border border-[var(--theme-border)] bg-[var(--theme-textbox)] px-3 py-2 text-sm sm:text-base
-                       text-[var(--theme-placeholder)] focus:outline-none focus:ring-2 focus:ring-[var(--theme-focus)]"
+                       text-[var(--theme-placeholder)] focus:outline-none focus:ring-2 focus:ring-[var(--theme-focus)] placeholder:text-[var(--theme-placeholder)]"
           />
         </label>
 
@@ -157,7 +157,7 @@ export default function ProfileInfo({
             value={form.addressState}
             onChange={e => setForm({ ...form, addressState: e.target.value })}
             className="block w-full rounded-xl border border-[var(--theme-border)] bg-[var(--theme-textbox)] px-3 py-2 text-sm sm:text-base
-                       text-[var(--theme-placeholder)] focus:outline-none focus:ring-2 focus:ring-[var(--theme-focus)]"
+                       text-[var(--theme-placeholder)] focus:outline-none focus:ring-2 focus:ring-[var(--theme-focus)] placeholder:text-[var(--theme-placeholder)]"
           />
         </label>
 
@@ -168,7 +168,7 @@ export default function ProfileInfo({
             value={form.addressZip}
             onChange={e => setForm({ ...form, addressZip: e.target.value })}
             className="block w-full rounded-xl border border-[var(--theme-border)] bg-[var(--theme-textbox)] px-3 py-2 text-sm sm:text-base
-                       text-[var(--theme-placeholder)] focus:outline-none focus:ring-2 focus:ring-[var(--theme-focus)]"
+                       text-[var(--theme-placeholder)] focus:outline-none focus:ring-2 focus:ring-[var(--theme-focus)] placeholder:text-[var(--theme-placeholder)]"
           />
         </label>
       </div>
@@ -181,7 +181,7 @@ export default function ProfileInfo({
           value={form.spouseName}
           onChange={e => setForm({ ...form, spouseName: e.target.value })}
           className="block w-full rounded-xl border border-[var(--theme-border)] bg-[var(--theme-textbox)] px-3 py-2 text-sm sm:text-base
-                     text-[var(--theme-placeholder)] focus:outline-none focus:ring-2 focus:ring-[var(--theme-focus)]"
+                     text-[var(--theme-placeholder)] focus:outline-none focus:ring-2 focus:ring-[var(--theme-focus)] placeholder:text-[var(--theme-placeholder)]"
         />
       </label>
 
