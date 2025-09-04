@@ -13,7 +13,7 @@ export default function App(): React.ReactElement {
       <Navbar />
       <GravatarStrip />
       {/* Page content grows to push footer down */}
-      <main className="flex-grow w-full mx-auto p-3 max-w-7xl 2xl:max-w-[80rem]">
+      <main className="flex-grow w-full mx-auto max-w-7xl 2xl:max-w-[80rem]">
         <AppRoutes />
       </main>
 
