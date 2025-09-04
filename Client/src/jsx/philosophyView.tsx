@@ -3,7 +3,7 @@ import { Link } from "react-router-dom";
 
 export default function PhilosophyView(): React.ReactElement {
   return (
-    <section className="pt-4 sm:pt-6 pb-6 sm:pb-10 px-3 sm:px-6 max-w-6xl mx-auto text-center text-[var(--theme-text)]">
+    <section className="pt-2 sm:pt-3 pb-3 sm:pb-5 px-3 sm:px-6 max-w-6xl mx-auto text-center text-[var(--theme-text)]">
       {/* Card container */}
       <div className="rounded-2xl sm:rounded-3xl overflow-hidden bg-[var(--theme-surface)] shadow-md md:shadow-[0_4px_14px_0_var(--theme-shadow)]">
         <div className="w-full h-[220px] sm:h-[360px] md:h-[480px] lg:h-[540px] xl:h-[600px] 2xl:h-[650px] overflow-hidden">
