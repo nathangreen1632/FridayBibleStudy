@@ -14,6 +14,10 @@ import ActiveBoard from './pages/board/ActiveBoardPage.tsx';
 import ArchiveBoard from './pages/board/ArchiveBoardPage.tsx';
 import PraisesBoard from './pages/board/PraisesBoardPage.tsx';
 
+// NEW: Forgot Password pages
+import RequestReset from './pages/RequestReset.tsx';
+import ResetPassword from './pages/ResetPassword.tsx';
+
 function RequireAuth({ children }: Readonly<{ children: React.ReactElement }>): React.ReactElement {
   const { user, me } = useAuthStore();
   const loc = useLocation();
@@ -31,6 +35,10 @@ export default function AppRoutes(): React.ReactElement {
       <Route path="/register" element={<Register />} />
       <Route path="/login" element={<Login />} />
       <Route path="/contact" element={<ContactPageWrapper />} />
+
+      {/* Forgot Password */}
+      <Route path="/request-reset" element={<RequestReset />} />
+      <Route path="/reset-password" element={<ResetPassword />} />
 
       {/* Default portal = Active Praises (single column) */}
       {/* If PortalBoard re-exports ActiveBoard, either of these lines works.
