@@ -59,6 +59,7 @@
 
     /* error */
     --theme-error: #ef4444; /* red-500 */
+    --theme-button-error: #c43838; /* red-600 */
   }
 }
 
@@ -119,7 +120,8 @@
     --theme-shadow: rgba(204, 218, 209, 0.35);
 
     /* error */
-    --theme-error: #ef4444; /* red-400 */
+    --theme-error: #ef4444; /* red-500 */
+    --theme-button-error: #c43838; /* red-600 */
   }
 }
 
