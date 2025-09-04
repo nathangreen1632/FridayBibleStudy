@@ -74,7 +74,7 @@ export default function Login(): React.ReactElement {
   }
 
   return (
-    <div className="min-h-[83vh] bg-[var(--theme-bg)] text-[var(--theme-text)] flex items-center justify-center p-3 sm:p-4">
+    <div className="min-h-[80vh] bg-[var(--theme-bg)] text-[var(--theme-text)] flex items-center justify-center p-3 sm:p-4">
       {/* Global <Toaster /> is rendered in App.tsx */}
 
       <form
