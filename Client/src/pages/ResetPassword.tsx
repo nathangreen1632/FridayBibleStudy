@@ -214,7 +214,7 @@ export default function ResetPassword(): React.ReactElement {
             disabled={!ready || submitting || !valid}
             className={[
               'w-full rounded-lg px-4 py-2 font-semibold transition-colors',
-              'bg-[var(--theme-button)] text-[var(--theme-text-white)] hover:bg-[var(--theme-button-hover)]',
+              'bg-[var(--theme-button)] text-[var(--theme-text-white)] hover:bg-[var(--theme-button-hover)] hover:text-[var(--theme-textbox)]',
               (!ready || submitting || !valid) ? 'opacity-60 cursor-not-allowed' : 'cursor-pointer',
             ].join(' ')}
           >
