@@ -144,7 +144,7 @@ export default function AccountPage(): React.ReactElement {
   }
 
   return (
-    <div className="min-h-[88vh] bg-[var(--theme-bg)] text-[var(--theme-text)]">
+    <div className="min-h-[80vh] bg-[var(--theme-bg)] text-[var(--theme-text)]">
       <div className="mx-auto max-w-4xl px-3 sm:px-6 py-6 sm:py-8 space-y-6 sm:space-y-8">
 
         {/* Page Header */}
