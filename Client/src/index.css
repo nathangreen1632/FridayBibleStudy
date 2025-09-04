@@ -176,3 +176,22 @@ body {
     --theme-scrollbar-thumb: var(--theme-accent); /* light accent */
   }
 }
+
+/* --- Mobile WebKit: reduce double-tap zoom & tap highlight --- */
+html {
+  /* Prevent text auto-zoom heuristics */
+  -webkit-text-size-adjust: 100%;
+}
+
+@supports (-webkit-touch-callout: none) {
+  /* Tell iOS Safari/Chromium to treat taps as “manipulation” (no dbl-tap zoom) */
+  html, body,
+  a, button, input, label, select, textarea {
+    touch-action: manipulation;
+  }
+
+  /* Remove iOS tap highlight flash (cosmetic) */
+  * {
+    -webkit-tap-highlight-color: rgba(0,0,0,0);
+  }
+}
