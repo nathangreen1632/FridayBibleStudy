@@ -219,7 +219,7 @@ export default function Register(): React.ReactElement {
               type="button"
               onClick={() => setShowPw((s) => !s)}
               className="absolute right-2 top-1/2 -translate-y-1/2 rounded-md px-3 py-1.5 text-xs sm:text-sm font-semibold
-                         text-[var(--theme-placeholder)] hover:bg-[var(--theme-card-hover)]"
+                         text-[var(--theme-placeholder)] hover:bg-[var(--theme-button-hover)] hover:text-[var(--theme-textbox)]"
             >
               {showPw ? 'Hide' : 'Show'}
             </button>
@@ -247,7 +247,7 @@ export default function Register(): React.ReactElement {
               type="button"
               onClick={() => setShowConfirm((s) => !s)}
               className="absolute right-2 top-1/2 -translate-y-1/2 rounded-md px-3 py-1.5 text-xs sm:text-sm font-semibold
-                         text-[var(--theme-placeholder)] hover:bg-[var(--theme-card-hover)]"
+                         text-[var(--theme-placeholder)] hover:bg-[var(--theme-button-hover)] hover:text-[var(--theme-textbox)]"
             >
               {showConfirm ? 'Hide' : 'Show'}
             </button>
