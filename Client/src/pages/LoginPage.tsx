@@ -139,8 +139,8 @@ export default function Login(): React.ReactElement {
         <button
           type="submit"
           disabled={disabled}
-          className="w-full rounded-xl bg-[var(--theme-button)] px-4 py-2.5 sm:py-3 text-[var(--theme-textbox)] text-sm sm:text-base font-semibold
-                     hover:bg-[var(--theme-button-hover)] disabled:opacity-60 disabled:cursor-not-allowed"
+          className="w-full rounded-xl bg-[var(--theme-button)] px-4 py-2.5 sm:py-3 text-[var(--theme-text-white)] text-sm sm:text-base font-semibold
+                     hover:bg-[var(--theme-button-hover)] hover:text-[var(--theme-textbox)] disabled:opacity-60 disabled:cursor-not-allowed"
         >
           {loading ? '…' : 'Sign in'}
         </button>
