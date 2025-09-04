@@ -120,7 +120,7 @@ export default function Login(): React.ReactElement {
               type="button"
               onClick={() => setShowPw((s) => !s)}
               className="absolute right-2 top-1/2 -translate-y-1/2 rounded-md px-3 py-1.5 text-xs sm:text-sm font-semibold
-                         text-[var(--theme-placeholder)] hover:bg-[var(--theme-card-hover)]"
+                         text-[var(--theme-placeholder)]/60 hover:text-[var(--theme-textbox)] hover:bg-[var(--theme-button-hover)]"
             >
               {showPw ? 'Hide' : 'Show'}
             </button>
@@ -147,12 +147,12 @@ export default function Login(): React.ReactElement {
 
         <div className="text-xs sm:text-sm pt-2 sm:pt-3 space-y-2 text-center">
           <p>
-            <Link to="/request-reset" className="underline">
+            <Link to="/request-reset" className="hover:underline">
               Forgot password?
             </Link>
           </p>
-          <p className="opacity-80">
-            <Link to="/register" className="underline">
+          <p className="">
+            <Link to="/register" className="hover:underline">
               Create Account
             </Link>
           </p>

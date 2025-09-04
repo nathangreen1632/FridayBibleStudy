@@ -38,6 +38,10 @@ type AuthState = {
   login: (email: string, password: string) => Promise<AuthResult>;
   logout: () => Promise<void>;
   updateProfile: (data: Partial<User>) => Promise<AuthResult>;
+
+  // NEW: Forgot password actions
+  requestReset: (email: string) => Promise<AuthResult>;
+  resetPassword: (email: string, otp: string, newPassword: string) => Promise<AuthResult>;
 };
 
 const SITE_KEY = import.meta.env.VITE_RECAPTCHA_SITE_KEY as string | undefined;
@@ -185,6 +189,100 @@ export const useAuthStore = create<AuthState>((set, get) => ({
       return { success: false, message: msg };
     } finally {
       set({ loading: false });
+    }
+  },
+
+  // NEW: Request password reset (send OTP to email)
+  requestReset: async (email: string): Promise<AuthResult> => {
+    // For forgot-password we soft-bypass if reCAPTCHA cannot load; server also supports soft-bypass in dev.
+    try {
+      if (SITE_KEY) {
+        try {
+          await loadRecaptchaEnterprise(SITE_KEY);
+        } catch {
+          // continue
+        }
+      }
+    } catch {
+      // continue
+    }
+
+    let token = '';
+    try {
+      if (SITE_KEY) {
+        token = await getRecaptchaToken(SITE_KEY, 'password_reset_request');
+      }
+    } catch {
+      // continue; header will simply omit token if empty
+    }
+
+    try {
+      const res = await api<{ ok?: boolean; error?: string }>('/api/auth/request-reset', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          ...(token ? { 'x-recaptcha-token': token } : {}),
+        },
+        body: JSON.stringify({ email }),
+      });
+
+      if (res && typeof res === 'object' && 'ok' in res && res.ok) {
+        return { success: true };
+      }
+
+      const msg = res && typeof res === 'object' && 'error' in res && res.error
+        ? String(res.error)
+        : 'Unable to request reset.';
+      return { success: false, message: msg };
+    } catch {
+      return { success: false, message: 'Network error while requesting reset.' };
+    }
+  },
+
+  // NEW: Verify OTP and set the new password
+  resetPassword: async (email: string, otp: string, newPassword: string): Promise<AuthResult> => {
+    // Soft-bypass reCAPTCHA issues here as well.
+    try {
+      if (SITE_KEY) {
+        try {
+          await loadRecaptchaEnterprise(SITE_KEY);
+        } catch {
+          // continue
+        }
+      }
+    } catch {
+      // continue
+    }
+
+    let token = '';
+    try {
+      if (SITE_KEY) {
+        token = await getRecaptchaToken(SITE_KEY, 'password_reset');
+      }
+    } catch {
+      // continue
+    }
+
+    try {
+      const res = await api<{ ok?: boolean; error?: string }>('/api/auth/reset-password', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          ...(token ? { 'x-recaptcha-token': token } : {}),
+        },
+        body: JSON.stringify({ email, otp, newPassword }),
+      });
+
+      if (res && typeof res === 'object' && 'ok' in res && res.ok) {
+        return { success: true };
+      }
+
+      const msg = res && typeof res === 'object' && 'error' in res && res.error
+        ? String(res.error)
+        : 'Please verify the one-time code is correct.';
+      return { success: false, message: msg };
+    } catch {
+      return { success: false, message: 'Network error while resetting password.' };
     }
   },
 }));

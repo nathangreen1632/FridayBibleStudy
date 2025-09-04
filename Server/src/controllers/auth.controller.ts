@@ -173,12 +173,69 @@ export async function requestReset(req: Request, res: Response): Promise<void> {
 
   await sendEmail({
     to: user.email,
-    subject: 'Your OTP Code',
-    html: `<p>Your OTP is <b>${otp}</b>. It expires in 10 minutes.</p>`
+    subject: 'Your Friday Bible Study verification code',
+    html: `
+  <div style="background-color:#CCDAD1; padding:20px; font-family:Inter, sans-serif;">
+    <div style="max-width:600px; margin:0 auto; background-color:#9CAEA9; border-radius:12px; padding:24px; color:#38302E; line-height:1.7; font-size:16px;">
+
+      <!-- Dark-mode helper (email-safe). If unsupported, the link stays blue. -->
+      <style>
+        @media (prefers-color-scheme: dark) {
+          .fallback-link { color: #ffffff !important; }
+        }
+      </style>
+
+      <h2 style="margin-top:0; color:#38302E; font-size:22px;">Verify your password reset</h2>
+
+      <p>Hi ${user.name},</p>
+      <p>Use this one-time code to reset your password. It expires in 10 minutes.</p>
+
+      <!-- Big OTP pill -->
+      <p style="margin: 1.25em 0; text-align:center;">
+        <span style="
+          display:inline-block;
+          background-color:#00274C;
+          color:#ffffff;
+          text-decoration:none;
+          padding:14px 24px;
+          border-radius:8px;
+          font-weight:800;
+          font-size:28px;
+          letter-spacing:0.25em;
+          white-space:nowrap;
+          font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, 'Liberation Mono', 'Courier New', monospace;
+        ">
+          ${otp.slice(0,3)}<span style="letter-spacing:0;">-</span>${otp.slice(3)}
+        </span>
+      </p>
+
+
+      <!-- Reset page link (same styling approach as your welcome email) -->
+      <p style="font-size:15px; color:#38302E; margin-top:1em; text-align:center;">
+        Then open the reset page and enter your code:<br>
+        <a href="https://www.fridaybiblestudy.org/reset-password"
+           class="fallback-link"
+           style="color:#2563EB; font-size:15px; text-decoration:none;">
+          https://www.fridaybiblestudy.org/reset-password
+        </a>
+      </p>
+
+      <p style="margin-top:1em;">If you didn’t request this, you can safely ignore this email.</p>
+
+      <p style="margin-top:1em;">
+        Grace and peace,<br>
+        <br>
+        The Friday Bible Study Team
+      </p>
+
+    </div>
+  </div>
+  `
   });
 
   res.json({ ok: true });
 }
+
 
 export async function resetPassword(req: Request, res: Response): Promise<void> {
   const { email, otp, newPassword } = req.body as { email: string; otp: string; newPassword: string };
