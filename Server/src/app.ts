@@ -25,21 +25,11 @@ export function createApp(): Express {
 
   app.use(
     helmet({
-      contentSecurityPolicy: {
-        useDefaults: true,
-        directives: {
-          "default-src": ["'self'"],
-          "base-uri": ["'self'"],
-          "object-src": ["'none'"],
-          "frame-ancestors": ["'self'"],
-          "img-src": ["'self'", "data:"],
-          "script-src": ["'self'"],
-          "style-src": ["'self'", "'unsafe-inline'"],
-          "connect-src": ["'self'", "ws:", "wss:"],
-          "frame-src": ["'self'"]
-        }
-      },
-      crossOriginOpenerPolicy: { policy: 'same-origin' }
+      // We already set our own CSP header in cspMiddleware.
+      contentSecurityPolicy: false,
+
+      // keep other Helmet protections on:
+      crossOriginEmbedderPolicy: false,
     })
   );
 
