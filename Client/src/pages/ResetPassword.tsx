@@ -137,14 +137,15 @@ export default function ResetPassword(): React.ReactElement {
               name="otp"
               type="text"
               inputMode="numeric"
-              pattern="[0-9]*"
+              pattern="^[0-9]{3}-?[0-9]{3}$"   // ← allows 123456 or 123-456
               value={formatOtp(form.otp)}
-              maxLength={7} // 6 digits + 1 hyphen when shown
+              maxLength={7}
               onChange={(e) => update('otp', e.target.value.replace(/\D/g, '').slice(0, 6))}
               className="w-full rounded-lg border border-[var(--theme-border)] bg-[var(--theme-textbox)] text-[var(--theme-placeholder)] px-3 py-2 focus:outline-none focus:ring-2 focus:ring-[var(--theme-focus)] placeholder:text-[var(--theme-placeholder)]/80"
               placeholder="6-digit code"
             />
           </div>
+
 
           <div>
             <label htmlFor="reset-new-password" className="block text-sm mb-1">New password</label>
