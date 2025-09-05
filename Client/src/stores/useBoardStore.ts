@@ -59,6 +59,10 @@ type BoardState = {
   filterStatus?: Status;
   filterCategory?: Category;
 
+  // Drag guard (used by DnD to prevent socket reorders mid-drag)
+  isDragging: boolean;                 // NEW
+  setDragging: (v: boolean) => void;   // NEW
+
   // Initial fetch
   fetchInitial: () => Promise<void>;
 
@@ -86,6 +90,10 @@ export const useBoardStore = create<BoardState>((set, get) => ({
   hasMore: true,
   sort: 'date',
   q: '',
+
+  // NEW: drag guard state
+  isDragging: false,
+  setDragging: (v) => set({ isDragging: v }),
 
   setSort: (s) => set({ sort: s }),
   setQuery: (q) => set({ q }),
