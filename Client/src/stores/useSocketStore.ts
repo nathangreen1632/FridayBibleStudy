@@ -10,6 +10,9 @@ import type { Comment } from '../types/comment.types';
 // Keep Praises in sync with socket events
 import { usePraisesStore, praisesOnSocketUpsert, praisesOnSocketRemove } from './usePraisesStore.ts';
 
+// ✅ NEW: keep "My Prayers" (profile column) in sync too
+import { myPrayersOnSocketUpsert, myPrayersOnSocketRemove } from './useMyPrayersStore.ts';
+
 // ✅ Typed event constants + value type
 import { Events } from '../types/socket.types';
 import type { EventValue } from '../types/socket.types';
@@ -88,7 +91,6 @@ export const useSocketStore = create<SocketState>((set, get) => {
     }
   };
 
-
   const debouncedFlush = debounce(flush, 200);
 
   // Safely attach listeners if available
@@ -109,6 +111,7 @@ export const useSocketStore = create<SocketState>((set, get) => {
   function onPrayerUpdated(d: PrayerUpdatedPayload) {
     try { get().enqueue({ type: 'upsert', p: d.prayer }); } catch {}
     try { praisesOnSocketUpsert(d.prayer); } catch {}
+    try { myPrayersOnSocketUpsert(d.prayer); } catch {}   // ← ADD
     // NOTE: no explicit rebuildColumn call needed; upsertPrayer re-sorts by `position`.
   }
 
@@ -122,6 +125,7 @@ export const useSocketStore = create<SocketState>((set, get) => {
       onE<PrayerCreatedPayload>(Events.PrayerCreated, (d) => {
         try { get().enqueue({ type: 'upsert', p: d.prayer }); } catch {}
         try { praisesOnSocketUpsert(d.prayer); } catch {}
+        try { myPrayersOnSocketUpsert(d.prayer); } catch {}   // ← ADD
       });
 
       onE<PrayerUpdatedPayload>(Events.PrayerUpdated, onPrayerUpdated);
@@ -130,10 +134,13 @@ export const useSocketStore = create<SocketState>((set, get) => {
         try { get().enqueue({ type: 'upsert', p: d.prayer }); } catch {}
         try { get().enqueue({ type: 'move', id: d.prayer.id, to: d.to }); } catch {}
         try { praisesOnSocketUpsert(d.prayer); } catch {}
+        try { myPrayersOnSocketUpsert(d.prayer); } catch {}   // ← ADD
       });
 
       onE<PrayerDeletedPayload>(Events.PrayerDeleted, (d) => {
+        // keep board logic as-is (no 'remove' Patch variant); mirror praises behavior
         try { praisesOnSocketRemove(d.id); } catch {}
+        try { myPrayersOnSocketRemove(d.id); } catch {}       // ← ADD
       });
 
       // When an update is added to a prayer, bump it visually right away.
@@ -141,6 +148,7 @@ export const useSocketStore = create<SocketState>((set, get) => {
       onE<UpdateCreatedPayload>(Events.UpdateCreated, (p) => {
         try { useBoardStore.getState().bumpToTop(p.prayerId); } catch {}
         try { usePraisesStore.getState().bumpToTop(p.prayerId); } catch {}
+        // Profile column will re-sort on the subsequent PrayerUpdated event.
       });
 
       // ---- COMMENT events ----
