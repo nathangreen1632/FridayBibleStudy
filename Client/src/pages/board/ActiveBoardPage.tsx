@@ -1,3 +1,4 @@
+// Client/src/pages/board/ActiveBoardPage.tsx
 import React from 'react';
 import SingleBoard from '../../components/board/SingleColumnBoard';
 import { useBoardStore } from '../../stores/useBoardStore';
