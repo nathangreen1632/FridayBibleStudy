@@ -195,9 +195,15 @@ export default function CommentsPanel(props: Readonly<{
   }, [open, markSeen, prayerId]);
 
   // compute hasNew without nested ternaries
-  let hasNew = false;
-  if (lastCommentAt && lastSeenAt) {
-    hasNew = new Date(lastCommentAt).getTime() > new Date(lastSeenAt).getTime();
+  let hasNew: boolean = false;
+  if (lastCommentAt) {
+    if (!lastSeenAt) {
+      hasNew = true;
+    } else {
+      const seen = new Date(lastSeenAt).getTime();
+      const newest = new Date(lastCommentAt).getTime();
+      hasNew = Number.isFinite(seen) && Number.isFinite(newest) ? (newest > seen) : false;
+    }
   }
 
   const [content, setContent] = useState('');
