@@ -33,6 +33,50 @@ async function findPrayerOr404(
   return p;
 }
 
+/** ------------------------------------------------------------------------
+ * NEW: Keep column positions dense so manual sorting remains meaningful.
+ * Re-pack positions to 0..N-1 and emit per-item updates so clients reconcile.
+ * Non-fatal: any failure is swallowed.
+ * -----------------------------------------------------------------------*/
+async function normalizePositions(groupId: number, status: Status): Promise<void> {
+  try {
+    const rows = await Prayer.findAll({
+      where: { groupId, status },
+      order: [['position', 'asc'], ['id', 'asc']],
+      attributes: ['id', 'position', 'groupId', 'status'],
+    });
+
+    // Detect negatives/gaps; only rewrite if needed.
+    let needs = false;
+    for (let i = 0; i < rows.length; i++) {
+      const expected = i;
+      const actual = Number(rows[i].position ?? 0);
+      if (actual !== expected) { needs = true; break; }
+    }
+    if (!needs) return;
+
+    for (let i = 0; i < rows.length; i++) {
+      try {
+        await Prayer.update({ position: i }, { where: { id: rows[i].id } });
+      } catch {}
+
+      // Emit per-item so all clients deterministically reconcile order.
+      try {
+        const p = await Prayer.findByPk(rows[i].id, {
+          include: [{ model: User, as: 'author', attributes: ['id', 'name'] }],
+        });
+        if (p) {
+          const payload = { prayer: toPrayerDTO(p) };
+          emitToGroup(p.groupId, 'prayer:updated', payload);
+          emitToGroup(p.groupId, Events.PrayerUpdated, payload);
+        }
+      } catch {}
+    }
+  } catch {
+    // non-fatal
+  }
+}
+
 export async function listPrayers(req: Request, res: Response): Promise<void> {
   const page = Number(req.query.page ?? 1);
   const pageSize = Number(req.query.pageSize ?? 20);
@@ -109,6 +153,33 @@ export async function createPrayer(req: Request, res: Response): Promise<void> {
 
   // ⬇️ emit full DTO (typed event)
   emitToGroup(groupId, Events.PrayerCreated, { prayer: toPrayerDTO(created) });
+
+  // NEW: put brand-new prayers at the top immediately, then normalize
+  try {
+    const minPosRaw = await Prayer.min('position', { where: { groupId, status: 'active' } });
+    let nextPos = -1;
+    if (typeof minPosRaw === 'number' && Number.isFinite(minPosRaw)) {
+      nextPos = minPosRaw - 1;
+    }
+    await Prayer.update({ position: nextPos }, { where: { id: created.id } });
+
+    // Re-emit with updated position so clients reconcile
+    try {
+      const reloaded = await Prayer.findByPk(created.id, {
+        include: [{ model: User, as: 'author', attributes: ['id', 'name'] }],
+      });
+      if (reloaded) {
+        const payload = { prayer: toPrayerDTO(reloaded) };
+        emitToGroup(groupId, 'prayer:updated', payload);
+        emitToGroup(groupId, Events.PrayerUpdated, payload);
+      }
+    } catch {}
+
+    // Keep column dense to preserve manual sort semantics
+    await normalizePositions(groupId, 'active');
+  } catch {
+    // non-fatal; creation still succeeds even if bump/normalize fails
+  }
 
   // Notify group & admin (non-fatal)
   const linkUrl = `${env.PUBLIC_URL}/portal/prayers/${created.id}`;
@@ -249,8 +320,11 @@ export async function createUpdate(req: Request, res: Response): Promise<void> {
     try {
       emitToGroup(prayer.groupId, Events.PrayerUpdated, payload);
     } catch { /* non-fatal */ }
+
+    // 3) Keep column dense so manual sorting remains meaningful
+    await normalizePositions(prayer.groupId, prayer.status);
   } catch {
-    // If bump fails, the update itself still succeeds; UI just won’t auto-bump this time.
+    // If bump/normalize fails, the update itself still succeeds; UI just won’t auto-bump this time.
   }
 
   // Keep existing lightweight signal (some clients may rely on it)
