@@ -1,6 +1,6 @@
 // Server/src/controllers/prayer.controller.ts
 import type { Request, Response } from 'express';
-import type { Order } from 'sequelize';
+import type { Order, WhereOptions } from 'sequelize';
 import { Group, PrayerUpdate, User, Attachment, PrayerParticipant } from '../models/index.js';
 import { Prayer, type Status } from '../models/prayer.model.js';
 import { emitToGroup } from '../config/socket.config.js';
@@ -126,6 +126,55 @@ export async function listPrayers(req: Request, res: Response): Promise<void> {
     : rowsWithAuthor;
 
   res.json({ items: filtered, total: count });
+}
+
+/** ------------------------------------------------------------------------
+ * NEW: listMyPrayers — only prayers created by the authenticated user
+ * Mirrors listPrayers query params & ordering; returns DTOs.
+ * -----------------------------------------------------------------------*/
+export async function listMyPrayers(req: Request, res: Response): Promise<void> {
+  const page = Number(req.query.page ?? 1);
+  const pageSize = Number(req.query.pageSize ?? 50);
+  const q = (req.query.q as string) ?? '';
+  const status = req.query.status as Status | undefined;
+  const category = req.query.category as string | undefined;
+  const sort = (req.query.sort as 'name' | 'date' | 'prayer' | 'status') ?? 'date';
+  const dir = (req.query.dir as 'asc' | 'desc') ?? 'desc';
+
+  const where: WhereOptions = { authorUserId: req.user!.userId };
+  if (status) (where as any).status = status;
+  if (category) (where as any).category = category;
+
+  const include = [{ model: User, as: 'author', attributes: ['id', 'name'] }];
+
+  // Build order similar to listPrayers; default to updatedAt desc for "mine"
+  let order: Order = [['updatedAt', dir]];
+  if (sort === 'name') order = [[{ model: User, as: 'author' }, 'name', dir]];
+  if (sort === 'prayer') order = [['title', dir]];
+  if (sort === 'status') order = [['status', dir]];
+
+  try {
+    const { rows, count } = await Prayer.findAndCountAll({
+      where,
+      include,
+      limit: pageSize,
+      offset: (page - 1) * pageSize,
+      order,
+    });
+
+    const items = rows.map((p) => toPrayerDTO(p));
+    const filtered = q
+      ? items.filter((p) =>
+        p.title.toLowerCase().includes(q.toLowerCase()) ||
+        p.content.toLowerCase().includes(q.toLowerCase()) ||
+        (p.author?.name?.toLowerCase().includes(q.toLowerCase()) ?? false)
+      )
+      : items;
+
+    res.json({ items: filtered, total: count });
+  } catch {
+    res.status(500).json({ error: 'Failed to load your prayers' });
+  }
 }
 
 export async function getPrayer(req: Request, res: Response): Promise<void> {
