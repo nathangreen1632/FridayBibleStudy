@@ -44,6 +44,7 @@ export const Events = {
   PrayerUpdated: 'prayer:updated',
   PrayerMoved:   'prayer:moved',
   RosterUpdated: 'roster:updated',
+  UpdateCreated: 'update:created',
 } as const;
 
 export type EventName = typeof Events[keyof typeof Events];
