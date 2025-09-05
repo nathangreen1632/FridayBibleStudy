@@ -57,6 +57,19 @@ export const useSocketStore = create<SocketState>((set, get) => {
   const flush = () => {
     if (!queue.length) return;
 
+    // Don't mutate board order mid-drag; retry shortly
+    try {
+      const { isDragging } = useBoardStore.getState();
+      if (isDragging) {
+        setTimeout(() => {
+          try { flush(); } catch {}
+        }, 120);
+        return;
+      }
+    } catch {
+      // if store is unavailable, fall through and try to apply (don’t crash)
+    }
+
     const batch = queue;
     queue = [];
 
@@ -74,6 +87,7 @@ export const useSocketStore = create<SocketState>((set, get) => {
       // if the board store is unavailable or errors, swallow to avoid breaking the socket loop
     }
   };
+
 
   const debouncedFlush = debounce(flush, 200);
 
@@ -97,7 +111,6 @@ export const useSocketStore = create<SocketState>((set, get) => {
     try { praisesOnSocketUpsert(d.prayer); } catch {}
     // NOTE: no explicit rebuildColumn call needed; upsertPrayer re-sorts by `position`.
   }
-
 
   if (hasOn && s) {
     try {
