@@ -11,8 +11,8 @@ function StatusPill({ s }: Readonly<{ s: Status }>) {
   switch (s) {
     case 'active':
       // “Prayer” column (active) => Yellow
-      label = 'Prayer';
-      colorClass = 'bg-yellow-400 text-black';
+      label = 'Prayers';
+      colorClass = 'bg-orange-500 text-white';
       break;
     case 'praise':
       // Praise => Green
@@ -22,7 +22,7 @@ function StatusPill({ s }: Readonly<{ s: Status }>) {
     case 'archived':
       // Archived => #ef4444
       label = 'Archived';
-      colorClass = 'bg-[#ef4444] text-white';
+      colorClass = 'bg-[#00274C] text-white';
       break;
     default:
       // Safe fallback uses your theme card color
@@ -70,7 +70,7 @@ function RowActions(props: Readonly<{
       </button>
       <div className="inline-flex items-center gap-1">
         <span className="text-xs opacity-70">Move:</span>
-        <button type="button" onClick={() => props.onMove('active')} className="px-2 py-1 rounded bg-[var(--theme-card)] hover:bg-[var(--theme-card-hover)]">Prayer</button>
+        <button type="button" onClick={() => props.onMove('active')} className="px-2 py-1 rounded bg-[var(--theme-card)] hover:bg-[var(--theme-card-hover)]">Prayers</button>
         <button type="button" onClick={() => props.onMove('praise')} className="px-2 py-1 rounded bg-[var(--theme-card)] hover:bg-[var(--theme-card-hover)]">Praise</button>
         <button type="button" onClick={() => props.onMove('archived')} className="px-2 py-1 rounded bg-[var(--theme-card)] hover:bg-[var(--theme-card-hover)]">Archive</button>
       </div>
@@ -177,7 +177,7 @@ export default function MyPrayersColumn(): React.ReactElement {
             className="px-2 py-2 rounded-lg bg-[var(--theme-card)] text-[var(--theme-text)] border border-[var(--theme-border)]"
           >
             <option value="all">All</option>
-            <option value="active">Prayer</option>
+            <option value="active">Prayers</option>
             <option value="praise">Praise</option>
             <option value="archived">Archived</option>
           </select>
