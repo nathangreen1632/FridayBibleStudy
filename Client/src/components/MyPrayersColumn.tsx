@@ -299,7 +299,7 @@ export default function MyPrayersColumn(): React.ReactElement {
                         <button
                           type="button"
                           onClick={() => onDelete(p.id)}
-                          className="px-3 py-1.5 rounded-md bg-[var(--theme-error)] text-[var(--theme-text-white)] hover:bg-[var(--theme-button-error)] cursor-pointer"
+                          className="px-3 py-1.5 rounded-md bg-[var(--theme-error)] text-[var(--theme-text-white)] hover:bg-[var(--theme-button-error)] hover:text-[var(--theme-textbox)] cursor-pointer"
                         >
                           Delete
                         </button>
