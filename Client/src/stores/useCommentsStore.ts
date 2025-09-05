@@ -20,7 +20,11 @@ type CommentsState = {
 
   setCounts: (prayerId: number, count: number, lastCommentAt?: string | null, isClosed?: boolean) => void;
 
-  fetchRootPage: (prayerId: number, limit?: number) => Promise<void>;
+  // UPDATED: accept optional reset flag
+  fetchRootPage: (prayerId: number, limit?: number, opts?: { reset?: boolean }) => Promise<void>;
+
+  // NEW: allow external refresh of a thread (clear cache + paging)
+  refreshRoot: (prayerId: number) => void;
 
   create: (prayerId: number, content: string, opts?: { cid?: string }) => Promise<void>;
   update: (commentId: number, content: string) => Promise<void>;
@@ -87,15 +91,71 @@ export const useCommentsStore = create<CommentsState>((set, get) => ({
     } catch {}
   },
 
+  // NEW: clear a thread's cached items and paging so first page refetches fresh
+  refreshRoot: (prayerId) => {
+    try {
+      const threads = new Map(get().threadsByPrayer);
+      const t = ((): ThreadState => {
+        const ex = threads.get(prayerId);
+        if (ex) return ex;
+        const neu: ThreadState = {
+          byId: new Map(),
+          rootOrder: [],
+          rootPage: { cursor: null, hasMore: true, loading: false, error: null },
+        };
+        threads.set(prayerId, neu);
+        return neu;
+      })();
+
+      t.byId = new Map();
+      t.rootOrder = [];
+      t.rootPage = { cursor: null, hasMore: true, loading: false, error: null };
+
+      set({ threadsByPrayer: threads });
+    } catch {
+      // keep UI resilient; no throws
+    }
+  },
+
   // Roots (latest-activity ordered) — replies removed
-  fetchRootPage: async (prayerId, limit = 10) => {
+  // UPDATED: now supports opts.reset to force a clean first page load
+  // Roots (latest-activity ordered) — replies removed
+// Backward compatible: (prayerId, 10) or (prayerId, { limit: 10, reset: true })
+  fetchRootPage: async (prayerId, limitOrOpts, maybeOpts) => {
     try {
       const threads = new Map(get().threadsByPrayer);
       const t = ensureThread(threads, prayerId);
+
+      // Resolve opts and limit without default params in the signature
+      let opts: { reset?: boolean; limit?: number } | undefined = undefined;
+      if (typeof limitOrOpts === 'object' && limitOrOpts !== null) {
+        opts = limitOrOpts;
+      } else if (maybeOpts && typeof maybeOpts === 'object') {
+        opts = maybeOpts;
+      }
+
+      let limit = 10;
+      if (typeof limitOrOpts === 'number') {
+        if (Number.isFinite(limitOrOpts) && limitOrOpts > 0) {
+          limit = limitOrOpts;
+        }
+      } else if (opts && typeof opts.limit === 'number') {
+        if (Number.isFinite(opts.limit) && opts.limit > 0) {
+          limit = opts.limit;
+        }
+      }
+
+      if (opts?.reset) {
+        t.byId = new Map();
+        t.rootOrder = [];
+        t.rootPage = { cursor: null, hasMore: true, loading: false, error: null };
+      }
+
       if (t.rootPage.loading || (!t.rootPage.hasMore && t.rootOrder.length > 0)) {
         set({ threadsByPrayer: threads });
         return;
       }
+
       t.rootPage.loading = true;
       t.rootPage.error = null;
       set({ threadsByPrayer: threads });
@@ -107,25 +167,27 @@ export const useCommentsStore = create<CommentsState>((set, get) => ({
 
       const data = await api<ListRootThreadsResponse>(`/api/comments/list?${params.toString()}`);
 
+      const nextById = new Map(t.byId);
       for (const item of data.items) {
-        // keep only the root comment as an "update"
-        const prevRoot = t.byId.get(item.root.id);
-        t.byId.set(item.root.id, {
+        const prevRoot = nextById.get(item.root.id);
+        nextById.set(item.root.id, {
           ...prevRoot,
           ...item.root,
           authorName: item.root.authorName ?? prevRoot?.authorName ?? null,
         });
       }
+      t.byId = nextById;
 
-      // deduped push of roots
       const newRoots = data.items.map((i) => i.root.id);
       const seen = new Set(t.rootOrder);
+      const mergedOrder: Array<number | string> = [...t.rootOrder];
       for (const id of newRoots) {
         if (!seen.has(id)) {
           seen.add(id);
-          t.rootOrder.push(id);
+          mergedOrder.push(id);
         }
       }
+      t.rootOrder = mergedOrder;
 
       t.rootPage.cursor = data.cursor ?? null;
       t.rootPage.hasMore = data.hasMore;
@@ -149,6 +211,7 @@ export const useCommentsStore = create<CommentsState>((set, get) => ({
       set({ threadsByPrayer: threads });
     }
   },
+
 
   // Create root-only update (no replies)
   create: async (prayerId, content, opts) => {
@@ -267,7 +330,6 @@ export const useCommentsStore = create<CommentsState>((set, get) => ({
     } catch {}
   },
 
-
   markSeen: async (prayerId) => {
     try {
       const at = new Date().toISOString();
@@ -357,7 +419,6 @@ export const useCommentsStore = create<CommentsState>((set, get) => ({
       set({ threadsByPrayer: threads, counts, lastCommentAt: lastCA });
     } catch {}
   },
-
 
   onClosedChanged: (p) => {
     try {
