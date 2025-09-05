@@ -1,4 +1,4 @@
-// Client/src/components/board/SingleBoard.board.tsx
+// Client/src/components/board/SingleBoard.tsx
 import React from 'react';
 import {
   DndContext,
@@ -7,10 +7,14 @@ import {
   useSensors,
   closestCorners,
   type DragEndEvent,
+  useDndMonitor,                    // ← NEW
 } from '@dnd-kit/core';
 import Column from './ColumnContainerBoard.tsx';
 import Dock from '../../common/DockPanel.tsx'; // ← added
 import type { ColumnKey } from '../SortableCard.tsx';
+
+// NEW: drag guard store hook
+import { useBoardStore } from '../../stores/useBoardStore';
 
 type SingleBoardProps = {
   title: string;
@@ -20,6 +24,17 @@ type SingleBoardProps = {
   onMoveWithin?: (id: number, toIndex: number) => void; // reorder within same column
   onDockDrop?: (dockId: 'dock-active'|'dock-archive'|'dock-praise', id: number) => void;
 };
+
+// NEW: co-located guard that toggles store.isDragging during DnD lifecycle
+function DndGuards(): React.ReactElement | null {
+  const setDragging = useBoardStore((s) => s.setDragging);
+  useDndMonitor({
+    onDragStart: () => { try { setDragging(true); } catch {} },
+    onDragEnd:   () => { try { setDragging(false); } catch {} },
+    onDragCancel:() => { try { setDragging(false); } catch {} },
+  });
+  return null;
+}
 
 export default function SingleBoard({
                                       title,
@@ -53,6 +68,9 @@ export default function SingleBoard({
 
   return (
     <DndContext sensors={sensors} collisionDetection={closestCorners} onDragEnd={onDragEnd}>
+      {/* NEW: enables socket flush guard while dragging */}
+      <DndGuards />
+
       <div className="mx-auto max-w-4xl px-4 sm:px-5 md:px-1 lg:px-0">
         <Column title={title} column={column} ids={ids} renderCard={renderCard} />
       </div>
