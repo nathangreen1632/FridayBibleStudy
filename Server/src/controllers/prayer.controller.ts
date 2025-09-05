@@ -188,7 +188,10 @@ export async function updatePrayer(req: Request, res: Response): Promise<void> {
       to: prayer.status as 'active' | 'praise' | 'archived'
     });
   } else {
-    emitToGroup(prayer.groupId, Events.PrayerUpdated, { prayer: toPrayerDTO(prayer) });
+    // Broadcast using legacy string AND typed enum (client back-compat)
+    const payload = { prayer: toPrayerDTO(prayer) };
+    emitToGroup(prayer.groupId, 'prayer:updated', payload);
+    emitToGroup(prayer.groupId, Events.PrayerUpdated, payload);
   }
 
   res.json(prayer);
@@ -219,20 +222,55 @@ export async function createUpdate(req: Request, res: Response): Promise<void> {
   const prayer = await findPrayerOr404(prayerId, res);
   if (!prayer) return;
 
+  // Create the update record
   const upd = await PrayerUpdate.create({ prayerId, authorUserId: req.user!.userId, content });
 
-  // keep existing event name to avoid client breakage
-  emitToGroup(prayer.groupId, 'update:created', { id: upd.id, prayerId });
+  // 1) Bump this prayer to the top of its current board by lowering its position.
+  //    Choose (min position in same group/status) - 1 to preserve existing relative order.
+  try {
+    const minPosRaw = await Prayer.min('position', {
+      where: { groupId: prayer.groupId, status: prayer.status }
+    });
+
+    // HARD bump if there are no existing positions (null) by defaulting to -1
+    let nextPos = -1;
+    if (typeof minPosRaw === 'number' && Number.isFinite(minPosRaw)) {
+      nextPos = minPosRaw - 1;
+    }
+
+    prayer.position = nextPos;
+    await prayer.save();
+
+    // 2) Broadcast using legacy string AND typed enum (client back-compat)
+    const payload = { prayer: toPrayerDTO(prayer) };
+    try {
+      emitToGroup(prayer.groupId, 'prayer:updated', payload);
+    } catch { /* non-fatal */ }
+    try {
+      emitToGroup(prayer.groupId, Events.PrayerUpdated, payload);
+    } catch { /* non-fatal */ }
+  } catch {
+    // If bump fails, the update itself still succeeds; UI just won’t auto-bump this time.
+  }
+
+  // Keep existing lightweight signal (some clients may rely on it)
+  try {
+    emitToGroup(prayer.groupId, 'update:created', { id: upd.id, prayerId });
+  } catch {
+    // non-fatal
+  }
 
   // Send a simple update notice to the group via Resend (non-fatal)
-  const group = await Group.findByPk(prayer.groupId);
   try {
+    const group = await Group.findByPk(prayer.groupId);
     await sendEmailViaResend({
       to: group?.groupEmail ?? env.GROUP_EMAIL,
       subject: 'Prayer Updated',
-      html: `<p>Prayer <b>${prayer.title}</b> was updated.</p><p>${content}</p>`,
+      html: `<p>Prayer <b>${prayer.title}</b> was updated.</p><p>${content}</p>`
     });
-  } catch { /* ignore non-fatal email errors */ }
+  } catch {
+    // ignore non-fatal email errors
+  }
 
   res.json(upd);
 }
