@@ -8,8 +8,16 @@ import type { Category, Status } from '../types/domain.types';
 type ColumnKey = 'active' | 'archived';
 type Item = ListPrayersResponse['items'][number];
 
+// --- Robust numeric sort by position with a tie-breaker ---
+// We coerce to number to avoid NaN (e.g., undefined or string from API)
+// Tie-breaker uses id to keep a stable deterministic order when positions match.
 function sortByPosition(a: Item, b: Item) {
-  return a.position - b.position;
+  const pa = Number(a?.position ?? 0);
+  const pb = Number(b?.position ?? 0);
+  if (pa < pb) return -1;
+  if (pa > pb) return 1;
+  // stable tiebreak so order doesn't jitter
+  return a.id - b.id;
 }
 
 // insert id at a given index, removing any previous occurrence
@@ -61,6 +69,9 @@ type BoardState = {
   upsertPrayer: (p: Item) => void;
   movePrayer: (id: number, to: Status) => void;
 
+  // NEW: instant visual bump to top for the card’s current board
+  bumpToTop: (id: number) => void;
+
   setSort: (s: BoardState['sort']) => void;
   setQuery: (q: string) => void;
 };
@@ -84,7 +95,7 @@ export const useBoardStore = create<BoardState>((set, get) => ({
     try {
       const data = await api<ListPrayersResponse>('/api/prayers?page=1&pageSize=20');
 
-      const items: Item[] = Array.isArray(data?.items) ? (data.items) : [];
+      const items: Item[] = Array.isArray(data?.items) ? data.items : [];
       const byId = new Map<number, Item>();
       for (const it of items) {
         if (it) byId.set(it.id, it);
@@ -186,13 +197,16 @@ export const useBoardStore = create<BoardState>((set, get) => ({
         }
 
         const order = { active: [...state.order.active], archived: [...state.order.archived] };
+
         if (merged.status === 'active') {
           order.archived = order.archived.filter((x) => x !== p.id);
           if (!order.active.includes(p.id)) order.active = [p.id, ...order.active];
+          // Always re-sort the affected column by numeric position (even when only position changed)
           order.active = rebuildColumn(byId, order.active, 'active');
         } else if (merged.status === 'archived') {
           order.active = order.active.filter((x) => x !== p.id);
           if (!order.archived.includes(p.id)) order.archived = [p.id, ...order.archived];
+          // Always re-sort the affected column by numeric position (even when only position changed)
           order.archived = rebuildColumn(byId, order.archived, 'archived');
         }
 
@@ -234,5 +248,27 @@ export const useBoardStore = create<BoardState>((set, get) => ({
     } catch {
       // Ignore socket patch errors
     }
+  },
+
+  // NEW: instant visual bump to the top of the card’s current board (no network)
+  bumpToTop: (id) => {
+    const { byId, order } = get();
+    const item = byId.get(id);
+    if (!item) return;
+
+    const next = { active: [...order.active], archived: [...order.archived] };
+
+    if (item.status === 'active') {
+      const filtered = next.active.filter((x) => x !== id);
+      next.active = [id, ...filtered];
+    } else if (item.status === 'archived') {
+      const filtered = next.archived.filter((x) => x !== id);
+      next.archived = [id, ...filtered];
+    } else {
+      // status 'praise' is handled by the Praises store
+      return;
+    }
+
+    set({ order: next });
   },
 }));
