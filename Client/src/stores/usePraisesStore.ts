@@ -22,6 +22,9 @@ type PraisesState = {
 
   // occasional maintenance
   normalizePositions: (step?: number) => Promise<void>;
+
+  // NEW: instant visual bump to top (no network)
+  bumpToTop: (id: number) => void;
 };
 
 // ---- helpers ----
@@ -347,6 +350,15 @@ export const usePraisesStore = create<PraisesState>((set, get) => ({
         // ignore; local order remains usable even if one PATCH fails
       }
     }
+  },
+
+  // NEW: local-only visual bump to top of Praises list
+  bumpToTop(id) {
+    const s = get();
+    if (!s.byId.has(id)) return;
+
+    const filtered = s.order.filter((x) => x !== id);
+    set({ order: [id, ...filtered] });
   },
 }));
 
