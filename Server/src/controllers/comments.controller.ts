@@ -1,4 +1,3 @@
-// Server/src/controllers/comments.controller.ts
 import type { Request, Response, Router } from 'express';
 import { Router as makeRouter } from 'express';
 import { Op, QueryTypes } from 'sequelize';
@@ -7,6 +6,10 @@ import { recaptchaGuard } from '../middleware/recaptcha.middleware.js';
 import { Comment, CommentRead, Prayer, User, GroupMember } from '../models/index.js';
 import { emitToGroup } from '../config/socket.config.js';
 import { sequelize } from '../config/sequelize.config.js';
+
+// ✅ NEW: imports for DTO + Events
+import { toPrayerDTO } from './dto/prayer.dto.js';
+import { Events } from '../types/socket.types.js';
 
 type SafeUser = { id: number; role: 'classic' | 'admin'; groupId?: number | null; name?: string; email?: string };
 
@@ -277,6 +280,38 @@ commentsRouter.post(
         newCount,
         lastCommentAt: latestAt,
       });
+
+      // ✅ NEW: bump card to top for ROOT comments only
+      if (inserted.depth === 0) {
+        try {
+          const minPosRaw = await Prayer.min('position', {
+            where: { groupId: prayer.groupId, status: prayer.status },
+          });
+
+          let nextPos = -1;
+          if (typeof minPosRaw === 'number' && Number.isFinite(minPosRaw)) {
+            nextPos = minPosRaw - 1;
+          }
+
+          await Prayer.update({ position: nextPos }, { where: { id: pid } });
+
+          const updatedPrayer = await Prayer.findByPk(pid, {
+            include: [{ model: User, as: 'author', attributes: ['id', 'name'] }],
+          });
+
+          if (updatedPrayer) {
+            // lightweight signal for instant bump
+            try { emitToGroup(prayer.groupId, 'update:created', { id: inserted.id, prayerId: pid }); } catch {}
+
+            // full reconcile payload with new position
+            const payload = { prayer: toPrayerDTO(updatedPrayer) };
+            try { emitToGroup(prayer.groupId, 'prayer:updated', payload); } catch {}
+            try { emitToGroup(prayer.groupId, Events.PrayerUpdated, payload); } catch {}
+          }
+        } catch {
+          // non-fatal; comment creation should not fail due to bump issues
+        }
+      }
 
       // best-effort mail
       try {
