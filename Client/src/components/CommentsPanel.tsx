@@ -135,9 +135,16 @@ export default function CommentsPanel(props: Readonly<{
   useEffect(() => {
     const hasCounts = useCommentsStore.getState().counts.has(prayerId);
     if (!hasCounts) {
-      void fetchRootPage(prayerId, 1); // lightweight fetch: fills counts/lastCommentAt/closed
+      (async () => {
+        try {
+          await fetchRootPage(prayerId, 1); // lightweight fetch: fills counts/lastCommentAt/closed
+        } catch {
+          // ignore
+        }
+      })();
     }
   }, [prayerId, fetchRootPage]);
+
 
   // Collapse-on-outside-click (via hook)
   const containerRef = useRef<HTMLDivElement | null>(null);
@@ -146,7 +153,13 @@ export default function CommentsPanel(props: Readonly<{
   // Fetch only when opening and list isn't loaded yet
   useEffect(() => {
     if (!open) return;
-    void fetchRootPage(prayerId, 10);
+    (async () => {
+      try {
+        await fetchRootPage(prayerId, 10);
+      } catch {
+        // ignore
+      }
+    })();
   }, [open, prayerId, fetchRootPage]);
 
   /* ------------------------------------------------------------------------
@@ -168,8 +181,15 @@ export default function CommentsPanel(props: Readonly<{
     if (newestServer <= newestLocal) return;
 
     try { refreshRoot(prayerId); } catch {}
-    // Works with your updated signature: (prayerId, 10) OR (prayerId, { limit: 10, reset: true })
-    void fetchRootPage(prayerId, 10);
+
+    (async () => {
+      try {
+        // Works with your updated signature: (prayerId, 10) OR (prayerId, { limit: 10, reset: true })
+        await fetchRootPage(prayerId, 10);
+      } catch {
+        // ignore
+      }
+    })();
   }, [open, prayerId, newestServer, newestLocal, refreshRoot, fetchRootPage]);
 
   // Mark seen ONLY on transition from closed -> open (prevents instant clearing after new posts)
@@ -177,7 +197,13 @@ export default function CommentsPanel(props: Readonly<{
   useEffect(() => {
     const wasOpen = prevOpenRef.current;
     if (!wasOpen && open) {
-      void markSeen(prayerId);
+      (async () => {
+        try {
+          await markSeen(prayerId);
+        } catch {
+          // ignore
+        }
+      })();
     }
     prevOpenRef.current = open;
   }, [open, markSeen, prayerId]);
@@ -187,12 +213,17 @@ export default function CommentsPanel(props: Readonly<{
 
   const [content, setContent] = useState('');
 
-  const submitRoot = () => {
+  const submitRoot = async () => {
     const trimmed = content.trim();
     if (!trimmed || isClosed) return;
-    // Optimistic insert via store; socket will reconcile id
-    void create(prayerId, trimmed, {});
-    setContent('');
+    try {
+      // Optimistic insert via store; socket will reconcile id
+      await create(prayerId, trimmed, {});
+    } catch {
+      // ignore
+    } finally {
+      setContent('');
+    }
   };
 
   // Strict DESC by createdAt (newest first) and hide deleted (via helper)
@@ -288,7 +319,13 @@ function CommentItem(props: Readonly<{
             <button
               className="px-3 py-1 rounded-lg text-sm cursor-pointer"
               style={{ background: 'var(--theme-button-blue)', color: 'var(--theme-text-white)' }}
-              onClick={() => { setEdit(false); if (text.trim()) { void props.update(c.id, text.trim()); } }}
+              onClick={async () => {
+                setEdit(false);
+                if (text.trim()) {
+                  try { await props.update(c.id, text.trim()); } catch { /* ignore */ }
+                }
+              }}
+
             >
               Save
             </button>
@@ -305,7 +342,12 @@ function CommentItem(props: Readonly<{
       {!edit && (
         <div className="text-[var(--theme-text-white)] flex gap-3 mt-2">
           <button className="text-xs underline cursor-pointer" onClick={() => setEdit(true)}>Edit</button>
-          <button className="text-xs underline cursor-pointer" onClick={() => { void props.remove(c.id); }}>Delete</button>
+          <button className="text-xs underline cursor-pointer" onClick={async () => {
+            try { await props.remove(c.id); } catch { /* ignore */ }
+          }}
+          >
+            Delete
+          </button>
         </div>
       )}
     </div>
