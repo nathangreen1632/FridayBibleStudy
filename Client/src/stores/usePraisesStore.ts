@@ -101,7 +101,13 @@ export const usePraisesStore = create<PraisesState>((set, get) => ({
       const cramped = minGap(positions) < 1e-6 || !isStrictlyIncreasing(positions);
       if (cramped) {
         // Schedule so initial paint isn’t blocked
-        setTimeout(() => { void get().normalizePositions(STEP_DEFAULT); }, 200);
+        setTimeout(async () => {
+          try {
+            await get().normalizePositions(STEP_DEFAULT);
+          } catch {
+            // ignore
+          }
+        }, 200);
       }
     } catch (e: unknown) {
       const msg =
@@ -194,7 +200,13 @@ export const usePraisesStore = create<PraisesState>((set, get) => ({
 
       // 5) Schedule normalization if spacing collapsed
       if (shouldNormalizeSoon(prevPos, nextPos, newPos)) {
-        setTimeout(() => { void get().normalizePositions(STEP_DEFAULT); }, 200);
+        setTimeout(async () => {
+          try {
+            await get().normalizePositions(STEP_DEFAULT);
+          } catch {
+            // ignore
+          }
+        }, 200);
       }
 
       return true;
