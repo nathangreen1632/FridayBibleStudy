@@ -4,6 +4,14 @@ import { useCommentsStore } from '../stores/useCommentsStore';
 import { useAuthStore } from '../stores/useAuthStore';
 import type { Comment } from '../types/comment.types';
 import { ChevronDown, BellDot, Lock } from 'lucide-react';
+import {
+  safeParseTime,
+  newestLocalFrom,
+  computeDisplayCount,
+  hasNewFlag,         // helper
+  sortRootItemsDesc, // helper
+} from '../helpers/commentsPanel.helper';
+import { useOutsideCollapse } from '../hooks/useOutsideCollapse';
 
 /** Capture pointer/mouse on a wrapper element to block DnD start without adding onMouseDown props. */
 function StopDragGroup(props: Readonly<{
@@ -98,11 +106,6 @@ function RootComposer(props: Readonly<{
   );
 }
 
-// Helps TS narrow after filtering Map.get() results
-function isLiveComment(c: Comment | undefined | null): c is Comment {
-  return Boolean(c && !c.deletedAt);
-}
-
 export default function CommentsPanel(props: Readonly<{
   prayerId: number;
   groupId?: number | null;
@@ -122,13 +125,13 @@ export default function CommentsPanel(props: Readonly<{
   const byId      = useCommentsStore((s) => s.threadsByPrayer.get(prayerId)?.byId);
 
   const fetchRootPage = useCommentsStore((s) => s.fetchRootPage);
-  const refreshRoot   = useCommentsStore((s) => s.refreshRoot); // ← NEW
+  const refreshRoot   = useCommentsStore((s) => s.refreshRoot);
   const create        = useCommentsStore((s) => s.create);
   const update        = useCommentsStore((s) => s.update);
   const remove        = useCommentsStore((s) => s.remove);
   const markSeen      = useCommentsStore((s) => s.markSeen);
 
-  // NEW: Hydrate header counts/flags even when collapsed (first mount or prayer change)
+  // Hydrate header counts/flags even when collapsed (first mount or prayer change)
   useEffect(() => {
     const hasCounts = useCommentsStore.getState().counts.has(prayerId);
     if (!hasCounts) {
@@ -136,23 +139,9 @@ export default function CommentsPanel(props: Readonly<{
     }
   }, [prayerId, fetchRootPage]);
 
-  // Collapse-on-outside-click
+  // Collapse-on-outside-click (via hook)
   const containerRef = useRef<HTMLDivElement | null>(null);
-  useEffect(() => {
-    if (!open) return;
-
-    const onPointerDown = (ev: Event) => {
-      const root = containerRef.current;
-      const target = ev.target as Node | null;
-      if (!root || !target) return;
-      if (!root.contains(target)) setOpen(false);
-    };
-
-    document.addEventListener('pointerdown', onPointerDown, true);
-    return () => {
-      document.removeEventListener('pointerdown', onPointerDown, true);
-    };
-  }, [open]);
+  useOutsideCollapse(containerRef, open, () => setOpen(false));
 
   // Fetch only when opening and list isn't loaded yet
   useEffect(() => {
@@ -160,29 +149,28 @@ export default function CommentsPanel(props: Readonly<{
     void fetchRootPage(prayerId, 10);
   }, [open, prayerId, fetchRootPage]);
 
-  // NEW: If server has newer content than our newest local root, refresh first page
+  /* ------------------------------------------------------------------------
+   * LOW-CC refresh gate: compute, then act
+   * ----------------------------------------------------------------------*/
+  const newestLocal = useMemo(
+    () => newestLocalFrom(rootOrder, byId),
+    [rootOrder, byId]
+  );
+
+  const newestServer = useMemo(
+    () => safeParseTime(lastCommentAt),
+    [lastCommentAt]
+  );
+
+  // If server has newer content than our newest local root, refresh first page
   useEffect(() => {
     if (!open) return;
+    if (newestServer <= newestLocal) return;
 
-    let newestLocal = 0;
-    if (Array.isArray(rootOrder) && byId instanceof Map) {
-      for (const id of rootOrder) {
-        const c = byId.get(id);
-        if (c && !c.deletedAt) {
-          const t = Date.parse(c.createdAt || '');
-          if (!Number.isNaN(t) && t > newestLocal) newestLocal = t;
-        }
-      }
-    }
-
-    const newestServer = lastCommentAt ? Date.parse(lastCommentAt) : 0;
-
-    if (newestServer > newestLocal) {
-      try { refreshRoot(prayerId); } catch {}
-      // Works with your updated signature: (prayerId, 10) OR (prayerId, { limit: 10, reset: true })
-      void fetchRootPage(prayerId, 10);
-    }
-  }, [open, prayerId, lastCommentAt, rootOrder, byId, refreshRoot, fetchRootPage]);
+    try { refreshRoot(prayerId); } catch {}
+    // Works with your updated signature: (prayerId, 10) OR (prayerId, { limit: 10, reset: true })
+    void fetchRootPage(prayerId, 10);
+  }, [open, prayerId, newestServer, newestLocal, refreshRoot, fetchRootPage]);
 
   // Mark seen ONLY on transition from closed -> open (prevents instant clearing after new posts)
   const prevOpenRef = useRef<boolean>(open);
@@ -194,17 +182,8 @@ export default function CommentsPanel(props: Readonly<{
     prevOpenRef.current = open;
   }, [open, markSeen, prayerId]);
 
-  // compute hasNew without nested ternaries
-  let hasNew: boolean = false;
-  if (lastCommentAt) {
-    if (!lastSeenAt) {
-      hasNew = true;
-    } else {
-      const seen = new Date(lastSeenAt).getTime();
-      const newest = new Date(lastCommentAt).getTime();
-      hasNew = Number.isFinite(seen) && Number.isFinite(newest) ? (newest > seen) : false;
-    }
-  }
+  // compute hasNew without nested ternaries (via helper)
+  const hasNew: boolean = hasNewFlag(lastCommentAt, lastSeenAt);
 
   const [content, setContent] = useState('');
 
@@ -216,31 +195,11 @@ export default function CommentsPanel(props: Readonly<{
     setContent('');
   };
 
-  // Strict DESC by createdAt (newest first) and hide deleted
+  // Strict DESC by createdAt (newest first) and hide deleted (via helper)
   const itemsDesc: Comment[] = useMemo(() => {
-    const ids = Array.isArray(rootOrder) ? rootOrder : [];
-    const list = ids
-      .map((id) => byId?.get(id))
-      .filter(isLiveComment);
+    return sortRootItemsDesc(byId, rootOrder);
+  }, [byId, rootOrder]);
 
-    list.sort((a, b) => {
-      const ta = Date.parse(a.createdAt || '');
-      const tb = Date.parse(b.createdAt || '');
-      if (Number.isNaN(ta) || Number.isNaN(tb)) return 0;
-      return tb - ta; // DESC
-    });
-
-    return list;
-  }, [rootOrder, byId]);
-
-  function computeDisplayCount(
-    countFromStore: number | undefined,
-    rootOrder?: Array<number | string>
-  ): number {
-    if (typeof countFromStore === 'number') return countFromStore;
-    if (Array.isArray(rootOrder)) return rootOrder.length;
-    return 0;
-  }
   const displayCount = computeDisplayCount(countFromStore, rootOrder);
 
   return (
