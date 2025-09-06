@@ -1,95 +1,31 @@
+// Server/src/controllers/comments.controller.ts
 import type { Request, Response, Router } from 'express';
 import { Router as makeRouter } from 'express';
 import { Op, QueryTypes } from 'sequelize';
 import { requireAuth } from '../middleware/auth.middleware.js';
 import { recaptchaGuard } from '../middleware/recaptcha.middleware.js';
-import { Comment, CommentRead, Prayer, User, GroupMember } from '../models/index.js';
-import { emitToGroup } from '../config/socket.config.js';
+import { Comment, CommentRead, Prayer } from '../models/index.js';
 import { sequelize } from '../config/sequelize.config.js';
-
-// ✅ NEW: imports for DTO + Events
-import { toPrayerDTO } from './dto/prayer.dto.js';
-import { Events } from '../types/socket.types.js';
-
-type SafeUser = { id: number; role: 'classic' | 'admin'; groupId?: number | null; name?: string; email?: string };
-
-function actor(req: Request): SafeUser | null {
-  // Map middleware's { userId, role, ... } to our local { id, role, ... }
-  const u = (req as any).user as {
-    userId?: number;
-    role?: 'classic' | 'admin';
-    groupId?: number | null;
-    name?: string;
-    email?: string;
-  } | undefined;
-
-  if (!u || typeof u.userId !== 'number') return null;
-  if (u.role !== 'classic' && u.role !== 'admin') return null;
-
-  return {
-    id: u.userId,
-    role: u.role,
-    groupId: u.groupId ?? null,
-    name: u.name,
-    email: u.email,
-  };
-}
-
-function safeMessage(e: unknown, fb: string): string {
-  if (e && typeof e === 'object' && 'message' in e) return String((e as any).message || fb);
-  return fb;
-}
-
-/** ---------- user-name enrichment helpers ---------- */
-
-type UserLite = { name?: string | null; email?: string | null };
-
-async function loadUserMap(ids: number[]): Promise<Map<number, UserLite>> {
-  const uniq = Array.from(new Set(ids.filter((v): v is number => Number.isFinite(v))));
-  if (!uniq.length) return new Map();
-  const rows = await User.findAll({
-    attributes: ['id', 'name', 'email'],
-    where: { id: { [Op.in]: uniq } },
-  });
-  const m = new Map<number, UserLite>();
-  for (const u of rows as any[]) m.set(Number(u.id), { name: u.name ?? null, email: u.email ?? null });
-  return m;
-}
-
-function mapComment(c: Comment, users?: Map<number, UserLite>) {
-  const plain = c.get({ plain: true }) as any;
-  const u = users?.get(plain.authorId);
-  return {
-    id: plain.id,
-    prayerId: plain.prayerId,
-    parentId: plain.parentId ?? null,
-    threadRootId: plain.threadRootId ?? null,
-    depth: plain.depth ?? 0,
-    authorId: plain.authorId,
-    authorName: u?.name ?? null, // ✅ include name (client will fall back to email/“You”)
-    content: plain.deletedAt ? '[deleted]' : (plain.content || ''),
-    createdAt: plain.createdAt,
-    updatedAt: plain.updatedAt ?? null,
-    deletedAt: plain.deletedAt ?? null,
-  };
-}
-
-/** -------- Postgres table quoting helpers -------- */
-
-function quoteIdent(x: string) {
-  return `"${x.replace(/"/g, '""')}"`;
-}
-function tableRefFromModel(m: any): string {
-  try {
-    const t = typeof m?.getTableName === 'function' ? m.getTableName() : 'comments';
-    if (typeof t === 'string') return quoteIdent(t);
-    if (t && typeof t === 'object') {
-      const schema = t.schema ? quoteIdent(t.schema) + '.' : '';
-      return schema + quoteIdent(t.tableName ?? 'comments');
-    }
-  } catch {}
-  return quoteIdent('comments');
-}
+import {
+  actor,
+  safeMessage,
+  loadUserMap,
+  mapComment,
+  tableRefFromModel,
+  parseCreateBody,
+  getOpenPrayer,
+  resolveThreadInfo,
+  insertComment,
+  calcNewCounts,
+  updatePrayerCounts,
+  buildAuthorMapFor,
+  emitCreationEvents,
+  bumpCardIfRoot,
+  bestEffortNotify,
+  emitUpdated,
+  emitDeleted,
+  emitCommentsClosed,
+} from '../helpers/commentsController.helper.js';
 
 export const commentsRouter: Router = makeRouter();
 
@@ -142,7 +78,6 @@ commentsRouter.get('/list', requireAuth, async (req: Request, res: Response) => 
       model: Comment,
     })) as unknown as Array<Comment & { last_activity_at?: Date }>;
 
-    // Collect replies + author ids in one pass to avoid repeated user lookups
     const repliesByRoot = new Map<number, Comment[]>();
     const authorIds = new Set<number>();
     for (const r of roots) {
@@ -173,9 +108,9 @@ commentsRouter.get('/list', requireAuth, async (req: Request, res: Response) => 
       items,
       cursor: newCursor,
       hasMore: !!newCursor,
-      commentCount: prayer.commentCount ?? 0,
-      lastCommentAt: prayer.lastCommentAt ?? null,
-      isCommentsClosed: !!prayer.isCommentsClosed,
+      commentCount: (prayer as any).commentCount ?? 0,
+      lastCommentAt: (prayer as any).lastCommentAt ?? null,
+      isCommentsClosed: !!(prayer as any).isCommentsClosed,
     });
   } catch (e) {
     return res
@@ -213,126 +148,40 @@ commentsRouter.post(
     try {
       const u = actor(req);
       if (!u) return res.status(401).json({ ok: false, error: 'unauthorized' });
-      const { prayerId, content, parentId, cid } = (req.body || {}) as {
-        prayerId?: number;
-        content?: string;
-        parentId?: number | null;
-        cid?: string;
-      };
-      const pid = Number(prayerId || 0);
+
+      const { pid, content, parentId, cid } = parseCreateBody(req);
       if (!pid) return res.status(200).json({ ok: false, error: 'prayerId required' });
 
-      const prayer = await Prayer.findByPk(pid);
-      if (!prayer) return res.status(400).json({ ok: false, error: 'prayer not found' });
-      if (prayer.isCommentsClosed) return res.status(200).json({ ok: false, error: 'comments closed' });
+      const prayer = await getOpenPrayer(pid);
+      if (!prayer) return res.status(200).json({ ok: false, error: 'prayer not found or comments closed' });
 
-      let depth = 0;
-      let threadRootId: number | null = null;
-      let parent: Comment | null = null;
-      if (parentId) {
-        parent = await Comment.findByPk(parentId);
-        if (parent) {
-          depth = (parent.depth || 0) + 1;
-          threadRootId = parent.threadRootId ?? parent.id;
-        }
-      }
+      const { depth, threadRootId, parentResolvedId } = await resolveThreadInfo(parentId);
 
-      const inserted = await Comment.create({
-        prayerId: pid,
-        parentId: parent ? parent.id : null,
-        threadRootId,
-        depth,
+      const inserted = await insertComment({
+        pid,
         authorId: u.id,
-        content: content || '',
+        content,
+        parentResolvedId,
+        depth,
+        threadRootId,
       });
 
-      if (inserted.depth === 0) {
-        await Comment.update({ threadRootId: inserted.id }, { where: { id: inserted.id } });
-      }
+      const { latestAt, newCount } = calcNewCounts(prayer, inserted);
+      await updatePrayerCounts(pid, latestAt, newCount);
 
-      const latestAt = inserted.createdAt || new Date();
+      const authorMap = await buildAuthorMapFor(u.id);
+      const payloadComment = mapComment(inserted, authorMap);
 
-      // ✅ count only ROOT updates
-      const rootDelta = inserted.depth === 0 ? 1 : 0;
-      const newCount = (prayer.commentCount ?? 0) + rootDelta;
-
-      await Prayer.update(
-        { commentCount: newCount, lastCommentAt: latestAt },
-        { where: { id: pid } }
-      );
-
-      // prepare user map for author name
-      const uRow = await User.findByPk(u.id, { attributes: ['id', 'name', 'email'] });
-      const userMap = new Map<number, UserLite>([
-        [u.id, { name: (uRow as any)?.name ?? null, email: (uRow as any)?.email ?? null }],
-      ]);
-
-      const payloadComment = mapComment(inserted, userMap);
-
-      emitToGroup(prayer.groupId, 'comment:created', {
-        prayerId: pid,
-        comment: payloadComment,
+      emitCreationEvents({
+        groupId: (prayer as any).groupId,
+        pid,
+        payloadComment,
         newCount,
-        lastCommentAt: latestAt,
-      });
-      emitToGroup(prayer.groupId, 'prayer:commentCount', {
-        prayerId: pid,
-        newCount,
-        lastCommentAt: latestAt,
+        latestAt,
       });
 
-      // ✅ NEW: bump card to top for ROOT comments only
-      if (inserted.depth === 0) {
-        try {
-          const minPosRaw = await Prayer.min('position', {
-            where: { groupId: prayer.groupId, status: prayer.status },
-          });
-
-          let nextPos = -1;
-          if (typeof minPosRaw === 'number' && Number.isFinite(minPosRaw)) {
-            nextPos = minPosRaw - 1;
-          }
-
-          await Prayer.update({ position: nextPos }, { where: { id: pid } });
-
-          const updatedPrayer = await Prayer.findByPk(pid, {
-            include: [{ model: User, as: 'author', attributes: ['id', 'name'] }],
-          });
-
-          if (updatedPrayer) {
-            // lightweight signal for instant bump
-            try { emitToGroup(prayer.groupId, 'update:created', { id: inserted.id, prayerId: pid }); } catch {}
-
-            // full reconcile payload with new position
-            const payload = { prayer: toPrayerDTO(updatedPrayer) };
-            try { emitToGroup(prayer.groupId, 'prayer:updated', payload); } catch {}
-            try { emitToGroup(prayer.groupId, Events.PrayerUpdated, payload); } catch {}
-          }
-        } catch {
-          // non-fatal; comment creation should not fail due to bump issues
-        }
-      }
-
-      // best-effort mail
-      try {
-        const author = await User.findByPk(prayer.authorUserId);
-        const admins = await GroupMember.findAll({ where: { groupId: prayer.groupId }, include: [{ model: User }] });
-        const to: string[] = [];
-        if (author?.email) to.push(author.email);
-        for (const gm of admins as any[]) {
-          if (gm?.user?.role === 'admin' && gm.user.email) to.push(gm.user.email);
-        }
-        if (to.length) {
-          const { sendEmail } = await import('../services/email.service.js');
-          await sendEmail({
-            to,
-            subject: `New comment on “${prayer.title}”`,
-            html: `<p>A new comment was added:</p><blockquote>${(content || '')
-              .replace(/&/g, '&amp;')
-              .replace(/</g, '&lt;')}</blockquote>`,
-          }).catch(() => {});
-        }
-      } catch {}
+      await bumpCardIfRoot(prayer, inserted);
+      await bestEffortNotify(prayer, content);
 
       return res.status(200).json({ ok: true, comment: payloadComment, cid: cid ?? null });
     } catch (e) {
@@ -356,12 +205,12 @@ commentsRouter.patch(
       const c = await Comment.findByPk(commentId);
       if (!c) return res.status(200).json({ ok: false, error: 'not found' });
 
-      const prayer = await Prayer.findByPk(c.prayerId);
+      const prayer = await Prayer.findByPk((c as any).prayerId);
       if (!prayer) return res.status(200).json({ ok: false, error: 'prayer missing' });
-      if (prayer.isCommentsClosed) return res.status(200).json({ ok: false, error: 'comments closed' });
+      if ((prayer as any).isCommentsClosed) return res.status(200).json({ ok: false, error: 'comments closed' });
 
-      const isOwner = c.authorId === u.id;
-      const isPrayerAuthor = prayer.authorUserId === u.id;
+      const isOwner = (c as any).authorId === u.id;
+      const isPrayerAuthor = (prayer as any).authorUserId === u.id;
       const isAdmin = u.role === 'admin';
       if (!isOwner && !isPrayerAuthor && !isAdmin) return res.status(200).json({ ok: false, error: 'forbidden' });
 
@@ -369,10 +218,12 @@ commentsRouter.patch(
       const updated = await Comment.findByPk(commentId);
       if (!updated) return res.status(200).json({ ok: false, error: 'update failed' });
 
-      const authorMap = await loadUserMap([c.authorId]);
+      const authorMap = await loadUserMap([(c as any).authorId]);
       const payload = mapComment(updated, authorMap);
 
-      emitToGroup(prayer.groupId, 'comment:updated', { prayerId: c.prayerId, comment: payload });
+      // ⬇️ NEW: notify clients about the comment update
+      emitUpdated((prayer as any).groupId, { prayerId: (c as any).prayerId, comment: payload });
+
       return res.status(200).json({ ok: true, comment: payload });
     } catch (e) {
       return res.status(200).json({ ok: false, error: safeMessage(e, 'update failed') });
@@ -394,43 +245,38 @@ commentsRouter.delete(
       const c = await Comment.findByPk(commentId);
       if (!c) return res.status(200).json({ ok: false, error: 'not found' });
 
-      const prayer = await Prayer.findByPk(c.prayerId);
+      const prayer = await Prayer.findByPk((c as any).prayerId);
       if (!prayer) return res.status(200).json({ ok: false, error: 'prayer missing' });
-      if (prayer.isCommentsClosed) return res.status(200).json({ ok: false, error: 'comments closed' });
+      if ((prayer as any).isCommentsClosed) return res.status(200).json({ ok: false, error: 'comments closed' });
 
-      const isOwner = c.authorId === u.id;
-      const isPrayerAuthor = prayer.authorUserId === u.id;
+      const isOwner = (c as any).authorId === u.id;
+      const isPrayerAuthor = (prayer as any).authorUserId === u.id;
       const isAdmin = u.role === 'admin';
       if (!isOwner && !isPrayerAuthor && !isAdmin) return res.status(200).json({ ok: false, error: 'forbidden' });
 
       await Comment.update({ deletedAt: new Date() }, { where: { id: commentId } });
 
-      // ✅ decrement only if deleting a ROOT comment
-      const base = prayer.commentCount ?? 0;
-      const rootDelta = c.depth === 0 ? -1 : 0;
+      const base = (prayer as any).commentCount ?? 0;
+      const rootDelta = (c as any).depth === 0 ? -1 : 0;
       const newCount = Math.max(base + rootDelta, 0);
 
       const last = await Comment.findOne({
-        where: { prayerId: c.prayerId, deletedAt: null },
+        where: { prayerId: (c as any).prayerId, deletedAt: null },
         order: [['createdAt', 'DESC']],
       });
-      const lastAt = last?.createdAt ?? null;
+      const lastAt = (last as any)?.createdAt ?? null;
 
-      await Prayer.update({ commentCount: newCount, lastCommentAt: lastAt }, { where: { id: c.prayerId } });
+      await Prayer.update({ commentCount: newCount, lastCommentAt: lastAt }, { where: { id: (c as any).prayerId } });
 
-      emitToGroup(prayer.groupId, 'comment:deleted', {
-        prayerId: c.prayerId,
-        commentId: c.id,
-        newCount,
-        lastCommentAt: lastAt,
-      });
-      emitToGroup(prayer.groupId, 'prayer:commentCount', {
-        prayerId: c.prayerId,
+      // ⬇️ NEW: notify clients about deletion + updated counts
+      emitDeleted((prayer as any).groupId, {
+        prayerId: (c as any).prayerId,
+        commentId: (c as any).id,
         newCount,
         lastCommentAt: lastAt,
       });
 
-      return res.status(200).json({ ok: true, commentId: c.id, lastCommentAt: lastAt });
+      return res.status(200).json({ ok: true, commentId: (c as any).id, lastCommentAt: lastAt });
     } catch (e) {
       return res.status(200).json({ ok: false, error: safeMessage(e, 'delete failed') });
     }
@@ -477,7 +323,9 @@ commentsRouter.patch(
       if (!p) return res.status(200).json({ ok: false, error: 'not found' });
 
       await Prayer.update({ isCommentsClosed: isClosed }, { where: { id: prayerId } });
-      emitToGroup(p.groupId, 'prayer:commentsClosed', { prayerId, isCommentsClosed: isClosed });
+
+      // ⬇️ NEW: notify clients that comments-open state changed
+      emitCommentsClosed((p as any).groupId, { prayerId, isCommentsClosed: isClosed });
 
       return res.status(200).json({ ok: true, prayerId, isCommentsClosed: isClosed });
     } catch (e) {
@@ -509,13 +357,13 @@ commentsRouter.get('/search', requireAuth, async (req: Request, res: Response) =
       limit,
     });
     const idsFromComments = new Set<number>((comments as any[]).map((r) => r.prayerId));
-    const allIds = new Set<number>([...rows.map((r) => r.id), ...idsFromComments]);
+    const allIds = new Set<number>([...rows.map((r) => (r as any).id), ...idsFromComments]);
 
     const prayers = await Prayer.findAll({ where: { id: { [Op.in]: [...allIds] }, groupId }, limit });
 
     const items = prayers.map((p) => ({
-      prayerId: p.id,
-      title: p.title,
+      prayerId: (p as any).id,
+      title: (p as any).title,
       matchedIn: ['title', 'description', 'comments'],
       snippet: null,
     }));
