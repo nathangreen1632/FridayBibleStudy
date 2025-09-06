@@ -122,6 +122,7 @@ export default function CommentsPanel(props: Readonly<{
   const byId      = useCommentsStore((s) => s.threadsByPrayer.get(prayerId)?.byId);
 
   const fetchRootPage = useCommentsStore((s) => s.fetchRootPage);
+  const refreshRoot   = useCommentsStore((s) => s.refreshRoot); // ← NEW
   const create        = useCommentsStore((s) => s.create);
   const update        = useCommentsStore((s) => s.update);
   const remove        = useCommentsStore((s) => s.remove);
@@ -156,9 +157,32 @@ export default function CommentsPanel(props: Readonly<{
   // Fetch only when opening and list isn't loaded yet
   useEffect(() => {
     if (!open) return;
-    const hasAny = Array.isArray(rootOrder) && rootOrder.length > 0;
-    if (!hasAny) { void fetchRootPage(prayerId, 10); }
-  }, [open, rootOrder, prayerId, fetchRootPage]);
+    void fetchRootPage(prayerId, 10);
+  }, [open, prayerId, fetchRootPage]);
+
+  // NEW: If server has newer content than our newest local root, refresh first page
+  useEffect(() => {
+    if (!open) return;
+
+    let newestLocal = 0;
+    if (Array.isArray(rootOrder) && byId instanceof Map) {
+      for (const id of rootOrder) {
+        const c = byId.get(id);
+        if (c && !c.deletedAt) {
+          const t = Date.parse(c.createdAt || '');
+          if (!Number.isNaN(t) && t > newestLocal) newestLocal = t;
+        }
+      }
+    }
+
+    const newestServer = lastCommentAt ? Date.parse(lastCommentAt) : 0;
+
+    if (newestServer > newestLocal) {
+      try { refreshRoot(prayerId); } catch {}
+      // Works with your updated signature: (prayerId, 10) OR (prayerId, { limit: 10, reset: true })
+      void fetchRootPage(prayerId, 10);
+    }
+  }, [open, prayerId, lastCommentAt, rootOrder, byId, refreshRoot, fetchRootPage]);
 
   // Mark seen ONLY on transition from closed -> open (prevents instant clearing after new posts)
   const prevOpenRef = useRef<boolean>(open);
@@ -171,9 +195,15 @@ export default function CommentsPanel(props: Readonly<{
   }, [open, markSeen, prayerId]);
 
   // compute hasNew without nested ternaries
-  let hasNew = false;
-  if (lastCommentAt && lastSeenAt) {
-    hasNew = new Date(lastCommentAt).getTime() > new Date(lastSeenAt).getTime();
+  let hasNew: boolean = false;
+  if (lastCommentAt) {
+    if (!lastSeenAt) {
+      hasNew = true;
+    } else {
+      const seen = new Date(lastSeenAt).getTime();
+      const newest = new Date(lastCommentAt).getTime();
+      hasNew = Number.isFinite(seen) && Number.isFinite(newest) ? (newest > seen) : false;
+    }
   }
 
   const [content, setContent] = useState('');
@@ -212,7 +242,6 @@ export default function CommentsPanel(props: Readonly<{
     return 0;
   }
   const displayCount = computeDisplayCount(countFromStore, rootOrder);
-
 
   return (
     <div ref={containerRef}>

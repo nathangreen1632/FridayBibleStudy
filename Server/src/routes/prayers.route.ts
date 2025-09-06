@@ -1,8 +1,10 @@
+// Server/src/routes/prayers.route.ts
 import { Router } from 'express';
 import { requireAuth } from '../middleware/auth.middleware.js';
 import { recaptchaMiddleware } from '../middleware/recaptcha.middleware.js';
 import {
   listPrayers,
+  listMyPrayers, // ← ADD
   createPrayer,
   getPrayer,
   updatePrayer,
@@ -16,6 +18,9 @@ const router: Router = Router();
 
 // list/create/read/update/delete
 router.get('/', requireAuth, listPrayers);
+
+// NEW: user’s own prayers (no CAPTCHA, read-only)
+router.get('/mine', requireAuth, listMyPrayers);
 
 router.post(
   '/',

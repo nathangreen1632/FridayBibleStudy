@@ -1,4 +1,4 @@
-// Client/src/pages/board/PraisesBoard.page.tsx
+// Client/src/pages/board/PraisesBoardPage.tsx
 import React, { useEffect, useCallback } from 'react';
 import SingleBoard from '../../components/board/SingleColumnBoard';
 import PrayerCardWithComments from '../../components/PrayerCardWithComments';

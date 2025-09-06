@@ -8,7 +8,14 @@ import type { Prayer, Status } from '../types/domain.types';
 import type { Comment } from '../types/comment.types';
 
 // Keep Praises in sync with socket events
-import { praisesOnSocketUpsert, praisesOnSocketRemove } from './usePraisesStore.ts';
+import { usePraisesStore, praisesOnSocketUpsert, praisesOnSocketRemove } from './usePraisesStore.ts';
+
+// ✅ NEW: keep "My Prayers" (profile column) in sync too
+import { myPrayersOnSocketUpsert, myPrayersOnSocketRemove } from './useMyPrayersStore.ts';
+
+// ✅ Typed event constants + value type
+import { Events } from '../types/socket.types';
+import type { EventValue } from '../types/socket.types';
 
 type PrayerDTO = Prayer;
 
@@ -16,6 +23,7 @@ type PrayerCreatedPayload = { prayer: PrayerDTO };
 type PrayerUpdatedPayload = { prayer: PrayerDTO };
 type PrayerMovedPayload   = { prayer: PrayerDTO; from: Status; to: Status };
 type PrayerDeletedPayload = { id: number };
+type UpdateCreatedPayload = { id: number; prayerId: number };
 
 type Patch =
   | { type: 'upsert'; p: Prayer }
@@ -52,6 +60,19 @@ export const useSocketStore = create<SocketState>((set, get) => {
   const flush = () => {
     if (!queue.length) return;
 
+    // Don't mutate board order mid-drag; retry shortly
+    try {
+      const { isDragging } = useBoardStore.getState();
+      if (isDragging) {
+        setTimeout(() => {
+          try { flush(); } catch {}
+        }, 120);
+        return;
+      }
+    } catch {
+      // if store is unavailable, fall through and try to apply (don’t crash)
+    }
+
     const batch = queue;
     queue = [];
 
@@ -76,53 +97,86 @@ export const useSocketStore = create<SocketState>((set, get) => {
   const hasOn = typeof s?.on === 'function';
   const hasEmit = typeof s?.emit === 'function';
 
+  // 🔒 Typed wrapper: only allows valid EventValue names
+  const onE = <P,>(event: EventValue, handler: (payload: P) => void) => {
+    try {
+      // cast only the handler, event is strictly typed by EventValue
+      s?.on(event, handler as unknown as (...args: unknown[]) => void);
+    } catch {
+      // never crash wiring
+    }
+  };
+
+  // Unified handler that typed events will use
+  function onPrayerUpdated(d: PrayerUpdatedPayload) {
+    try { get().enqueue({ type: 'upsert', p: d.prayer }); } catch {}
+    try { praisesOnSocketUpsert(d.prayer); } catch {}
+    try { myPrayersOnSocketUpsert(d.prayer); } catch {}   // ← ADD
+    // NOTE: no explicit rebuildColumn call needed; upsertPrayer re-sorts by `position`.
+  }
+
   if (hasOn && s) {
     try {
+      // Socket.IO internal events (not part of our typed domain list)
       s.on('connect',    () => set({ connected: true }));
       s.on('disconnect', () => set({ connected: false }));
 
       // ---- PRAYER events ----
-      s.on('prayer:created', (d: PrayerCreatedPayload) => {
+      onE<PrayerCreatedPayload>(Events.PrayerCreated, (d) => {
         try { get().enqueue({ type: 'upsert', p: d.prayer }); } catch {}
         try { praisesOnSocketUpsert(d.prayer); } catch {}
+        try { myPrayersOnSocketUpsert(d.prayer); } catch {}   // ← ADD
       });
 
-      s.on('prayer:updated', (d: PrayerUpdatedPayload) => {
-        try { get().enqueue({ type: 'upsert', p: d.prayer }); } catch {}
-        try { praisesOnSocketUpsert(d.prayer); } catch {}
-      });
+      onE<PrayerUpdatedPayload>(Events.PrayerUpdated, onPrayerUpdated);
 
-      s.on('prayer:moved', (d: PrayerMovedPayload) => {
+      onE<PrayerMovedPayload>(Events.PrayerMoved, (d) => {
         try { get().enqueue({ type: 'upsert', p: d.prayer }); } catch {}
         try { get().enqueue({ type: 'move', id: d.prayer.id, to: d.to }); } catch {}
         try { praisesOnSocketUpsert(d.prayer); } catch {}
+        try { myPrayersOnSocketUpsert(d.prayer); } catch {}   // ← ADD
       });
 
-      // (optional) only if your backend emits this
-      s.on('prayer:deleted', (d: PrayerDeletedPayload) => {
+      onE<PrayerDeletedPayload>(Events.PrayerDeleted, (d) => {
+        // keep board logic as-is (no 'remove' Patch variant); mirror praises behavior
         try { praisesOnSocketRemove(d.id); } catch {}
+        try { myPrayersOnSocketRemove(d.id); } catch {}       // ← ADD
+      });
+
+      // When an update is added to a prayer, bump it visually right away.
+      // Server also emits PrayerUpdated which will sync position soon after.
+      onE<UpdateCreatedPayload>(Events.UpdateCreated, (p) => {
+        try { useBoardStore.getState().bumpToTop(p.prayerId); } catch {}
+        try { usePraisesStore.getState().bumpToTop(p.prayerId); } catch {}
+        // Profile column will re-sort on the subsequent PrayerUpdated event.
       });
 
       // ---- COMMENT events ----
-      s.on('comment:created', (p: { prayerId: number; comment: Comment; newCount: number; lastCommentAt: string | null }) => {
-        try { useCommentsStore.getState().onCreated(p); } catch {}
-      });
+      onE<{ prayerId: number; comment: Comment; newCount: number; lastCommentAt: string | null }>(
+        Events.CommentCreated,
+        (p) => { try { useCommentsStore.getState().onCreated(p); } catch {} }
+      );
 
-      s.on('comment:updated', (p: { prayerId: number; comment: Comment }) => {
-        try { useCommentsStore.getState().onUpdated(p); } catch {}
-      });
+      onE<{ prayerId: number; comment: Comment }>(
+        Events.CommentUpdated,
+        (p) => { try { useCommentsStore.getState().onUpdated(p); } catch {} }
+      );
 
-      s.on('comment:deleted', (p: { prayerId: number; commentId: number; newCount: number; lastCommentAt: string | null }) => {
-        try { useCommentsStore.getState().onDeleted(p); } catch {}
-      });
+      onE<{ prayerId: number; commentId: number; newCount: number; lastCommentAt: string | null }>(
+        Events.CommentDeleted,
+        (p) => { try { useCommentsStore.getState().onDeleted(p); } catch {} }
+      );
 
-      s.on('prayer:commentsClosed', (p: { prayerId: number; isCommentsClosed: boolean }) => {
-        try { useCommentsStore.getState().onClosedChanged(p); } catch {}
-      });
+      onE<{ prayerId: number; isCommentsClosed: boolean }>(
+        Events.CommentsClosed,
+        (p) => { try { useCommentsStore.getState().onClosedChanged(p); } catch {} }
+      );
 
-      s.on('prayer:commentCount', (p: { prayerId: number; newCount: number; lastCommentAt: string | null }) => {
-        try { useCommentsStore.getState().onCountChanged(p); } catch {}
-      });
+      onE<{ prayerId: number; newCount: number; lastCommentAt: string | null }>(
+        Events.CommentCount,
+        (p) => { try { useCommentsStore.getState().onCountChanged(p); } catch {} }
+      );
+
     } catch {
       // Listener wiring should never crash the app
     }
@@ -133,7 +187,6 @@ export const useSocketStore = create<SocketState>((set, get) => {
     connected: !!s?.connected,
 
     joinGroup: (groupId: number) => {
-      // emit only if possible; ignore otherwise
       try {
         if (hasEmit) get().socket?.emit('join:group', groupId);
       } catch {
@@ -155,7 +208,6 @@ export const useSocketStore = create<SocketState>((set, get) => {
         debouncedFlush();
       } catch {
         // if queueing fails for any reason, drop gracefully
-        // (better to skip a single patch than crash UI)
       }
     },
   };

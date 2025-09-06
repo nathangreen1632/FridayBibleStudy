@@ -10,6 +10,7 @@ import { useUiStore } from '../stores/useUiStore.ts';
 import Modal from '../modals/Modal.tsx';
 import ConfirmBar from '../common/ConfirmBar.tsx';
 import ProfileInfo from '../components/ProfileInfo.tsx';
+import MyPrayersColumn from "../components/MyPrayersColumn.tsx";
 
 const SITE_KEY = import.meta.env.VITE_RECAPTCHA_SITE_KEY as string | undefined;
 
@@ -254,6 +255,8 @@ export default function AccountPage(): React.ReactElement {
           </form>
         </section>
       </div>
+
+      <MyPrayersColumn />
 
       {/* Profile Modal */}
       <Modal

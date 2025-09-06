@@ -17,6 +17,8 @@
     --c-i: #A27B5C; /* I: warm sand/tan */
     --c-j: #4A6FA5; /* J: desaturated blue (optional CTA/link) */
     --c-k: #00274C; /* K: darkest blue (hover) */
+    --c-l: #16803D; /* L: green */
+    --c-m: #BF5700; /* M: UT burnt orange */
 
     /* LIGHT MODE */
     --theme-bg: var(--c-b);
@@ -37,6 +39,8 @@
     --theme-button-gray: var(--c-c);
     --theme-button-dark: var(--c-a);
     --theme-button-hover: var(--c-k);
+    --theme-pill-green: var(--c-l);
+    --theme-pill-orange: var(--c-m);
 
     /* extended buttons / links */
     --theme-link: var(--c-j);
@@ -78,7 +82,9 @@
     --c-h: #5C6A72; /* H: slate gray */
     --c-i: #A27B5C; /* I: warm sand/tan */
     --c-j: #4A6FA5; /* J: desaturated blue */
-    --c-k: #00274C;
+    --c-k: #00274C; /* K: darkest blue (hover) */
+    --c-l: #16803D; /* L: green */
+    ---c-m: #BF5700; /* M: UT burnt orange */
 
     /* DARK MODE — 180° from light (A↔E, B↔D, C→B to avoid hold-overs) */
     --theme-bg: var(--c-d);
@@ -99,6 +105,8 @@
     --theme-button-gray: var(--c-b);
     --theme-button-dark: var(--c-e);
     --theme-button-hover: var(--c-k);
+    --theme-pill-green: var(--c-l);
+    --theme-pill-orange: var(--c-m);
 
     /* extended buttons / links */
     --theme-link: var(--c-j);

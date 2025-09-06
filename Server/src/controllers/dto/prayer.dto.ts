@@ -1,8 +1,8 @@
-// Server/src/controllers/_dto/prayer.dto.ts
+// Server/src/controllers/dto/prayer.dto.ts
 import type { PrayerDTO, AttachmentDTO } from '../../types/socket.types.js';
 
 export function toPrayerDTO(p: any): PrayerDTO {
-  const attachments: AttachmentDTO[] | undefined = Array.isArray(p.attachments)
+  const attachments: AttachmentDTO[] | undefined = Array.isArray(p?.attachments)
     ? p.attachments.map((a: any) => ({
       id: a.id,
       prayerId: a.prayerId,
@@ -14,6 +14,12 @@ export function toPrayerDTO(p: any): PrayerDTO {
     }))
     : undefined;
 
+  // Ensure position is a number so clients can sort reliably
+  const position =
+    typeof p?.position === 'number'
+      ? p.position
+      : Number(p?.position ?? 0) || 0;
+
   return {
     id: p.id,
     groupId: p.groupId,
@@ -22,11 +28,11 @@ export function toPrayerDTO(p: any): PrayerDTO {
     content: p.content,
     category: p.category,
     status: p.status,
-    position: p.position,
-    impersonatedByAdminId: p.impersonatedByAdminId ?? null,
-    createdAt: iso(p.createdAt),
-    updatedAt: iso(p.updatedAt),
-    author: p.author ? { id: p.author.id, name: p.author.name } : undefined,
+    position,
+    impersonatedByAdminId: p?.impersonatedByAdminId ?? null,
+    createdAt: iso(p?.createdAt),
+    updatedAt: iso(p?.updatedAt),
+    author: p?.author ? { id: p.author.id, name: p.author.name } : undefined,
     attachments,
   };
 }
@@ -35,6 +41,6 @@ function iso(d: unknown): string {
   if (!d) return new Date().toISOString();
   if (typeof d === 'string') return d;
   // Sequelize Date objects, dayjs, etc.
-  // @ts-expect-error tolerate
-  return d.toISOString?.() ?? String(d);
+  // @ts-expect-error allow generic date-like inputs
+  try { return d?.toISOString?.() ?? String(d); } catch { return String(d); }
 }
