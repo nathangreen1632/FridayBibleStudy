@@ -39,7 +39,16 @@ export default function AccountPage(): React.ReactElement {
     category: '' // default to placeholder "Select Prayer Type"
   });
 
-  useEffect(() => { void me(); }, [me]);
+  useEffect(() => {
+    (async () => {
+      try {
+        await me();
+      } catch {
+        // ignore or add logging if desired
+      }
+    })();
+  }, [me]);
+
 
   async function onSaveProfile(values: Parameters<typeof updateProfile>[0]) {
     try {
