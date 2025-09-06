@@ -18,7 +18,7 @@
     --c-j: #4A6FA5; /* J: desaturated blue (optional CTA/link) */
     --c-k: #00274C; /* K: darkest blue (hover) */
     --c-l: #16803D; /* L: green */
-    --c-m: #A14A0E; /* M: amber/orange */
+    --c-m: #BF5700; /* M: UT burnt orange */
 
     /* LIGHT MODE */
     --theme-bg: var(--c-b);
@@ -84,7 +84,7 @@
     --c-j: #4A6FA5; /* J: desaturated blue */
     --c-k: #00274C; /* K: darkest blue (hover) */
     --c-l: #16803D; /* L: green */
-    ---c-m: #A14A0E; /* M: amber/orange */
+    ---c-m: #BF5700; /* M: UT burnt orange */
 
     /* DARK MODE — 180° from light (A↔E, B↔D, C→B to avoid hold-overs) */
     --theme-bg: var(--c-d);
