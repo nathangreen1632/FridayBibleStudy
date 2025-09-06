@@ -102,7 +102,16 @@ export default function MyPrayersColumn(): React.ReactElement {
   const [confirmingDeleteId, setConfirmingDeleteId] = useState<number | null>(null);
 
 
-  useEffect(() => { void fetchInitial(); }, [fetchInitial]);
+  useEffect(() => {
+    (async () => {
+      try {
+        await fetchInitial();
+      } catch {
+        // ignore or add logging if you want
+      }
+    })();
+  }, [fetchInitial]);
+
 
   const items = useMemo(() => {
     const all = ids.map((id) => byId.get(id)).filter(Boolean) as Prayer[];

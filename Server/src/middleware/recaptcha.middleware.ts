@@ -259,7 +259,8 @@ export async function recaptchaMiddleware(req: Request, res: Response, next: Nex
       devWarnOnce(`${method} ${paths[0] || ''} :: missingToken(${actionHeader})`, '[reCAPTCHA] Missing token for action:', actionHeader);
       return next();
     }
-    return void (await verifyAndAttach(req, res, next, actionHeader, token));
+    await verifyAndAttach(req, res, next, actionHeader, token);
+    return;
   }
 
   // Fallback: resolve from route mapping (legacy endpoints)

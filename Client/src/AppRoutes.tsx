@@ -22,7 +22,18 @@ function RequireAuth({ children }: Readonly<{ children: React.ReactElement }>): 
   const { user, me } = useAuthStore();
   const loc = useLocation();
 
-  useEffect(() => { if (!user) void me(); }, [user, me]);
+  useEffect(() => {
+    if (!user) {
+      (async () => {
+        try {
+          await me();
+        } catch {
+          // swallow errors (or add logging)
+        }
+      })();
+    }
+  }, [user, me]);
+
 
   if (!user) return <Navigate to="/login" replace state={{ from: loc.pathname }} />;
   return children;

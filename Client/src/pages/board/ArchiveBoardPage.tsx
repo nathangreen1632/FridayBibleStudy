@@ -57,11 +57,26 @@ export default function ArchiveBoard(): React.ReactElement {
         column="archived"
         ids={archivedIds}
         renderCard={renderCard}
-        onMoveWithin={(id, toIndex) => { void onMove(id, 'archived', toIndex); }}
-        onDockDrop={(dock, id) => {
-          if (dock === 'dock-active')  { void onMove(id, 'active', 0); }
-          if (dock === 'dock-praise')  { void moveToPraise(id); } // server-persisted
-          // Stay on this page per your rule; no navigation.
+        onMoveWithin={async (id, toIndex) => {
+          try {
+            await onMove(id, 'archived', toIndex);
+          } catch {
+            // ignore or log
+          }
+        }}
+
+        onDockDrop={async (dock, id) => {
+          try {
+            if (dock === 'dock-active') {
+              await onMove(id, 'active', 0);
+            }
+            if (dock === 'dock-praise') {
+              await moveToPraise(id); // server-persisted
+            }
+            // Stay on this page per your rule; no navigation.
+          } catch {
+            // ignore or log
+          }
         }}
       />
       {/* Dock removed here; it's rendered inside SingleBoard's DndContext */}
