@@ -4,6 +4,21 @@ import { useShallow } from 'zustand/react/shallow';
 import { api } from '../helpers/http.helper';
 import { apiWithRecaptcha } from '../helpers/secure-api.helper';
 import type { Prayer, Status } from '../types/domain.types';
+import {
+  validateMove,
+  makeReordered,
+  neighborPositions,
+  chooseNewPosition,
+  withOptimisticPosition,
+  rollbackPosition,
+  shouldNormalizeSoon,
+  parsePrayerSafely,
+  // NEW:
+  computeSequentialUpdates,
+  applyOptimisticPositions,
+  mergeSavedIntoById,
+} from '../helpers/usePraiseStore.helper';
+
 
 type PraisesState = {
   byId: Map<number, Prayer>;
@@ -137,85 +152,48 @@ export const usePraisesStore = create<PraisesState>((set, get) => ({
 
   async moveWithin(id, toIndex) {
     const s0 = get();
-    const fromIndex = s0.order.indexOf(id);
-    if (fromIndex < 0 || toIndex < 0 || toIndex >= s0.order.length) return false;
+    const { ok, fromIndex } = validateMove(s0.order, id, toIndex);
+    if (!ok) return false;
 
-    // Reorder locally
-    const prevOrder = [...s0.order];
-    const nextOrder = [...s0.order];
-    nextOrder.splice(fromIndex, 1);
-    nextOrder.splice(toIndex, 0, id);
+    // 1) Local reorder (optimistic)
+    const { prevOrder, nextOrder } = makeReordered(s0.order, fromIndex, toIndex);
     set({ order: nextOrder });
 
-    // Compute a position between neighbors
-    const s = get();
-    const byId = s.byId; // re-read in case something changed
-    const prevId = nextOrder[toIndex - 1];
-    const nextId = nextOrder[toIndex + 1];
-    const prevPos = byId.get(prevId)?.position;
-    const nextPos = byId.get(nextId)?.position;
+    // 2) Compute target position between neighbors
+    const s1 = get();
+    const { prevPos, nextPos } = neighborPositions(nextOrder, s1.byId, toIndex);
+    const newPos = chooseNewPosition(prevPos, nextPos, STEP_DEFAULT);
 
-    let newPos: number;
-    if (typeof prevPos === 'number' && typeof nextPos === 'number') {
-      newPos = prevPos + (nextPos - prevPos) / 2;
-    } else if (typeof prevPos === 'number') {
-      newPos = prevPos + STEP_DEFAULT;
-    } else if (typeof nextPos === 'number') {
-      newPos = nextPos - STEP_DEFAULT;
-    } else {
-      newPos = 0;
-    }
-
-    // Optimistically set local position for the target item
-    const before = byId.get(id);
-    if (before) {
-      const merged = new Map(byId);
-      merged.set(id, { ...before, position: newPos });
-      set({ byId: merged });
-    }
+    // 3) Optimistic position on the target item
+    const { before, merged } = withOptimisticPosition(s1.byId, id, newPos);
+    if (merged !== s1.byId) set({ byId: merged });
 
     try {
-      const r = await apiWithRecaptcha(
-        `/api/prayers/${id}`,
-        'prayer_update',
-        {
-          method: 'PATCH',
-          body: JSON.stringify({ position: newPos }),
-        }
-      );
+      const r = await apiWithRecaptcha(`/api/prayers/${id}`, 'prayer_update', {
+        method: 'PATCH',
+        body: JSON.stringify({ position: newPos }),
+      });
 
       if (!r.ok) {
-        // rollback...
+        // rollback order + position
         set({ order: prevOrder });
-        if (before) {
-          const cur = get();
-          const merged = new Map(cur.byId);
-          merged.set(id, before);
-          set({ byId: merged });
-        }
+        const cur = get();
+        set({ byId: rollbackPosition(cur.byId, id, before) });
         return false;
       }
 
-      let saved: Prayer | undefined;
-      try {
-        saved = (await r.json()) as Prayer | undefined;
-      } catch {
-        saved = undefined;
-      }
+      // 4) Merge saved (if any)
+      const saved = await parsePrayerSafely(r);
       if (saved) {
         const cur = get();
-        const merged = new Map(cur.byId);
-        const prev = merged.get(saved.id);
-        merged.set(saved.id, prev ? { ...prev, ...saved } : saved);
-        set({ byId: merged });
+        const nextBy = new Map(cur.byId);
+        const prev = nextBy.get(saved.id);
+        nextBy.set(saved.id, prev ? { ...prev, ...saved } : saved);
+        set({ byId: nextBy });
       }
 
-      // If midpoint collapsed (e.g., integer-only DB) or neighbors too close, normalize soon
-      if (
-        (typeof prevPos === 'number' && newPos === prevPos) ||
-        (typeof nextPos === 'number' && newPos === nextPos) ||
-        (typeof prevPos === 'number' && typeof nextPos === 'number' && nextPos - prevPos < 1e-6)
-      ) {
+      // 5) Schedule normalization if spacing collapsed
+      if (shouldNormalizeSoon(prevPos, nextPos, newPos)) {
         setTimeout(() => { void get().normalizePositions(STEP_DEFAULT); }, 200);
       }
 
@@ -223,15 +201,12 @@ export const usePraisesStore = create<PraisesState>((set, get) => ({
     } catch {
       // rollback order + position
       set({ order: prevOrder });
-      if (before) {
-        const cur = get();
-        const merged = new Map(cur.byId);
-        merged.set(id, before);
-        set({ byId: merged });
-      }
+      const cur = get();
+      set({ byId: rollbackPosition(cur.byId, id, before) });
       return false;
     }
   },
+
 
   async movePrayer(id, to) {
     const s = get();
@@ -307,20 +282,11 @@ export const usePraisesStore = create<PraisesState>((set, get) => ({
     const { order, byId } = s;
     if (order.length === 0) return;
 
-    // Optimistically update local positions to a spaced sequence
-    const nextBy = new Map(byId);
-    const updates: Array<{ id: number; position: number }> = [];
+    // 1) Build updates and apply optimistic local positions
+    const updates = computeSequentialUpdates(order, step);
+    set({ byId: applyOptimisticPositions(byId, updates) });
 
-    for (let i = 0; i < order.length; i++) {
-      const id = order[i];
-      const pos = (i + 1) * step;
-      const prev = nextBy.get(id);
-      if (prev) nextBy.set(id, { ...prev, position: pos });
-      updates.push({ id, position: pos });
-    }
-    set({ byId: nextBy });
-
-    // Persist sequentially (best-effort)
+    // 2) Persist sequentially (best-effort)
     for (const u of updates) {
       try {
         const r = await apiWithRecaptcha(
@@ -333,17 +299,10 @@ export const usePraisesStore = create<PraisesState>((set, get) => ({
         );
 
         if (r.ok) {
-          try {
-            const saved = (await r.json()) as Prayer | undefined;
-            if (saved) {
-              const cur = get();
-              const merged = new Map(cur.byId);
-              const prev = merged.get(saved.id);
-              merged.set(saved.id, prev ? { ...prev, ...saved } : saved);
-              set({ byId: merged });
-            }
-          } catch {
-            // ignore JSON parse issues; local optimistic state remains usable
+          const saved = await parsePrayerSafely(r);
+          if (saved) {
+            const cur = get();
+            set({ byId: mergeSavedIntoById(cur.byId, saved) });
           }
         }
       } catch {
@@ -351,6 +310,7 @@ export const usePraisesStore = create<PraisesState>((set, get) => ({
       }
     }
   },
+
 
   // NEW: local-only visual bump to top of Praises list
   bumpToTop(id) {

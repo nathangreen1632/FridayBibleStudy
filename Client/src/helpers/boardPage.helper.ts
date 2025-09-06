@@ -58,8 +58,8 @@ export function useMoveToPraise() {
         try {
           const body = await r.json().catch(() => ({}));
           const msg =
-            (body && typeof body === 'object' && 'error' in body && typeof (body as any).error === 'string')
-              ? (body as any).error
+            (body && typeof body === 'object' && 'error' in body && typeof (body).error === 'string')
+              ? (body).error
               : 'Failed to move to Praise';
           toast.error(msg);
         } catch {
