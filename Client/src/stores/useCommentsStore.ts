@@ -4,6 +4,17 @@ import { api } from '../helpers/http.helper';
 import { apiWithRecaptcha } from '../helpers/secure-api.helper';
 import type { Comment, ListRootThreadsResponse } from '../types/comment.types';
 import { useAuthStore } from './useAuthStore';
+import {
+  resolveFetchOpts,
+  applyReset,
+  shouldSkipLoad,
+  markLoading,
+  buildListQuery,
+  upsertRootsIntoThread,
+  mergeOrderNoDupes,
+  applyServerPaging,
+  applyMetaMaps,
+} from '../helpers/commentsStore.helper';
 
 type ThreadState = {
   byId: Map<number | string, Comment>;
@@ -121,96 +132,61 @@ export const useCommentsStore = create<CommentsState>((set, get) => ({
   // UPDATED: now supports opts.reset to force a clean first page load
   // Roots (latest-activity ordered) — replies removed
 // Backward compatible: (prayerId, 10) or (prayerId, { limit: 10, reset: true })
+  // Backward compatible: (prayerId, 10) or (prayerId, { limit: 10, reset: true })
   fetchRootPage: async (prayerId, limitOrOpts, maybeOpts) => {
     try {
       const threads = new Map(get().threadsByPrayer);
       const t = ensureThread(threads, prayerId);
 
-      // Resolve opts and limit without default params in the signature
-      let opts: { reset?: boolean; limit?: number } | undefined = undefined;
-      if (typeof limitOrOpts === 'object' && limitOrOpts !== null) {
-        opts = limitOrOpts;
-      } else if (maybeOpts && typeof maybeOpts === 'object') {
-        opts = maybeOpts;
-      }
+      // 1) Resolve options + limit
+      const { limit, opts } = resolveFetchOpts(limitOrOpts, maybeOpts);
 
-      let limit = 10;
-      if (typeof limitOrOpts === 'number') {
-        if (Number.isFinite(limitOrOpts) && limitOrOpts > 0) {
-          limit = limitOrOpts;
-        }
-      } else if (opts && typeof opts.limit === 'number') {
-        if (Number.isFinite(opts.limit) && opts.limit > 0) {
-          limit = opts.limit;
-        }
-      }
+      // 2) Optional reset
+      if (opts?.reset) applyReset(t);
 
-      if (opts?.reset) {
-        t.byId = new Map();
-        t.rootOrder = [];
-        t.rootPage = { cursor: null, hasMore: true, loading: false, error: null };
-      }
-
-      if (t.rootPage.loading || (!t.rootPage.hasMore && t.rootOrder.length > 0)) {
+      // 3) Early exit if loading or no-more-data (but already have some)
+      if (shouldSkipLoad(t)) {
         set({ threadsByPrayer: threads });
         return;
       }
 
-      t.rootPage.loading = true;
-      t.rootPage.error = null;
+      // 4) Mark loading and persist
+      markLoading(t, true);
       set({ threadsByPrayer: threads });
 
-      const params = new URLSearchParams();
-      if (t.rootPage.cursor) params.set('cursor', String(t.rootPage.cursor));
-      params.set('limit', String(limit));
-      params.set('prayerId', String(prayerId));
+      // 5) Fetch
+      const qs = buildListQuery(prayerId, limit, t.rootPage.cursor ?? null);
+      const data = await api<ListRootThreadsResponse>(`/api/comments/list?${qs}`);
 
-      const data = await api<ListRootThreadsResponse>(`/api/comments/list?${params.toString()}`);
+      // 6) Upsert roots + merge order
+      upsertRootsIntoThread(t, data.items);
+      const newRoots = data.items.map(i => i.root.id);
+      t.rootOrder = mergeOrderNoDupes(t.rootOrder, newRoots);
 
-      const nextById = new Map(t.byId);
-      for (const item of data.items) {
-        const prevRoot = nextById.get(item.root.id);
-        nextById.set(item.root.id, {
-          ...prevRoot,
-          ...item.root,
-          authorName: item.root.authorName ?? prevRoot?.authorName ?? null,
-        });
-      }
-      t.byId = nextById;
+      // 7) Apply paging flags
+      applyServerPaging(t, data);
 
-      const newRoots = data.items.map((i) => i.root.id);
-      const seen = new Set(t.rootOrder);
-      const mergedOrder: Array<number | string> = [...t.rootOrder];
-      for (const id of newRoots) {
-        if (!seen.has(id)) {
-          seen.add(id);
-          mergedOrder.push(id);
-        }
-      }
-      t.rootOrder = mergedOrder;
+      // 8) Apply meta maps (counts / lastCommentAt / closed)
+      const meta = applyMetaMaps(
+        () => get().counts,
+        () => get().lastCommentAt,
+        () => get().closed,
+        prayerId,
+        data
+      );
 
-      t.rootPage.cursor = data.cursor ?? null;
-      t.rootPage.hasMore = data.hasMore;
-      t.rootPage.loading = false;
-
-      const counts = new Map(get().counts);
-      counts.set(prayerId, data.commentCount ?? 0);
-
-      const lastCA = new Map(get().lastCommentAt);
-      if (data.lastCommentAt) lastCA.set(prayerId, data.lastCommentAt);
-
-      const closed = new Map(get().closed);
-      closed.set(prayerId, data.isCommentsClosed);
-
-      set({ threadsByPrayer: threads, counts, lastCommentAt: lastCA, closed });
+      // 9) Commit
+      set({ threadsByPrayer: threads, ...meta });
     } catch (e) {
+      // graceful recovery (no throws)
       const threads = new Map(get().threadsByPrayer);
       const t = ensureThread(threads, prayerId);
-      t.rootPage.loading = false;
+      markLoading(t, false);
       t.rootPage.error = msg(e, 'Failed to load updates');
       set({ threadsByPrayer: threads });
     }
   },
+
 
 
   // Create root-only update (no replies)
