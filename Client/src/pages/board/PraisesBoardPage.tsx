@@ -36,7 +36,15 @@ export default function PraisesBoard(): React.ReactElement {
   const groupId   = user?.groupId ?? 1;
 
   // initial load
-  useEffect(() => { void fetchInitial(); }, [fetchInitial]);
+  useEffect(() => {
+    (async () => {
+      try {
+        await fetchInitial();
+      } catch {
+        // ignore or log
+      }
+    })();
+  }, [fetchInitial]);
 
   // join the user's group room for real-time events
   useEffect(() => {
@@ -59,11 +67,26 @@ export default function PraisesBoard(): React.ReactElement {
         column="praise"
         ids={ids}
         renderCard={renderCard}
-        onMoveWithin={(id, toIndex) => { void moveWithin(id, toIndex); }}
-        onDockDrop={(dock, id) => {
-          if (dock === 'dock-active')  { void movePrayer(id, 'active'); }
-          if (dock === 'dock-archive') { void movePrayer(id, 'archived'); }
-          // Stay on the same page per your rule; no navigation.
+        onMoveWithin={async (id, toIndex) => {
+          try {
+            await moveWithin(id, toIndex);
+          } catch {
+            // ignore or log
+          }
+        }}
+
+        onDockDrop={async (dock, id) => {
+          try {
+            if (dock === 'dock-active') {
+              await movePrayer(id, 'active');
+            }
+            if (dock === 'dock-archive') {
+              await movePrayer(id, 'archived');
+            }
+            // Stay on the same page per your rule; no navigation.
+          } catch {
+            // ignore or log
+          }
         }}
       />
       {/* Dock removed here; it's rendered inside SingleBoard's DndContext */}
