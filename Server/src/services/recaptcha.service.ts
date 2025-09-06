@@ -97,7 +97,6 @@ async function ensureServiceAccountFile(): Promise<string | null> {
     const raw = await fs.readFile(keyPath, 'utf8');
     const sa = JSON.parse(raw);
     // eslint-disable-next-line no-console
-    console.log('[reCAPTCHA] SA project_id:', sa.project_id, ' RECAPTCHA_PROJECT_ID:', env.RECAPTCHA_PROJECT_ID);
     if (sa.project_id !== env.RECAPTCHA_PROJECT_ID) {
       console.warn('⚠️  Service account project_id does NOT match RECAPTCHA_PROJECT_ID');
     }
