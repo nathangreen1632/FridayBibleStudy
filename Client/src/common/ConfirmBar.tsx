@@ -32,7 +32,7 @@ export default function ConfirmBar({
         <button
           type="button"
           onClick={onConfirm}
-          className="rounded-xl bg-[var(--theme-error)] text-[var(--theme-placeholder)] px-4 py-2 hover:bg-[var(--theme-button-error)]"
+          className="rounded-xl bg-[var(--theme-error)] text-[var(--theme-textbox)] px-4 py-2 hover:bg-[var(--theme-button-error)]"
         >
           {confirmLabel}
         </button>
