@@ -357,13 +357,13 @@ commentsRouter.get('/search', requireAuth, async (req: Request, res: Response) =
       limit,
     });
     const idsFromComments = new Set<number>((comments as any[]).map((r) => r.prayerId));
-    const allIds = new Set<number>([...rows.map((r) => (r as any).id), ...idsFromComments]);
+    const allIds = new Set<number>([...rows.map((r: { id: number }) => r.id), ...idsFromComments]);
 
     const prayers = await Prayer.findAll({ where: { id: { [Op.in]: [...allIds] }, groupId }, limit });
 
-    const items = prayers.map((p) => ({
-      prayerId: (p as any).id,
-      title: (p as any).title,
+    const items = prayers.map((p: { id: number; title: string }) => ({
+      prayerId: p.id,
+      title: p.title,
       matchedIn: ['title', 'description', 'comments'],
       snippet: null,
     }));
