@@ -57,11 +57,26 @@ export default function ActiveBoard(): React.ReactElement {
         column="active"
         ids={activeIds}
         renderCard={renderCard}
-        onMoveWithin={(id, toIndex) => { void onMove(id, 'active', toIndex); }}
-        onDockDrop={(dock, id) => {
+        onMoveWithin={async (id, toIndex) => {
+          try {
+            await onMove(id, 'active', toIndex);
+          } catch {
+            // ignore or log
+          }
+        }}
+
+        onDockDrop={async (dock, id) => {
           // Stay on the same page (no navigation)
-          if (dock === 'dock-archive') { void onMove(id, 'archived', 0); }
-          if (dock === 'dock-praise')  { void moveToPraise(id); } // server-persisted
+          try {
+            if (dock === 'dock-archive') {
+              await onMove(id, 'archived', 0);
+            }
+            if (dock === 'dock-praise') {
+              await moveToPraise(id); // server-persisted
+            }
+          } catch {
+            // ignore or log
+          }
         }}
       />
       {/* Dock removed here; it's rendered inside SingleBoard's DndContext */}
