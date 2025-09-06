@@ -2,6 +2,7 @@
 import React, { useEffect, useMemo, useState } from 'react';
 import { useMyPrayersStore } from '../stores/useMyPrayersStore';
 import type { Category, Prayer, Status } from '../types/domain.types';
+import ConfirmBar from '../common/ConfirmBar';
 import {ChevronDown} from "lucide-react";
 
 function StatusPill({ s }: Readonly<{ s: Status }>) {
@@ -98,6 +99,8 @@ export default function MyPrayersColumn(): React.ReactElement {
 
   const [editing, setEditing] = useState<Record<number, { title: string; content: string; category: Category }>>({});
   const [savingId, setSavingId] = useState<number | null>(null);
+  const [confirmingDeleteId, setConfirmingDeleteId] = useState<number | null>(null);
+
 
   useEffect(() => { void fetchInitial(); }, [fetchInitial]);
 
@@ -246,21 +249,25 @@ export default function MyPrayersColumn(): React.ReactElement {
                     <>
                       <input
                         value={ed.title}
+                        placeholder="Title"
+                        spellCheck={true}
                         onChange={(e) => onField('title', e.target.value)}
-                        className="mt-2 w-full px-3 py-2 rounded text-lg bg-[var(--theme-textbox)] text-[var(--theme-placeholder)] border border-[var(--theme-border)]"
+                        className="mt-2 w-full px-3 py-2 rounded text-lg bg-[var(--theme-textbox)] text-[var(--theme-placeholder)] border border-[var(--theme-border)] placeholder:text-[var(--theme-placeholder)] cursor-pointer"
                       />
                       <textarea
                         value={ed.content}
+                        placeholder="Write your prayer here..."
+                        spellCheck={true}
                         onChange={(e) => onField('content', e.target.value)}
                         onInput={autoGrow}
                         rows={6}
-                        className="mt-2 w-full px-3 py-2 rounded text-lg bg-[var(--theme-textbox)] text-[var(--theme-placeholder)] border border-[var(--theme-border)] min-h-40 md:min-h-48 leading-6 resize-y max-h-[600px] overflow-auto"
+                        className="mt-2 w-full px-3 py-2 rounded text-lg bg-[var(--theme-textbox)] text-[var(--theme-placeholder)] border border-[var(--theme-border)] min-h-40 md:min-h-48 leading-6 resize-y max-h-[600px] overflow-auto cursor-pointer"
                       />
                       <div className="relative mt-2">
                         <select
                           value={ed.category}
                           onChange={(e) => onField('category', e.target.value)}
-                          className="w-full px-3 py-2 pr-9 rounded text-lg bg-[var(--theme-card)] text-[var(--theme-text)] border border-[var(--theme-border)] appearance-none focus:outline-none focus:ring-2 focus:ring-[var(--theme-focus)]/30 cursor-pointer"
+                          className="w-full px-3 py-2 pr-9 rounded text-lg bg-[var(--theme-textbox)] text-[var(--theme-placeholder)] border border-[var(--theme-border)] appearance-none focus:outline-none focus:ring-2 focus:ring-[var(--theme-focus)]/30 cursor-pointer"
                         >
                           <option value="birth">Birth</option>
                           <option value="long-term">Long term</option>
@@ -273,7 +280,7 @@ export default function MyPrayersColumn(): React.ReactElement {
                         {/* Chevron icon overlay (not a caret) */}
                         <ChevronDown
                           size={20}
-                          className="pointer-events-none absolute right-3 top-1/2 -translate-y-1/2 text-[var(--theme-text)] opacity-80"
+                          className="pointer-events-none absolute right-3 top-1/2 -translate-y-1/2 opacity-80 text-[var(--theme-placeholder)]"
                           aria-hidden="true"
                         />
                       </div>
@@ -283,28 +290,51 @@ export default function MyPrayersColumn(): React.ReactElement {
                       <div className="mt-3 flex items-center gap-2">
                         <button
                           type="button"
-                          onClick={() => cancelEdit(p.id)}
+                          onClick={() => {
+                            setConfirmingDeleteId(null);
+                            cancelEdit(p.id);
+                          }}
                           className="px-3 py-1.5 rounded-md bg-[var(--theme-button)] text-[var(--theme-text-white)] hover:bg-[var(--theme-button-hover)] hover:text-[var(--theme-textbox)] disabled:opacity-60 cursor-pointer"
                         >
                           Cancel
                         </button>
+
                         <button
                           type="button"
-                          onClick={() => onSave(p.id)}
+                          onClick={async () => {
+                            setConfirmingDeleteId(null);
+                            await onSave(p.id);
+                          }}
                           disabled={savingId === p.id}
                           className="px-3 py-1.5 rounded-md bg-[var(--theme-button)] text-[var(--theme-text-white)] hover:bg-[var(--theme-button-hover)] hover:text-[var(--theme-textbox)] disabled:opacity-60 cursor-pointer"
                         >
                           Save
                         </button>
+
                         <button
                           type="button"
-                          onClick={() => onDelete(p.id)}
+                          onClick={() => setConfirmingDeleteId(p.id)}
                           className="px-3 py-1.5 rounded-md bg-[var(--theme-error)] text-[var(--theme-text-white)] hover:bg-[var(--theme-button-error)] hover:text-[var(--theme-textbox)] cursor-pointer"
                         >
                           Delete
                         </button>
                       </div>
 
+                      {/* Inline confirm bar (only for this row) */}
+                      {confirmingDeleteId === p.id && (
+                        <div className="mt-3 rounded-xl border border-[var(--theme-border)] bg-[var(--theme-surface)] p-3">
+                          <ConfirmBar
+                            message={`Delete “${(ed.title || p.title).trim()}”? This cannot be undone.`}
+                            confirmLabel="Delete"
+                            cancelLabel="Keep editing"
+                            onConfirm={async () => {
+                              await onDelete(p.id);      // uses your existing remove flow
+                              setConfirmingDeleteId(null);
+                            }}
+                            onCancel={() => setConfirmingDeleteId(null)}
+                          />
+                        </div>
+                      )}
                     </>
                   ) : (
                     <>
