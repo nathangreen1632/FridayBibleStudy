@@ -203,3 +203,20 @@ html {
     -webkit-tap-highlight-color: rgba(0,0,0,0);
   }
 }
+
+/* Subtle 3D text variants driven by your theme tokens */
+.text-3d-raised {
+  /* slight “lifted” look */
+  text-shadow:
+          0 1px 0 var(--theme-surface),
+          0 2px 0 var(--theme-border),
+          0 3px 4px var(--theme-shadow);
+}
+
+.text-3d-engraved {
+  /* slight “pressed in” look */
+  text-shadow:
+          0 -1px 0 var(--theme-surface),
+          0 -2px 0 var(--theme-border),
+          0 -3px 4px var(--theme-shadow);
+}
