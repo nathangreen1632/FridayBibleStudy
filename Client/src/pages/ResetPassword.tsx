@@ -94,10 +94,21 @@ export default function ResetPassword(): React.ReactElement {
         toast.success('Password updated. You can log in now.');
         nav('/login');
       } else {
-        const msg =
-          res && typeof res === 'object' && 'error' in res && res.error
-            ? String(res.error)
-            : 'Please verify the one-time code is correct.';
+        let msg = 'Please verify the one-time code is correct.';
+
+        if (res && typeof res === 'object' && 'error' in res) {
+          const errVal = (res as { error?: unknown }).error;
+
+          if (typeof errVal === 'string') {
+            msg = errVal;
+          } else if (errVal != null) {
+            try {
+              msg = JSON.stringify(errVal);
+            } catch {
+              // keep default message
+            }
+          }
+        }
         toast.error(msg);
       }
     } catch {
