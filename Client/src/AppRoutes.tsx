@@ -17,6 +17,7 @@ import PraisesBoard from './pages/board/PraisesBoardPage.tsx';
 // NEW: Forgot Password pages
 import RequestReset from './pages/RequestReset.tsx';
 import ResetPassword from './pages/ResetPassword.tsx';
+import adminRoutes from './routes/admin/AdminRoutes';
 
 function RequireAuth({ children }: Readonly<{ children: React.ReactElement }>): React.ReactElement {
   const { user, me } = useAuthStore();
@@ -51,20 +52,30 @@ export default function AppRoutes(): React.ReactElement {
       <Route path="/request-reset" element={<RequestReset />} />
       <Route path="/reset-password" element={<ResetPassword />} />
 
-      {/* Default portal = Active Praises (single column) */}
-      {/* If PortalBoard re-exports ActiveBoard, either of these lines works.
-          To be explicit, we'll render ActiveBoard directly. */}
+      {/* Portal / Boards */}
       <Route path="/portal" element={<RequireAuth><ActiveBoard /></RequireAuth>} />
-
-      {/* Explicit board routes */}
       <Route path="/board/active" element={<RequireAuth><ActiveBoard /></RequireAuth>} />
       <Route path="/board/archive" element={<RequireAuth><ArchiveBoard /></RequireAuth>} />
       <Route path="/board/praises" element={<RequireAuth><PraisesBoard /></RequireAuth>} />
-
       <Route path="/profile" element={<RequireAuth><AccountPage /></RequireAuth>} />
+
+      {/* --- Admin Portal Routes --- */}
+      {adminRoutes.map((route) => (
+        <Route key={route.path} path={route.path} element={route.element}>
+          {route.children?.map((child) => (
+            <Route
+              key={child.path || 'index'}
+              index={child.index}
+              path={child.path}
+              element={child.element}
+            />
+          ))}
+        </Route>
+      ))}
 
       {/* Fallback */}
       <Route path="*" element={<Navigate to="/portal" replace />} />
     </Routes>
   );
 }
+
