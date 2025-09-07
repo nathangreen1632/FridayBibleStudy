@@ -26,11 +26,11 @@ export default function AdminPrayersTable({ rows, loading }: Readonly<{ rows: Ad
             <Link to={`/admin/prayers/${r.id}`} className="text-[var(--theme-link)] hover:text-[var(--theme-link-hover)] underline">
               {r.title}
             </Link>
-            <div className="text-xs opacity-80">by {r.authorName || 'Unknown'}</div>
+            <div className="text-xs opacity-80">by {r.authorName}</div>
           </td>
           <td className="p-3">{r.groupName}</td>
           <td className="p-3">{r.category}</td>
-          <td className="p-3">{r.status}</td>
+          <td className="p-3">{r.status === 'active' ? 'prayer' : r.status}</td>
           <td className="p-3">{r.commentCount ?? 0}</td>
           <td className="p-3">{r.lastCommentAt ? new Date(r.lastCommentAt).toLocaleString() : '—'}</td>
         </tr>
