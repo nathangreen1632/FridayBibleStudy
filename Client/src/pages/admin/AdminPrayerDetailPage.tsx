@@ -50,7 +50,7 @@ export default function AdminPrayerDetailPage(): React.ReactElement {
               onChange={(e) => setLocalStatus(e.target.value as AdminStatus)}
               className="rounded-lg border border-[var(--theme-border)] bg-[var(--theme-textbox)] px-3 py-2"
             >
-              <option value="active">Active</option>
+              <option value="active">Prayer</option>
               <option value="praise">Praise</option>
               <option value="archived">Archived</option>
             </select>
