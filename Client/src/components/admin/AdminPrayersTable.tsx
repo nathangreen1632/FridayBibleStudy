@@ -31,11 +31,11 @@ export default function AdminPrayersTable(
       <thead className="bg-[var(--theme-card)]">
       <tr>
         <th className="text-left p-3">Title</th>
-        <th className="text-left p-3">Group</th>
-        <th className="text-left p-3">Category</th>
-        <th className="text-left p-3">Status</th>
-        <th className="text-left p-3">Comments</th>
-        <th className="text-left p-3">Last Update</th>
+        <th className="text-center p-3">Group</th>
+        <th className="text-center p-3">Category</th>
+        <th className="text-center p-3">Status</th>
+        <th className="text-center p-3">Comments</th>
+        <th className="text-center p-3">Last Update</th>
       </tr>
       </thead>
       <tbody>
@@ -51,11 +51,11 @@ export default function AdminPrayersTable(
             </Link>
             <div className="text-xs opacity-80">by {r.authorName}</div>
           </td>
-          <td className="p-3">{r.groupName}</td>
-          <td className="p-3">{r.category}</td>
-          <td className="p-3">{displayStatus(r.status)}</td>
-          <td className="p-3">{r.commentCount ?? 0}</td>
-          <td className="p-3">{r.lastCommentAt ? new Date(r.lastCommentAt).toLocaleString() : '—'}</td>
+          <td className="p-3 text-center">{r.groupName}</td>
+          <td className="p-3 text-center">{r.category}</td>
+          <td className="p-3 text-center">{displayStatus(r.status)}</td>
+          <td className="p-3 text-center">{r.commentCount ?? 0}</td>
+          <td className="p-3 text-center">{r.lastCommentAt ? new Date(r.lastCommentAt).toLocaleString() : '—'}</td>
         </tr>
       ))}
       </tbody>
