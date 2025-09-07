@@ -1,17 +1,23 @@
 // Client/src/pages/admin/AdminPrayerDetailPage.tsx
 import React, { useEffect, useState } from 'react';
-import { useParams } from 'react-router-dom';
+import { useLocation, useNavigate, useParams } from 'react-router-dom';
 import { useAdminStore } from '../../stores/admin/useAdminStore';
+import { useAdminUiStore } from '../../stores/admin/useAdminUiStore';
 
 type AdminStatus = 'active' | 'praise' | 'archived';
 
 export default function AdminPrayerDetailPage(): React.ReactElement {
   const { id } = useParams();
   const prayerId = Number(id);
+
+  const nav = useNavigate();
+  const location = useLocation();
+  const ui = useAdminUiStore();
+
   const { loadThread, detailComments, setStatus, addComment } = useAdminStore();
 
   const [content, setContent] = useState('');
-  const [localStatus, setLocalStatus] = useState<AdminStatus>('active'); // renamed
+  const [localStatus, setLocalStatus] = useState<AdminStatus>('active'); // default
 
   // IDs for label/control association
   const statusSelectId = 'admin-detail-status';
@@ -34,10 +40,42 @@ export default function AdminPrayerDetailPage(): React.ReactElement {
     await setStatus(prayerId, localStatus);
   }
 
+  // Back button: restore list state if we arrived from the admin list
+  function onBack() {
+    const st = location.state as { from?: string; ui?: any } | null | undefined;
+
+    const cameFromAdminList =
+      !!st &&
+      typeof st.from === 'string' &&
+      st.from.startsWith('/admin') &&
+      !st.from.includes('/prayers/');
+
+    if (cameFromAdminList) {
+      if (st.ui) ui.set(st.ui);
+      nav('/admin', { replace: true });
+      return;
+    }
+
+    // Fallback: browser back; if no history, Router will stay put
+    nav(-1);
+  }
+
   const items = detailComments[prayerId] ?? [];
 
   return (
     <div className="space-y-4">
+      {/* Back button row */}
+      <div>
+        <button
+          type="button"
+          onClick={onBack}
+          className="rounded-xl bg-[var(--theme-surface)] border border-[var(--theme-border)]
+                     px-3 py-1.5 text-sm hover:bg-[var(--theme-card-hover)]"
+        >
+          ← Back to list
+        </button>
+      </div>
+
       <div className="bg-[var(--theme-surface)] border border-[var(--theme-border)] rounded-xl p-3">
         <div className="flex flex-col sm:flex-row gap-3 sm:items-end">
           <div>
