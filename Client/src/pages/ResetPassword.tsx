@@ -3,6 +3,7 @@ import React, { useEffect, useMemo, useState } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import { toast } from 'react-hot-toast';
 import { apiWithRecaptcha } from '../helpers/secure-api.helper';
+import { submitResetPassword, type ResetPayload } from '../helpers/resetPassword.helper';
 
 export default function ResetPassword(): React.ReactElement {
   const nav = useNavigate();
@@ -16,7 +17,7 @@ export default function ResetPassword(): React.ReactElement {
   const [submitting, setSubmitting] = useState(false);
   const [ready, setReady] = useState(false);
 
-  // visibility toggles
+
   const [showNew, setShowNew] = useState(false);
   const [showConfirm, setShowConfirm] = useState(false);
 
@@ -70,38 +71,29 @@ export default function ResetPassword(): React.ReactElement {
 
   async function onSubmit(e: React.FormEvent) {
     e.preventDefault();
+
     if (!valid) {
       toast.error('Please check your inputs.');
       return;
     }
+
     setSubmitting(true);
-
     try {
-      const res = await apiWithRecaptcha(
-        '/api/auth/reset-password',
-        'password_reset',
-        {
-          method: 'POST',
-          body: JSON.stringify({
-            email: form.email,
-            otp: form.otp,
-            newPassword: form.newPassword,
-          }),
-        }
-      );
+      const payload: ResetPayload = {
+        email: form.email,
+        otp: form.otp,
+        newPassword: form.newPassword,
+      };
 
-      if (res && typeof res === 'object' && 'ok' in res && res.ok) {
+      const result = await submitResetPassword(apiWithRecaptcha, payload);
+
+      if (result.ok) {
         toast.success('Password updated. You can log in now.');
         nav('/login');
-      } else {
-        const msg =
-          res && typeof res === 'object' && 'error' in res && res.error
-            ? String(res.error)
-            : 'Please verify the one-time code is correct.';
-        toast.error(msg);
+        return;
       }
-    } catch {
-      toast.error('Network error while resetting password.');
+
+      toast.error(result.message);
     } finally {
       setSubmitting(false);
     }

@@ -48,10 +48,20 @@ export default function RequestReset(): React.ReactElement {
         return;
       }
 
-      const msg =
-        res && typeof res === 'object' && 'error' in res && res.error
-          ? String(res.error)
-          : 'Unable to request reset right now.';
+      let msg = 'Unable to request reset right now.';
+
+      if (res && typeof res === 'object' && 'error' in res) {
+        if (typeof res.error === 'string') {
+          msg = res.error;
+        } else {
+          try {
+            msg = JSON.stringify(res.error);
+          } catch {
+            msg = 'An unknown error occurred.';
+          }
+        }
+      }
+
       toast.error(msg);
     } catch {
       toast.error('Network error while requesting reset.');

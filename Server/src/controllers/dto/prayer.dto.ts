@@ -38,9 +38,63 @@ export function toPrayerDTO(p: any): PrayerDTO {
 }
 
 function iso(d: unknown): string {
-  if (!d) return new Date().toISOString();
-  if (typeof d === 'string') return d;
-  // Sequelize Date objects, dayjs, etc.
-  // @ts-expect-error allow generic date-like inputs
-  try { return d?.toISOString?.() ?? String(d); } catch { return String(d); }
+  if (d == null) return now();
+
+  if (isString(d)) return d;
+
+  if (isValidDate(d)) return (d).toISOString();
+
+  const fromIsoMethod = tryIsoMethod(d);
+  if (fromIsoMethod) return fromIsoMethod;
+
+  if (isEpochNumber(d)) return fromEpoch(d);
+
+  const fromCustomToString = tryCustomToString(d);
+  if (fromCustomToString) return fromCustomToString;
+
+  return now();
+}
+
+/* ------------------ helpers ------------------ */
+
+function now(): string {
+  return new Date().toISOString();
+}
+
+function isString(v: unknown): v is string {
+  return typeof v === 'string';
+}
+
+function isValidDate(v: unknown): v is Date {
+  return v instanceof Date && Number.isFinite(v.getTime());
+}
+
+function tryIsoMethod(v: unknown): string | null {
+  const fn = (v as any)?.toISOString;
+  if (typeof fn === 'function') {
+    try {
+      const out = fn.call(v);
+      return typeof out === 'string' && out ? out : null;
+    } catch {
+      return null;
+    }
+  }
+  return null;
+}
+
+function isEpochNumber(v: unknown): v is number {
+  return typeof v === 'number' && Number.isFinite(v);
+}
+
+function fromEpoch(num: number): string {
+  const dt = new Date(num);
+  return Number.isFinite(dt.getTime()) ? dt.toISOString() : now();
+}
+
+function tryCustomToString(v: unknown): string | null {
+  const s = (v as any)?.toString?.();
+  if (typeof s === 'string' && s && s !== '[object Object]') {
+    return s;
+  }
+  return null;
 }

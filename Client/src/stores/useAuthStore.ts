@@ -2,6 +2,14 @@
 import { create } from 'zustand';
 import { api } from '../helpers/http.helper';
 import { loadRecaptchaEnterprise, getRecaptchaToken } from '../lib/recaptcha.lib';
+import {
+  requireSiteKey,
+  loadRecaptchaOrError,
+  getLoginTokenOrError,
+  performLoginRequest,
+  responseErrorMessageIfAny,
+  fetchMeSafe,
+} from '../helpers/useAuthStore.helper';
 
 type User = {
   id: number;
@@ -96,64 +104,43 @@ export const useAuthStore = create<AuthState>((set, get) => ({
 
   login: async (email, password) => {
     set({ loading: true });
-
     try {
-      // reCAPTCHA site key is required by backend policy; handle gracefully if missing.
-      if (!SITE_KEY) {
-        return { success: false, message: 'Missing reCAPTCHA site key. Please contact the administrator.' };
-      }
+      // 1) Site key required
+      const siteKeyIssue = requireSiteKey(SITE_KEY);
+      if (siteKeyIssue) return siteKeyIssue;
 
-      // Load and obtain token; each step has a graceful fallback message.
-      try {
-        await loadRecaptchaEnterprise(SITE_KEY);
-      } catch {
-        return { success: false, message: 'Security check unavailable (reCAPTCHA load failed). Please try again later.' };
-      }
+      // 2) Load reCAPTCHA
+      const loadIssue = await loadRecaptchaOrError(SITE_KEY as string);
+      if (loadIssue) return loadIssue;
 
-      let recaptchaToken = '';
-      try {
-        recaptchaToken = await getRecaptchaToken(SITE_KEY, 'login');
-      } catch {
-        return { success: false, message: 'Security token could not be created. Please refresh and try again.' };
-      }
+      // 3) Get token
+      const tokenResult = await getLoginTokenOrError(SITE_KEY as string);
+      if (!tokenResult.ok) return { success: false, message: tokenResult.message };
+      const recaptchaToken = tokenResult.token;
 
-      const res = await api<Response>('/api/auth/login', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'x-recaptcha-token': recaptchaToken,
-        },
-        body: JSON.stringify({ email, password, recaptchaToken }),
-      });
+      // 4) Call /login
+      const res = await performLoginRequest(email, password, recaptchaToken);
 
-      // If api() returns a native Response, check ok; otherwise assume it has already parsed/handled.
+      // 5) If Response-like, check error payloads consistently
       if (res instanceof Response) {
-        if (!res.ok) {
-          const errBody: unknown = await res.json().catch(() => ({}));
-          const msg = (typeof errBody === 'object' && errBody && 'error' in errBody)
-            ? String((errBody as { error?: unknown }).error ?? 'Login failed')
-            : 'Login failed';
-          return { success: false, message: msg };
-        }
+        const msg = await responseErrorMessageIfAny(res);
+        if (msg) return { success: false, message: msg };
       }
 
-      // Fetch full profile and merge into state.
-      try {
-        const full = await api<User>('/api/auth/me', { method: 'GET' });
+      // 6) Best-effort /me merge (don’t break success if /me fails)
+      const full = await fetchMeSafe<User>();
+      if (full) {
         set((state) => ({
           user: state.user
             ? ({ ...state.user, ...full } as User)
             : ({ ...full, groupId: full.groupId ?? null } as User),
         }));
-      } catch {
-        // If /me fails right after login, still return success but leave user as-is
-        // to avoid breaking the session; UI can call me() later.
       }
 
       return { success: true };
     } catch (err: unknown) {
-      const msg = err instanceof Error ? err.message : 'Login failed';
-      return { success: false, message: msg };
+      const message = err instanceof Error ? err.message : 'Login failed';
+      return { success: false, message };
     } finally {
       set({ loading: false });
     }
