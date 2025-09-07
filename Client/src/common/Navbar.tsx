@@ -10,9 +10,10 @@ import {
   HelpingHand,
   User,
   LogOut,
-  Menu,         // hamburger icon
-  Archive as ArchiveIcon,
-  Sparkles,     // praises
+  Menu,
+  Archive,
+  Sparkles,
+  ShieldCheck,
 } from 'lucide-react';
 import { useScrollLock } from '../hooks/useScrollLock.ts';
 
@@ -31,15 +32,10 @@ export default function Navbar(): React.ReactElement {
   const { user, logout } = useAuthStore();
   const [open, setOpen] = useState(false);
 
-  // Wraps the hamburger button + dropdown for outside-click detection
   const menuRef = useRef<HTMLDivElement | null>(null);
 
-  // Close menu on route change
-  useEffect(() => {
-    setOpen(false);
-  }, [location.pathname]);
+  useEffect(() => { setOpen(false); }, [location.pathname]);
 
-  // Close on ESC and on click/touch outside
   useEffect(() => {
     if (!open) return;
 
@@ -50,23 +46,11 @@ export default function Navbar(): React.ReactElement {
     function onClickOutside(e: MouseEvent | TouchEvent) {
       const node = menuRef.current;
       if (!node) return;
-
       const target = e.target as Node | null;
 
-      // Ignore events that originate on the hamburger/toggle element
-      if (
-        target instanceof Element &&
-        target.closest('[data-nav-toggle]')
-      ) {
-        return;
-      }
-
-      // Close if the click/touch is outside the menu wrapper
-      if (target && !node.contains(target)) {
-        setOpen(false);
-      }
+      if (target instanceof Element && target.closest('[data-nav-toggle]')) return;
+      if (target && !node.contains(target)) setOpen(false);
     }
-
 
     document.addEventListener('keydown', onKey);
     document.addEventListener('mousedown', onClickOutside);
@@ -79,7 +63,6 @@ export default function Navbar(): React.ReactElement {
     };
   }, [open]);
 
-  // Lock background scroll while the dropdown is open
   useScrollLock(open);
 
   async function onLogout() {
@@ -127,35 +110,56 @@ export default function Navbar(): React.ReactElement {
 
           {user && (
             <>
-              {/* Default portal = Active board */}
-              <NavLink to="/portal" className={({ isActive }) => linkClass(isActive)}>
-                <HelpingHand className="w-4 h-4" />
-                Prayers
-              </NavLink>
+              {/* Admin: ONLY Admin + Sign out */}
+              {user.role === 'admin' && (
+                <>
+                  <NavLink to="/admin" className={({ isActive }) => linkClass(isActive)}>
+                    <ShieldCheck className="w-4 h-4" />
+                    Admin
+                  </NavLink>
+                  <button
+                    onClick={onLogout}
+                    className="ml-2 flex items-center gap-1 px-3 py-2 rounded-lg text-sm font-medium bg-[var(--theme-surface)] border border-[var(--theme-border)] hover:bg-[var(--theme-card-hover)]"
+                    aria-label="Sign out"
+                  >
+                    <LogOut className="w-4 h-4" />
+                    Sign out
+                  </button>
+                </>
+              )}
 
-              {/* Praises + Archive pages */}
-              <NavLink to="/board/praises" className={({ isActive }) => linkClass(isActive)}>
-                <Sparkles className="w-4 h-4" />
-                Praises
-              </NavLink>
-              <NavLink to="/board/archive" className={({ isActive }) => linkClass(isActive)}>
-                <ArchiveIcon className="w-4 h-4" />
-                Archived
-              </NavLink>
+              {/* Classic: original links */}
+              {user.role !== 'admin' && (
+                <>
+                  <NavLink to="/portal" className={({ isActive }) => linkClass(isActive)}>
+                    <HelpingHand className="w-4 h-4" />
+                    Prayers
+                  </NavLink>
 
-              <NavLink to="/profile" className={({ isActive }) => linkClass(isActive)}>
-                <User className="w-4 h-4" />
-                Profile
-              </NavLink>
+                  <NavLink to="/board/praises" className={({ isActive }) => linkClass(isActive)}>
+                    <Sparkles className="w-4 h-4" />
+                    Praises
+                  </NavLink>
+                  <NavLink to="/board/archive" className={({ isActive }) => linkClass(isActive)}>
+                    <Archive className="w-4 h-4" />
+                    Archived
+                  </NavLink>
 
-              <button
-                onClick={onLogout}
-                className="ml-2 flex items-center gap-1 px-3 py-2 rounded-lg text-sm font-medium bg-[var(--theme-surface)] border border-[var(--theme-border)] hover:bg-[var(--theme-card-hover)]"
-                aria-label="Sign out"
-              >
-                <LogOut className="w-4 h-4" />
-                Sign out
-              </button>
+                  <NavLink to="/profile" className={({ isActive }) => linkClass(isActive)}>
+                    <User className="w-4 h-4" />
+                    Profile
+                  </NavLink>
+
+                  <button
+                    onClick={onLogout}
+                    className="ml-2 flex items-center gap-1 px-3 py-2 rounded-lg text-sm font-medium bg-[var(--theme-surface)] border border-[var(--theme-border)] hover:bg-[var(--theme-card-hover)]"
+                    aria-label="Sign out"
+                  >
+                    <LogOut className="w-4 h-4" />
+                    Sign out
+                  </button>
+                </>
+              )}
             </>
           )}
         </nav>
@@ -165,15 +169,9 @@ export default function Navbar(): React.ReactElement {
           <button
             type="button"
             data-nav-toggle
-            onClick={(e) => {
-              e.stopPropagation();
-              setOpen((was) => !was); // open on click, close on click
-            }}
+            onClick={(e) => { e.stopPropagation(); setOpen((was) => !was); }}
             onKeyDown={(e) => {
-              if (e.key === 'Enter' || e.key === ' ') {
-                e.preventDefault();
-                setOpen((was) => !was);
-              }
+              if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); setOpen((was) => !was); }
             }}
             aria-label="Toggle menu"
             aria-expanded={open}
@@ -214,33 +212,56 @@ export default function Navbar(): React.ReactElement {
                 </>
               ) : (
                 <>
-                  <NavLink to="/portal" className={({ isActive }) => linkClass(isActive)} onClick={closeMenu}>
-                    <HelpingHand className="w-4 h-4" />
-                    Prayers
-                  </NavLink>
+                  {/* Admin: ONLY Admin + Sign out */}
+                  {user.role === 'admin' && (
+                    <>
+                      <NavLink to="/admin" className={({ isActive }) => linkClass(isActive)} onClick={closeMenu}>
+                        <ShieldCheck className="w-4 h-4" />
+                        Admin
+                      </NavLink>
+                      <button
+                        onClick={() => { closeMenu(); void onLogout(); }}
+                        className="flex items-center gap-1 px-3 py-2 rounded-lg text-sm font-medium bg-[var(--theme-surface)] border border-[var(--theme-border)] hover:bg-[var(--theme-card-hover)]"
+                        aria-label="Sign out"
+                      >
+                        <LogOut className="w-4 h-4" />
+                        Sign out
+                      </button>
+                    </>
+                  )}
 
-                  <NavLink to="/board/praises" className={({ isActive }) => linkClass(isActive)} onClick={closeMenu}>
-                    <Sparkles className="w-4 h-4" />
-                    Praises
-                  </NavLink>
-                  <NavLink to="/board/archive" className={({ isActive }) => linkClass(isActive)} onClick={closeMenu}>
-                    <ArchiveIcon className="w-4 h-4" />
-                    Archived
-                  </NavLink>
+                  {/* Classic: original links */}
+                  {user.role !== 'admin' && (
+                    <>
+                      <NavLink to="/portal" className={({ isActive }) => linkClass(isActive)} onClick={closeMenu}>
+                        <HelpingHand className="w-4 h-4" />
+                        Prayers
+                      </NavLink>
 
-                  <NavLink to="/profile" className={({ isActive }) => linkClass(isActive)} onClick={closeMenu}>
-                    <User className="w-4 h-4" />
-                    Profile
-                  </NavLink>
+                      <NavLink to="/board/praises" className={({ isActive }) => linkClass(isActive)} onClick={closeMenu}>
+                        <Sparkles className="w-4 h-4" />
+                        Praises
+                      </NavLink>
+                      <NavLink to="/board/archive" className={({ isActive }) => linkClass(isActive)} onClick={closeMenu}>
+                        <Archive className="w-4 h-4" />
+                        Archived
+                      </NavLink>
 
-                  <button
-                    onClick={() => { closeMenu(); void onLogout(); }}
-                    className="flex items-center gap-1 px-3 py-2 rounded-lg text-sm font-medium bg-[var(--theme-surface)] border border-[var(--theme-border)] hover:bg-[var(--theme-card-hover)]"
-                    aria-label="Sign out"
-                  >
-                    <LogOut className="w-4 h-4" />
-                    Sign out
-                  </button>
+                      <NavLink to="/profile" className={({ isActive }) => linkClass(isActive)} onClick={closeMenu}>
+                        <User className="w-4 h-4" />
+                        Profile
+                      </NavLink>
+
+                      <button
+                        onClick={() => { closeMenu(); void onLogout(); }}
+                        className="flex items-center gap-1 px-3 py-2 rounded-lg text-sm font-medium bg-[var(--theme-surface)] border border-[var(--theme-border)] hover:bg-[var(--theme-card-hover)]"
+                        aria-label="Sign out"
+                      >
+                        <LogOut className="w-4 h-4" />
+                        Sign out
+                      </button>
+                    </>
+                  )}
                 </>
               )}
             </div>
