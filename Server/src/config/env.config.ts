@@ -1,3 +1,4 @@
+// Server/src/config/env.config.ts
 import path from 'path';
 import './dotenv.config.js';
 import { parseNodeEnv, req, opt, int } from '../helpers/env.helper.js';
@@ -33,6 +34,9 @@ export interface Env {
   UPLOAD_DIR: string;
   MAX_FILE_MB: number;
   PUBLIC_URL: string;
+
+  /** Comma-separated list of emails to auto-elevate to admin on login */
+  ADMIN_EMAILS: string;
 }
 
 export const env: Env = {
@@ -64,4 +68,7 @@ export const env: Env = {
   UPLOAD_DIR: opt('UPLOAD_DIR', './uploads'),
   MAX_FILE_MB: int('MAX_FILE_MB', 10),
   PUBLIC_URL: opt('PUBLIC_URL', 'http://localhost:3001'),
+
+  // NEW: list of bootstrap admin emails
+  ADMIN_EMAILS: process.env.ADMIN_EMAILS ?? '',
 };
