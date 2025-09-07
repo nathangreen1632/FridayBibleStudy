@@ -74,11 +74,20 @@ export default function Navbar(): React.ReactElement {
     setOpen(false);
   }
 
+  function brandPath(u: { role: string } | null | undefined): string {
+    if (!u) return '/';
+    if (u.role === 'admin') return '/admin';
+    return '/';
+  }
+
   return (
     <header className="sticky top-0 z-40 bg-[var(--theme-bg)]/80 backdrop-blur border-b border-[var(--theme-border)]">
       <div className="max-w-5xl mx-auto px-4 py-3 flex items-center justify-between">
         {/* Brand */}
-        <NavLink to="/" className="text-2xl font-bold text-[var(--theme-accent)]">
+        <NavLink
+          to={brandPath(user)}
+          className="text-2xl font-bold text-[var(--theme-accent)]"
+        >
           Friday Bible Study
         </NavLink>
 
