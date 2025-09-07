@@ -1,7 +1,6 @@
-// Server/src/services/admin/admin.service.ts
-import {Op, WhereOptions} from 'sequelize';
-import {Comment, Group, Prayer, User} from '../../models/index.js';
-import type {Category, Status} from '../../models/prayer.model.js';
+import { Op, WhereOptions, fn, col } from 'sequelize';
+import { Comment, Group, Prayer, User } from '../../models/index.js';
+import type { Category, Status } from '../../models/prayer.model.js';
 
 export type ListPrayersParams = {
   q?: string;
@@ -14,76 +13,103 @@ export type ListPrayersParams = {
 
 export async function findPrayersForAdmin(params: ListPrayersParams) {
   const page = typeof params.page === 'number' && params.page > 0 ? params.page : 1;
-  const pageSize = typeof params.pageSize === 'number' && params.pageSize > 0 ? params.pageSize : 20;
+  const rawSize =
+    typeof params.pageSize === 'number' && params.pageSize > 0
+      ? params.pageSize
+      : 10;
+  const pageSize = Math.min(rawSize, 10); // enforce cap
+
 
   const like = params.q ? `%${params.q}%` : undefined;
 
-  // ✅ Build in one object literal with computed key for Op.or
   const where: WhereOptions = {
     ...(params.groupId ? { groupId: params.groupId } : {}),
     ...(params.status ? { status: params.status } : {}),
     ...(params.category ? { category: params.category } : {}),
-    ...(like
-      ? {
-        [Op.or]: [
-          { title:   { [Op.iLike]: like } },
-          { content: { [Op.iLike]: like } },
-        ],
-      }
-      : {}),
+    ...(like ? { [Op.or]: [{ title: { [Op.iLike]: like } }, { content: { [Op.iLike]: like } }] } : {}),
   };
 
-  const { rows, count } = await Prayer.findAndCountAll({
-    where,
-    include: [
-      { model: Group, as: 'group', attributes: ['id', 'name'] },
-      { model: User,  as: 'author', attributes: ['id', 'name'] },
-    ],
-    order: [['updatedAt', 'DESC']],
-    limit: pageSize,
-    offset: (page - 1) * pageSize,
-  });
+  try {
+    const { rows, count } = await Prayer.findAndCountAll({
+      where,
+      attributes: {
+        // COALESCE("Prayer"."lastCommentAt","Prayer"."updatedAt") AS "lastActivity"
+        include: [[fn('COALESCE', col('Prayer.lastCommentAt'), col('Prayer.updatedAt')), 'lastActivity']],
+      },
+      include: [
+        { model: Group, as: 'group', attributes: ['id', 'name'], required: false },
+        { model: User, as: 'author', attributes: ['id', 'name', 'role'], required: true },
+      ],
+      order: [[col('lastActivity'), 'DESC'], ['id', 'DESC']],
+      limit: pageSize,
+      offset: (page - 1) * pageSize,
+      subQuery: false,
+    });
 
-  const items = rows.map((p) => ({
-    id: p.id,
-    groupId: p.groupId,
-    groupName: (p as any).group?.name ?? '',
-    authorUserId: p.authorUserId,
-    authorName: (p as any).author?.name ?? '',
-    title: p.title,
-    category: p.category,
-    status: p.status,
-    commentCount: p.commentCount ?? 0,
-    lastCommentAt: p.lastCommentAt ?? null,
-    updatedAt: p.updatedAt,
-  }));
+    const items = rows.map((p) => {
+      const plain = p.get({ plain: true }) as any;
+      return {
+        id: plain.id,
+        groupId: plain.groupId,
+        groupName: plain.group?.name ?? '',
+        authorUserId: plain.authorUserId,
+        authorName: plain.author?.name ?? '',
+        title: plain.title ?? '',
+        category: plain.category,
+        status: plain.status,
+        commentCount: typeof plain.commentCount === 'number' ? plain.commentCount : 0,
+        lastCommentAt: plain.lastCommentAt ?? null,
+        updatedAt: plain.updatedAt,
+        lastActivity: plain.lastActivity,
+      };
+    });
 
-  return { items, total: count, page, pageSize };
+    return { items, total: count, page, pageSize };
+  } catch {
+    // graceful fallback
+    return { items: [], total: 0, page, pageSize };
+  }
 }
 
+/** Root-level comments for an admin thread view (no deleted, newest first). */
 export async function getPrayerComments(prayerId: number) {
-  return await Comment.findAll({
-    where: { prayerId, depth: 0, deletedAt: null },
-    order: [['createdAt', 'DESC']],
-    limit: 50,
-  });
+  try {
+    return await Comment.findAll({
+      where: { prayerId, depth: 0, deletedAt: null },
+      order: [['createdAt', 'DESC']],
+      limit: 50,
+    });
+  } catch {
+    return [];
+  }
 }
 
+/** Post an admin-authored root comment. */
 export async function insertAdminComment(prayerId: number, adminId: number, content: string) {
-  return await Comment.create({
-    prayerId,
-    parentId: null,
-    threadRootId: null,
-    depth: 0,
-    authorId: adminId,
-    content,
-  });
+  try {
+    const c = await Comment.create({
+      prayerId,
+      parentId: null,
+      threadRootId: null,
+      depth: 0,
+      authorId: adminId,
+      content,
+    });
+    return { ok: true as const, comment: c };
+  } catch {
+    return { ok: false as const, error: 'Unable to create comment' as const };
+  }
 }
 
+/** Update prayer status (active/praise/archived) with graceful checks. */
 export async function updatePrayerStatus(prayerId: number, status: Status) {
-  const p = await Prayer.findByPk(prayerId);
-  if (!p) return { ok: false, error: 'Not found' as const };
-  p.status = status;
-  await p.save();
-  return { ok: true as const };
+  try {
+    const p = await Prayer.findByPk(prayerId);
+    if (!p) return { ok: false as const, error: 'Not found' as const };
+    p.status = status;
+    await p.save();
+    return { ok: true as const };
+  } catch {
+    return { ok: false as const, error: 'Unable to update status' as const };
+  }
 }
