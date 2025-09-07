@@ -17,7 +17,7 @@ export default function ResetPassword(): React.ReactElement {
   const [submitting, setSubmitting] = useState(false);
   const [ready, setReady] = useState(false);
 
-  // visibility toggles
+
   const [showNew, setShowNew] = useState(false);
   const [showConfirm, setShowConfirm] = useState(false);
 
