@@ -46,6 +46,22 @@ type AuthState = {
 
 const SITE_KEY = import.meta.env.VITE_RECAPTCHA_SITE_KEY as string | undefined;
 
+function humanizeError(value: unknown, fallback: string): string {
+  if (typeof value === 'string') return value;
+  if (value && typeof value === 'object') {
+    const maybe = value as { message?: unknown };
+    if (typeof maybe.message === 'string') return maybe.message;
+    try {
+      // last resort: compact JSON string, not [object Object]
+      return JSON.stringify(value);
+    } catch {
+      /* ignore */
+    }
+  }
+  return fallback;
+}
+
+
 export const useAuthStore = create<AuthState>((set, get) => ({
   loading: false,
   user: null,
@@ -129,10 +145,23 @@ export const useAuthStore = create<AuthState>((set, get) => ({
       // If api() returns a native Response, check ok; otherwise assume it has already parsed/handled.
       if (res instanceof Response) {
         if (!res.ok) {
-          const errBody: unknown = await res.json().catch(() => ({}));
-          const msg = (typeof errBody === 'object' && errBody && 'error' in errBody)
-            ? String((errBody as { error?: unknown }).error ?? 'Login failed')
-            : 'Login failed';
+          let msg = 'Login failed';
+
+          // Prefer JSON error payloads; fall back to plain text; never stringify raw objects via String()
+          try {
+            const parsed: unknown = await res.clone().json(); // clone() so we can still read text if JSON fails
+            if (parsed && typeof parsed === 'object' && 'error' in parsed) {
+              msg = humanizeError((parsed as { error?: unknown }).error, msg);
+            }
+          } catch {
+            try {
+              const text = await res.text();
+              if (text) msg = text;
+            } catch {
+              /* ignore; keep default msg */
+            }
+          }
+
           return { success: false, message: msg };
         }
       }
