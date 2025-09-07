@@ -86,7 +86,7 @@ export default function AdminPrayerDetailPage(): React.ReactElement {
               id={statusSelectId}
               value={localStatus}
               onChange={(e) => setLocalStatus(e.target.value as AdminStatus)}
-              className="rounded-lg border border-[var(--theme-border)] bg-[var(--theme-textbox)] px-3 py-2"
+              className="rounded-lg border border-[var(--theme-border)] bg-[var(--theme-textbox)] text-[var(--theme-placeholder)] placeholder:text[var(--theme-placeholder)] px-3 py-2"
             >
               <option value="active">Prayer</option>
               <option value="praise">Praise</option>
@@ -111,7 +111,7 @@ export default function AdminPrayerDetailPage(): React.ReactElement {
         </label>
         <textarea
           id={updateTextareaId}
-          className="w-full rounded-lg border border-[var(--theme-border)] bg-[var(--theme-textbox)] px-3 py-2"
+          className="w-full rounded-lg border border-[var(--theme-border)] bg-[var(--theme-textbox)] text-[var(--theme-placeholder)] placeholder:[var(--theme-placeholder)] px-3 py-2"
           rows={3}
           value={content}
           onChange={(e) => setContent(e.target.value)}
