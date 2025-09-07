@@ -6,6 +6,8 @@ import { hashPassword, verifyPassword } from '../utils/passwords.util.js';
 import { signJwt } from '../utils/jwt.util.js';
 import { env } from '../config/env.config.js';
 import { sendEmail } from '../services/email.service.js';
+import { anyAdminExists, isBootstrapEmail } from '../services/admin/bootstrap.service.js';
+
 import crypto from 'crypto';
 import bcrypt from 'bcryptjs';
 
@@ -118,8 +120,22 @@ export async function login(req: Request, res: Response): Promise<void> {
   const { email, password } = req.body as { email: string; password: string };
   const user = await User.findOne({ where: { email } });
   if (!user) { res.status(401).json({ error: 'Invalid credentials' }); return; }
+
   const ok = await verifyPassword(password, user.passwordHash);
   if (!ok) { res.status(401).json({ error: 'Invalid credentials' }); return; }
+
+  // --- BOOTSTRAP ONLY: promote the first admin on first successful login ---
+  try {
+    const alreadyHasAdmin = await anyAdminExists();
+    if (!alreadyHasAdmin && isBootstrapEmail(user.email)) {
+      user.role = 'admin';
+      await user.save();
+    }
+  } catch {
+    // Do not block login on bootstrap errors
+  }
+  // --- END BOOTSTRAP ---
+
   const token = signJwt({ userId: user.id, role: user.role });
   setCookie(res, token);
   res.json({ id: user.id, name: user.name, email: user.email, role: user.role });
