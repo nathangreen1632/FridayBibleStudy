@@ -1,11 +1,17 @@
 // Client/src/pages/auth/Login.auth.tsx
-import React, { useEffect, useMemo, useState } from 'react';
-import { Link, useLocation, useNavigate } from 'react-router-dom';
-import { toast } from 'react-hot-toast';
-import { useAuthStore } from '../stores/useAuthStore.ts';
-import { loadRecaptchaEnterprise, getRecaptchaToken } from '../lib/recaptcha.lib.ts';
+import React, {useEffect, useMemo, useState} from 'react';
+import {Link, useLocation, useNavigate} from 'react-router-dom';
+import {toast} from 'react-hot-toast';
+import {useAuthStore} from '../stores/useAuthStore.ts';
+import {getRecaptchaToken, loadRecaptchaEnterprise} from '../lib/recaptcha.lib.ts';
 
 const SITE_KEY = import.meta.env.VITE_RECAPTCHA_SITE_KEY as string | undefined;
+
+// ↓ Helper to centralize landing decision
+function landingPathForRole(role?: string): string {
+  if (role === 'admin') return '/admin';
+  return '/portal'; // classic or anything else
+}
 
 export default function Login(): React.ReactElement {
   const nav = useNavigate();
@@ -15,21 +21,18 @@ export default function Login(): React.ReactElement {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [showPw, setShowPw] = useState(false);
-  const [ready, setReady] = useState(false);        // reCAPTCHA readiness (optional)
+  const [ready, setReady] = useState(false);
   const [err, setErr] = useState<string | null>(null);
 
-  // Load reCAPTCHA (optional; login proceeds even if unavailable)
   useEffect(() => {
     let mounted = true;
     (async () => {
-      if (!SITE_KEY) { setReady(true); return; } // allow login without captcha if not configured
+      if (!SITE_KEY) { setReady(true); return; }
       try {
         await loadRecaptchaEnterprise(SITE_KEY);
         if (mounted) setReady(true);
       } catch {
         if (mounted) {
-          setReady(false);
-          // Don’t block login; just inform
           toast.error('Security check could not load. You can still try to sign in.');
           setReady(true);
         }
@@ -54,29 +57,48 @@ export default function Login(): React.ReactElement {
     e.preventDefault();
     setErr(null);
 
-    // Optional: obtain token (not required for existing login signature)
     const recaptchaToken = ready ? await safeGetRecaptchaToken() : null;
     if (SITE_KEY && !recaptchaToken) {
-      // Non-blocking warning if site key exists but token failed
       toast('Proceeding without security token.', { icon: '⚠️' });
     }
 
     const { success, message } = await login(email, password /* , recaptchaToken */);
     if (success) {
       toast.success('Welcome back!');
-      const to = (loc.state)?.from ?? '/portal';
-      nav(to, { replace: true });
+
+      // Fresh role after login
+      const role = useAuthStore.getState().user?.role;
+      const defaultDest = landingPathForRole(role);
+
+      // Safely read a possible redirect
+      const from = (loc.state as { from?: string } | null | undefined)?.from;
+
+      // Only honor "from" if it's not a neutral page and role is allowed
+      const isNeutral =
+        !from ||
+        from === '/' ||
+        from.startsWith('/login') ||
+        from.startsWith('/register');
+
+      const isAdminOnly = !!from && from.startsWith('/admin');
+      const roleAllowsFrom = role === 'admin' || !isAdminOnly;
+
+      // ✅ Always a string
+      const target: string =
+        !isNeutral && roleAllowsFrom ? from : defaultDest;
+
+      nav(target, { replace: true });
     } else {
       const msg = message ?? 'Login failed';
       setErr(msg);
       toast.error(msg);
     }
+
   }
 
   return (
     <div className="min-h-[80vh] bg-[var(--theme-bg)] text-[var(--theme-text)] flex items-center justify-center p-3 sm:p-4">
       {/* Global <Toaster /> is rendered in App.tsx */}
-
       <form
         onSubmit={onSubmit}
         aria-label="Sign in"
