@@ -14,6 +14,6 @@ type AdminUiState = {
 export const useAdminUiStore = create<AdminUiState>((set) => ({
   q: '',
   page: 1,
-  pageSize: 20,
+  pageSize: 10,
   set: (patch) => set((s) => ({ ...s, ...patch })),
 }));
