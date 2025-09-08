@@ -6,6 +6,8 @@ import {
   fetchPrayerThread,
   patchPrayerStatus,
   postAdminComment,
+  // NEW: hard delete API
+  deleteAdminPrayer,
 } from '../../helpers/api/adminApi';
 import type { AdminListResponse, AdminPrayerRow } from '../../types/admin.types';
 import type { Prayer } from '../../types/domain.types';
@@ -37,6 +39,9 @@ type State = {
     prayerId: number,
     next: 'active' | 'praise' | 'archived'
   ) => Promise<{ ok: boolean; message?: string }>;
+
+  // NEW: hard delete
+  deletePrayer: (prayerId: number) => Promise<{ ok: boolean; message?: string }>;
 };
 
 function safeIso(input: unknown): string | null {
@@ -92,7 +97,7 @@ function normalizeThreadPayload(raw: unknown): { prayer?: Prayer; comments: Comm
     if (Array.isArray(thread.items)) candidates.push(...(thread.items as unknown[]));
     if (Array.isArray(thread.rows)) candidates.push(...(thread.rows as unknown[]));
 
-    const threadComments = (thread).comments;
+    const threadComments = thread.comments;
     if (threadComments && typeof threadComments === 'object') {
       if (Array.isArray(threadComments.items)) candidates.push(...(threadComments.items as unknown[]));
       if (Array.isArray(threadComments.rows)) candidates.push(...(threadComments.rows as unknown[]));
@@ -372,6 +377,42 @@ export const useAdminStore = create<State>((set, get) => ({
       return { ok: true };
     } catch {
       return { ok: false, message: 'Unable to update status.' };
+    }
+  },
+
+  // NEW: hard delete (admin)
+  deletePrayer: async (prayerId) => {
+    if (!prayerId || Number.isNaN(prayerId)) {
+      return { ok: false, message: 'Invalid prayer id.' };
+    }
+    try {
+      const res = await deleteAdminPrayer(prayerId);
+      // Handle Fetch Response pattern (no custom { ok } wrapper)
+      if (!res || !(res.status >= 200 && res.status < 300)) {
+        return { ok: false, message: 'Delete failed.' };
+      }
+
+      // Optimistically remove from caches to keep UI in sync
+      const s = get();
+      const nextList = s.list.filter((row) => row.id !== prayerId);
+      const nextDetailPrayers = { ...s.detailPrayers };
+      const nextDetailRows = { ...s.detailRows };
+      const nextDetailComments = { ...s.detailComments };
+      delete nextDetailPrayers[prayerId];
+      delete nextDetailRows[prayerId];
+      delete nextDetailComments[prayerId];
+
+      set({
+        list: nextList,
+        total: Math.max(0, s.total - 1),
+        detailPrayers: nextDetailPrayers,
+        detailRows: nextDetailRows,
+        detailComments: nextDetailComments,
+      });
+
+      return { ok: true };
+    } catch {
+      return { ok: false, message: 'Unable to delete this prayer right now.' };
     }
   },
 }));
