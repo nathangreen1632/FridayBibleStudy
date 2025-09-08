@@ -120,7 +120,7 @@ export default function AdminPrayerDetailPage(): React.ReactElement {
           type="button"
           onClick={onBack}
           className="rounded-xl bg-[var(--theme-surface)] border border-[var(--theme-border)]
-                     px-3 py-1.5 text-sm hover:bg-[var(--theme-card-hover)]"
+                     px-3 py-1.5 text-sm hover:text-[var(--theme-textbox)] hover:bg-[var(--theme-button-hover)] transition-colors duration-200"
         >
           ← Back to list
         </button>
@@ -151,7 +151,7 @@ export default function AdminPrayerDetailPage(): React.ReactElement {
             <button
               type="button"
               onClick={onSetStatus}
-              className="rounded-xl bg-[var(--theme-button)] text-[var(--theme-text-white)] px-4 py-2 hover:bg-[var(--theme-button-hover)] hover:text-[var(--theme-textbox)]"
+              className="rounded-xl bg-[var(--theme-button)] text-[var(--theme-text-white)] px-4 py-2 hover:bg-[var(--theme-button-hover)] hover:text-[var(--theme-textbox)] transition-colors duration-200"
             >
               Update Status
             </button>
@@ -159,7 +159,7 @@ export default function AdminPrayerDetailPage(): React.ReactElement {
             <button
               type="button"
               onClick={onClickDelete}
-              className="rounded-xl bg-[var(--theme-error)] text-[var(--theme-textbox)] px-4 py-2 hover:bg-[var(--theme-button-error)]"
+              className="rounded-xl bg-[var(--theme-error)] text-[var(--theme-textbox)] px-4 py-2 hover:bg-[var(--theme-button-error)] transition-colors duration-200"
               aria-label="Delete prayer"
             >
               Delete
@@ -198,7 +198,7 @@ export default function AdminPrayerDetailPage(): React.ReactElement {
         <div className="mt-2 flex justify-end">
           <button
             onClick={onPost}
-            className="rounded-xl bg-[var(--theme-button-blue)] text-[var(--theme-text-white)] px-4 py-2 hover:bg-[var(--theme-button-blue-hover)]"
+            className="rounded-xl bg-[var(--theme-button)] text-[var(--theme-text-white)] px-4 py-2 hover:text-[var(--theme-textbox)] hover:bg-[var(--theme-button-hover)] transition-colors duration-200"
           >
             Post
           </button>
