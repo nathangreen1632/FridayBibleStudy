@@ -40,7 +40,7 @@ export default function AdminPrayersTable(
       </thead>
       <tbody>
       {rows.map((r) => (
-        <tr key={r.id} className="border-t border-[var(--theme-border)] hover:bg-[var(--theme-card-hover)]">
+        <tr key={r.id} className="border-t border-[var(--theme-border)] hover:bg-[var(--theme-card-hover-alt)]">
           <td className="p-3">
             <Link
               to={`/admin/prayers/${r.id}`}
