@@ -7,6 +7,11 @@ type Props = {
   className?: string;
 };
 
+function formatStatus(s: string): string {
+  const coerced = s === 'active' ? 'prayer' : s;
+  return coerced.charAt(0).toUpperCase() + coerced.slice(1);
+}
+
 export default function AdminPrayerSummaryCard({
                                                  prayerId,
                                                  className,
@@ -25,6 +30,7 @@ export default function AdminPrayerSummaryCard({
 
   const category = row?.category ?? (prayer?.category as string) ?? 'prayer';
   const status = row?.status ?? (prayer?.status as string) ?? 'active';
+  const statusDisplay = formatStatus(status);
   const updatedAt = row?.updatedAt ? new Date(row.updatedAt) : undefined;
   const lastCommentAt = row?.lastCommentAt ? new Date(row.lastCommentAt) : undefined;
   const commentCount = typeof row?.commentCount === 'number' ? row.commentCount : 0;
@@ -64,7 +70,7 @@ export default function AdminPrayerSummaryCard({
 
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-2 sm:gap-3 mb-4">
         <InfoRow label="Category" value={category} />
-        <InfoRow label="Status" value={status} />
+        <InfoRow label="Status" value={statusDisplay} />
         <InfoRow label="Comments" value={commentCount} />
         <InfoRow label="Last Comment" value={lastCommentAt ? lastCommentAt.toLocaleString() : '—'} />
         <InfoRow label="Updated" value={updatedAt ? updatedAt.toLocaleString() : '—'} />
