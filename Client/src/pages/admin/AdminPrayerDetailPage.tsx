@@ -3,6 +3,7 @@ import React, { useEffect, useState } from 'react';
 import { useLocation, useNavigate, useParams } from 'react-router-dom';
 import { useAdminStore } from '../../stores/admin/useAdminStore';
 import { useAdminUiStore } from '../../stores/admin/useAdminUiStore';
+import AdminPrayerSummaryCard from '../../components/admin/AdminPrayerSummaryCard';
 
 type AdminStatus = 'active' | 'praise' | 'archived';
 
@@ -14,7 +15,7 @@ export default function AdminPrayerDetailPage(): React.ReactElement {
   const location = useLocation();
   const ui = useAdminUiStore();
 
-  const { loadThread, detailComments, setStatus, addComment } = useAdminStore();
+  const { loadThread, detailComments, detailPrayers, setStatus, addComment } = useAdminStore();
 
   const [content, setContent] = useState('');
   const [localStatus, setLocalStatus] = useState<AdminStatus>('active'); // default
@@ -28,6 +29,15 @@ export default function AdminPrayerDetailPage(): React.ReactElement {
       void loadThread(prayerId);
     }
   }, [prayerId, loadThread]);
+
+  // Keep the Status dropdown in sync when the prayer loads/changes
+  useEffect(() => {
+    const current = detailPrayers[prayerId];
+    const s = current?.status;
+    if (s === 'active' || s === 'praise' || s === 'archived') {
+      setLocalStatus(s);
+    }
+  }, [prayerId, detailPrayers]);
 
   async function onPost() {
     const msg = content.trim();
@@ -75,6 +85,9 @@ export default function AdminPrayerDetailPage(): React.ReactElement {
           ← Back to list
         </button>
       </div>
+
+      {/* Pass the ID; the card reads from the store */}
+      <AdminPrayerSummaryCard prayerId={prayerId} />
 
       <div className="bg-[var(--theme-surface)] border border-[var(--theme-border)] rounded-xl p-3">
         <div className="flex flex-col sm:flex-row gap-3 sm:items-end">
