@@ -1,6 +1,6 @@
-import { Op, WhereOptions, fn, col } from 'sequelize';
-import { Comment, Group, Prayer, User } from '../../models/index.js';
-import type { Category, Status } from '../../models/prayer.model.js';
+import {col, fn, Op, WhereOptions} from 'sequelize';
+import {Comment, Group, Prayer, User} from '../../models/index.js';
+import type {Category, Status} from '../../models/prayer.model.js';
 
 export type ListPrayersParams = {
   q?: string;
@@ -111,5 +111,24 @@ export async function updatePrayerStatus(prayerId: number, status: Status) {
     return { ok: true as const };
   } catch {
     return { ok: false as const, error: 'Unable to update status' as const };
+  }
+}
+
+export async function findPrayerByIdForAdmin(id: number) {
+  if (!id || Number.isNaN(Number(id))) return null;
+
+  try {
+    return await Prayer.findByPk(id, {
+      attributes: {
+        // expose a stable "lastActivity" like the list does
+        include: [[fn('COALESCE', col('Prayer.lastCommentAt'), col('Prayer.updatedAt')), 'lastActivity']],
+      },
+      include: [
+        {model: Group, as: 'group', attributes: ['id', 'name'], required: false},
+        {model: User, as: 'author', attributes: ['id', 'name', 'role'], required: true},
+      ],
+    });
+  } catch {
+    return null; // graceful fallback; controller returns 500 on unexpected errors
   }
 }
