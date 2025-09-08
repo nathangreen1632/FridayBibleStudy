@@ -2,6 +2,7 @@
 import type { Request, Response } from 'express';
 import type { Order, WhereOptions } from 'sequelize';
 import { Group, PrayerUpdate, User, Attachment, PrayerParticipant } from '../models/index.js';
+import { sequelize } from '../config/sequelize.config.js';
 import { Prayer, type Status } from '../models/prayer.model.js';
 import { emitToGroup } from '../config/socket.config.js';
 import path from 'path';
@@ -329,11 +330,43 @@ export async function deletePrayer(req: Request, res: Response): Promise<void> {
     return;
   }
 
-  await prayer.destroy();
+  // capture for post-delete housekeeping
+  const groupId = prayer.groupId;
+  const statusBeforeDelete = prayer.status;
+
+  try {
+    await sequelize.transaction(async (t) => {
+      // Best-effort child deletes (safe even if tables are empty).
+      // If you use ON DELETE CASCADE, these will just be redundant but harmless.
+      await PrayerParticipant.destroy({ where: { prayerId: prayer.id }, transaction: t });
+      await PrayerUpdate.destroy({ where: { prayerId: prayer.id }, transaction: t });
+      await Attachment.destroy({ where: { prayerId: prayer.id }, transaction: t });
+
+      // Remove the root record
+      await prayer.destroy({ transaction: t });
+    });
+  } catch {
+    res.status(500).json({ error: 'Unable to delete this prayer right now.' });
+    return;
+  }
+
   // keep existing event name to avoid client breakage
-  emitToGroup(prayer.groupId, 'prayer:deleted', { id: prayer.id });
+  try {
+    emitToGroup(groupId, 'prayer:deleted', { id });
+  } catch {
+    // non-fatal
+  }
+
+  // Keep column dense so manual sorting remains meaningful (best-effort)
+  try {
+    await normalizePositions(groupId, statusBeforeDelete);
+  } catch {
+    // non-fatal
+  }
+
   res.json({ ok: true });
 }
+
 
 export async function createUpdate(req: Request, res: Response): Promise<void> {
   const prayerId = Number(req.params.id);
