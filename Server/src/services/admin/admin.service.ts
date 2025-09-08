@@ -1,6 +1,19 @@
 import {col, fn, Op, WhereOptions} from 'sequelize';
 import {Comment, Group, Prayer, User} from '../../models/index.js';
 import type {Category, Status} from '../../models/prayer.model.js';
+import {
+  getOpenPrayer,
+  resolveThreadInfo,
+  insertComment,
+  calcNewCounts,
+  updatePrayerCounts,
+  buildAuthorMapFor,
+  mapComment,
+  emitCreationEvents,
+  bumpCardIfRoot,
+  bestEffortNotify,
+} from '../../helpers/commentsController.helper.js';
+
 
 export type ListPrayersParams = {
   q?: string;
@@ -84,20 +97,56 @@ export async function getPrayerComments(prayerId: number) {
   }
 }
 
-/** Post an admin-authored root comment. */
-export async function insertAdminComment(prayerId: number, adminId: number, content: string) {
+/** Post an admin-authored root comment with full side-effects. */
+export async function insertAdminComment(
+  prayerId: number,
+  adminId: number,
+  content: string
+): Promise<
+  | { ok: true; comment: ReturnType<typeof mapComment>; newCount: number; lastCommentAt: Date | null }
+  | { ok: false; error: string }
+> {
   try {
-    const c = await Comment.create({
-      prayerId,
-      parentId: null,
-      threadRootId: null,
-      depth: 0,
+    const prayer = await getOpenPrayer(prayerId);
+    if (!prayer) return { ok: false, error: 'Prayer not found or comments closed' };
+
+    // admin adds a ROOT update (depth 0)
+    const { depth, threadRootId, parentResolvedId } = await resolveThreadInfo(null);
+
+    const inserted = await insertComment({
+      pid: prayerId,
       authorId: adminId,
       content,
+      parentResolvedId,
+      depth,
+      threadRootId,
     });
-    return { ok: true as const, comment: c };
+
+    const { latestAt, newCount } = calcNewCounts(prayer, inserted);
+    await updatePrayerCounts(prayerId, latestAt, newCount);
+
+    const authorMap = await buildAuthorMapFor(adminId);
+    const payloadComment = mapComment(inserted, authorMap);
+
+    // emit to group: comment:created + prayer:commentCount
+    emitCreationEvents({
+      groupId: (prayer as any).groupId,
+      pid: prayerId,
+      payloadComment,
+      newCount,
+      latestAt: latestAt ?? new Date(),
+    });
+
+    // bump card & emit UpdateCreated / PrayerUpdated
+    await bumpCardIfRoot(prayer, inserted);
+
+    // best-effort email notify original author + admins
+    await bestEffortNotify(prayer, content);
+
+    return { ok: true, comment: payloadComment, newCount, lastCommentAt: latestAt ?? null };
   } catch {
-    return { ok: false as const, error: 'Unable to create comment' as const };
+    // graceful fallback
+    return { ok: false, error: 'Unable to create comment' };
   }
 }
 
