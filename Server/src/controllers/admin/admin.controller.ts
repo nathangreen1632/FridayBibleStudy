@@ -1,7 +1,7 @@
 // Server/src/controllers/admin.controller.ts
 import type { Request, Response } from 'express';
 import { User } from '../../models/index.js';
-import { findPrayersForAdmin, getPrayerComments, insertAdminComment, updatePrayerStatus } from '../../services/admin/admin.service.js';
+import { findPrayersForAdmin, getPrayerComments, insertAdminComment, updatePrayerStatus, findPrayerByIdForAdmin } from '../../services/admin/admin.service.js';
 import type { Status } from '../../models/prayer.model.js';
 
 export async function promoteUser(req: Request, res: Response): Promise<void> {
@@ -82,5 +82,27 @@ export async function demoteUser(req: Request, res: Response): Promise<void> {
     res.json({ ok: true });
   } catch {
     res.status(500).json({ error: 'Could not demote user' });
+  }
+}
+
+export async function getPrayerDetail(req: Request, res: Response): Promise<void> {
+  const rawId = req.params?.prayerId;
+  const prayerId = Number(rawId);
+
+  if (!rawId || Number.isNaN(prayerId) || prayerId <= 0) {
+    res.status(400).json({ error: 'Invalid prayerId' });
+    return;
+  }
+
+  try {
+    const prayer = await findPrayerByIdForAdmin(prayerId);
+    if (!prayer) {
+      res.status(404).json({ error: 'Prayer not found' });
+      return;
+    }
+    // Returning { prayer } matches your client-side normalizer paths.
+    res.json({ prayer });
+  } catch {
+    res.status(500).json({ error: 'Failed to load prayer detail' });
   }
 }
