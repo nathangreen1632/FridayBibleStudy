@@ -2,7 +2,7 @@ import { Router } from 'express';
 import authRouter from './auth.route.js';
 import prayersRouter from './prayers.route.js';
 import groupsRouter from './groups.route.js';
-import adminRouter from './admin.route.js';
+import adminRouter from './admin/admin.route.js';
 import exportRouter from './export.route.js';
 import contactRouter from './contact.route.js';
 import commentsRouter from './comments.route.js';

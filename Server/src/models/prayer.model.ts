@@ -3,8 +3,7 @@ import type { AttachmentAttributes } from './attachment.model.js';
 import type { PrayerUpdateAttributes } from './prayerUpdate.model.js';
 
 export type Category = 'prayer' | 'long-term' | 'salvation' | 'pregnancy' | 'birth' | 'praise';
-// Updated per spec: use "praise" instead of "main"
-export type Status = 'active' | 'praise' | 'archived';
+export type Status   = 'active' | 'praise' | 'archived';
 
 export interface PrayerAttributes {
   id: number;
@@ -19,7 +18,6 @@ export interface PrayerAttributes {
   createdAt: Date;
   updatedAt: Date;
 
-  // 👇 Added for comments feature
   commentCount?: number;
   lastCommentAt?: Date | null;
   isCommentsClosed?: boolean;
@@ -51,7 +49,6 @@ export class Prayer extends Model<PrayerAttributes, PrayerCreation> implements P
   declare createdAt: Date;
   declare updatedAt: Date;
 
-  // 👇 Added fields
   declare commentCount?: number;
   declare lastCommentAt?: Date | null;
   declare isCommentsClosed?: boolean;
@@ -71,7 +68,6 @@ export class Prayer extends Model<PrayerAttributes, PrayerCreation> implements P
           type: DataTypes.ENUM('prayer', 'long-term', 'salvation', 'pregnancy', 'birth', 'praise'),
           allowNull: false,
         },
-        // Updated ENUM values here:
         status: {
           type: DataTypes.ENUM('active', 'praise', 'archived'),
           allowNull: false,
@@ -81,14 +77,32 @@ export class Prayer extends Model<PrayerAttributes, PrayerCreation> implements P
         impersonatedByAdminId: { type: DataTypes.INTEGER, allowNull: true },
         createdAt: DataTypes.DATE,
         updatedAt: DataTypes.DATE,
-
-        // 👇 Added columns for comments meta
         commentCount: { type: DataTypes.INTEGER, allowNull: false, defaultValue: 0 },
         lastCommentAt: { type: DataTypes.DATE, allowNull: true },
         isCommentsClosed: { type: DataTypes.BOOLEAN, allowNull: false, defaultValue: false },
       },
-      { sequelize, tableName: 'prayers' }
+      { sequelize, tableName: 'prayers', modelName: 'Prayer' }
     );
     return Prayer;
+  }
+
+  // ✅ Tell Sequelize exactly how to join
+  static associate(models: any): void {
+    // prayers.authorUserId → users.id
+    Prayer.belongsTo(models.User,  {
+      as: 'author',
+      foreignKey: 'authorUserId',
+      targetKey: 'id',
+    });
+
+    // prayers.groupId → groups.id
+    Prayer.belongsTo(models.Group, {
+      as: 'group',
+      foreignKey: 'groupId',
+      targetKey: 'id',
+    });
+
+    // Optional: uncomment if you use eager loads elsewhere
+    // Prayer.hasMany(models.Comment, { as: 'comments', foreignKey: 'prayerId', sourceKey: 'id' });
   }
 }

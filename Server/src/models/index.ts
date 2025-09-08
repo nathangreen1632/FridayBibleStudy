@@ -1,3 +1,4 @@
+// Server/src/models/index.ts
 import { Sequelize } from 'sequelize';
 import { sequelize } from '../config/sequelize.config.js';
 import { User } from './user.model.js';
@@ -8,8 +9,6 @@ import { PrayerUpdate } from './prayerUpdate.model.js';
 import { Attachment } from './attachment.model.js';
 import { OtpToken } from './otpToken.model.js';
 import { PrayerParticipant } from './prayerParticipant.model.js';
-
-// 👇 NEW: comments models
 import { Comment } from './comment.model.js';
 import { CommentRead } from './commentRead.model.js';
 
@@ -23,8 +22,6 @@ function initAll(s: Sequelize): void {
   Attachment.initModel(s);
   OtpToken.initModel(s);
   PrayerParticipant.initModel(s);
-
-  // 👇 NEW: init comment-related models
   Comment.initModel(s);
   CommentRead.initModel(s);
 
@@ -34,8 +31,14 @@ function initAll(s: Sequelize): void {
   User.hasMany(GroupMember,    { foreignKey: 'userId',  onDelete: 'CASCADE', onUpdate: 'CASCADE' });
   Group.hasMany(GroupMember,   { foreignKey: 'groupId', onDelete: 'CASCADE', onUpdate: 'CASCADE' });
 
+  // ✅ Explicit aliases to match your service includes
   Prayer.belongsTo(User,  { foreignKey: 'authorUserId', as: 'author', onDelete: 'SET NULL', onUpdate: 'CASCADE' });
-  Prayer.belongsTo(Group, { foreignKey: 'groupId',                    onDelete: 'CASCADE',  onUpdate: 'CASCADE' });
+  Prayer.belongsTo(Group, { foreignKey: 'groupId',      as: 'group',  onDelete: 'CASCADE',  onUpdate: 'CASCADE' });
+
+  // Optional inverse relations (helpful in other queries)
+  User.hasMany(Prayer,  { foreignKey: 'authorUserId', as: 'authoredPrayers', onDelete: 'SET NULL', onUpdate: 'CASCADE' });
+  Group.hasMany(Prayer, { foreignKey: 'groupId',      as: 'prayers',         onDelete: 'CASCADE',  onUpdate: 'CASCADE' });
+
   Prayer.hasMany(PrayerUpdate, { foreignKey: 'prayerId', as: 'updates',     onDelete: 'CASCADE', onUpdate: 'CASCADE' });
   Prayer.hasMany(Attachment,   { foreignKey: 'prayerId', as: 'attachments', onDelete: 'CASCADE', onUpdate: 'CASCADE' });
 
@@ -65,18 +68,14 @@ function initAll(s: Sequelize): void {
     onUpdate: 'CASCADE'
   });
 
-  // 👇 NEW: comments associations
-  // - Each comment belongs to a prayer and (optionally) to a parent/root comment for threading
-  // - Also link to author for convenience; add Prayer.hasMany for cascade visibility
+  // Comments
   Comment.belongsTo(Prayer, { foreignKey: 'prayerId', onDelete: 'CASCADE', onUpdate: 'CASCADE' });
   Prayer.hasMany(Comment,   { foreignKey: 'prayerId', as: 'comments', onDelete: 'CASCADE', onUpdate: 'CASCADE' });
 
   Comment.belongsTo(User,   { foreignKey: 'authorId', as: 'author', onDelete: 'CASCADE', onUpdate: 'CASCADE' });
-
   Comment.belongsTo(Comment, { foreignKey: 'parentId',     as: 'parent', onDelete: 'SET NULL', onUpdate: 'CASCADE' });
   Comment.belongsTo(Comment, { foreignKey: 'threadRootId', as: 'root',   onDelete: 'SET NULL', onUpdate: 'CASCADE' });
 
-  // Track per-user last seen time for comments on a prayer
   CommentRead.belongsTo(Prayer, { foreignKey: 'prayerId', onDelete: 'CASCADE', onUpdate: 'CASCADE' });
 }
 
@@ -92,7 +91,6 @@ export {
   Attachment,
   OtpToken,
   PrayerParticipant,
-  // 👇 NEW: export comment models
   Comment,
   CommentRead,
 };
