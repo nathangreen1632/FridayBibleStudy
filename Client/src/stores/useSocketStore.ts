@@ -111,7 +111,7 @@ export const useSocketStore = create<SocketState>((set, get) => {
   function onPrayerUpdated(d: PrayerUpdatedPayload) {
     try { get().enqueue({ type: 'upsert', p: d.prayer }); } catch {}
     try { praisesOnSocketUpsert(d.prayer); } catch {}
-    try { myPrayersOnSocketUpsert(d.prayer); } catch {}   // ← ADD
+    try { myPrayersOnSocketUpsert(d.prayer); } catch {}
     // NOTE: no explicit rebuildColumn call needed; upsertPrayer re-sorts by `position`.
   }
 
@@ -125,7 +125,7 @@ export const useSocketStore = create<SocketState>((set, get) => {
       onE<PrayerCreatedPayload>(Events.PrayerCreated, (d) => {
         try { get().enqueue({ type: 'upsert', p: d.prayer }); } catch {}
         try { praisesOnSocketUpsert(d.prayer); } catch {}
-        try { myPrayersOnSocketUpsert(d.prayer); } catch {}   // ← ADD
+        try { myPrayersOnSocketUpsert(d.prayer); } catch {}
       });
 
       onE<PrayerUpdatedPayload>(Events.PrayerUpdated, onPrayerUpdated);
@@ -134,13 +134,16 @@ export const useSocketStore = create<SocketState>((set, get) => {
         try { get().enqueue({ type: 'upsert', p: d.prayer }); } catch {}
         try { get().enqueue({ type: 'move', id: d.prayer.id, to: d.to }); } catch {}
         try { praisesOnSocketUpsert(d.prayer); } catch {}
-        try { myPrayersOnSocketUpsert(d.prayer); } catch {}   // ← ADD
+        try { myPrayersOnSocketUpsert(d.prayer); } catch {}
       });
 
       onE<PrayerDeletedPayload>(Events.PrayerDeleted, (d) => {
-        // keep board logic as-is (no 'remove' Patch variant); mirror praises behavior
+        // ✅ NEW: remove from the board immediately
+        try { useBoardStore.getState().removePrayer(d.id); } catch {}
+
+        // existing behaviors (keep them)
         try { praisesOnSocketRemove(d.id); } catch {}
-        try { myPrayersOnSocketRemove(d.id); } catch {}       // ← ADD
+        try { myPrayersOnSocketRemove(d.id); } catch {}
       });
 
       // When an update is added to a prayer, bump it visually right away.
