@@ -57,3 +57,19 @@ export async function patchPrayerStatus(
     }
   );
 }
+
+// Client/src/helpers/api/adminApi.ts
+export async function deleteAdminPrayer(
+  prayerId: number,
+  recaptchaToken?: string
+): Promise<Response> {
+  const headers: Record<string, string> = { 'Content-Type': 'application/json' };
+  if (recaptchaToken) headers['x-recaptcha-token'] = recaptchaToken;
+
+  return fetch(`/api/admin/prayers/${prayerId}`, {
+    method: 'DELETE',
+    credentials: 'include',
+    headers,
+  });
+}
+
