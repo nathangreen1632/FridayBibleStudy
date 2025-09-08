@@ -58,6 +58,31 @@ function devWarnOnce(key: string, msg: string, detail?: unknown) {
 }
 
 /** ----------------------------------------------------------------------------
+ * NEW: Canonical route-key normalizer (numbers -> :id, :xxxId -> :id)
+ * ---------------------------------------------------------------------------*/
+/**
+ * Canonicalize an Express request to a stable route key:
+ *  - METHOD + " " + (baseUrl + routePath, or req.path when route.path is missing)
+ *  - Replace any numeric path segment with ':id'
+ *  - Replace ':prayerId' (or any ':SomethingId') with ':id'
+ *  - Collapse duplicate slashes
+ */
+function makeRouteKey(req: Request): string {
+  const method = (req.method || 'GET').toUpperCase();
+  // Prefer the registered route pattern when available
+  const routePath = (req.route?.path as string | undefined) ?? req.path ?? '';
+  const raw = `${req.baseUrl || ''}${routePath || ''}`;
+
+  const normalized = raw
+    .replace(/\/\d+(\b|(?=\/))/g, '/:id')   // numbers -> :id
+    .replace(/:([a-zA-Z]+)Id\b/g, ':id')    // :somethingId -> :id
+    .replace(/:prayerId\b/g, ':id')         // explicit safety
+    .replace(/\/{2,}/g, '/');               // no double slashes
+
+  return `${method} ${normalized}`;
+}
+
+/** ----------------------------------------------------------------------------
  * Path-alias patterns (header-driven) for comments actions
  * ---------------------------------------------------------------------------*/
 
@@ -72,8 +97,7 @@ const ACTION_PATTERNS: Record<string, Array<{ method: string; paths: string[] }>
  * Legacy route→action resolution (fallback for existing endpoints)
  * ---------------------------------------------------------------------------*/
 
-// Map “METHOD path” → Enterprise action (works with your existing routes)
-// Map “METHOD path” → Enterprise action (works with your existing routes)
+// Existing map (kept intact)
 const ROUTE_ACTIONS: Record<string, string> = {
   // AUTH
   'POST /auth/login': 'login',
@@ -84,13 +108,13 @@ const ROUTE_ACTIONS: Record<string, string> = {
   // ADMIN (existing)
   'POST /admin/promote': 'admin_promote',
 
-  // ADMIN status patch (expect what your client actually uses)
+  // ADMIN status patch
   'PATCH /api/admin/prayers/:id/status': 'admin_patch_status',
   'PATCH /admin/prayers/:id/status': 'admin_patch_status',
   'PATCH /api/admin/prayers/:prayerId/status': 'admin_patch_status',
   'PATCH /admin/prayers/:prayerId/status': 'admin_patch_status',
 
-  // ADMIN delete (unchanged)
+  // ADMIN delete
   'DELETE /api/admin/prayers/:id': 'admin_prayer_delete',
   'DELETE /admin/prayers/:id': 'admin_prayer_delete',
   'DELETE /api/admin/prayers/:prayerId': 'admin_prayer_delete',
@@ -110,6 +134,19 @@ const ROUTE_ACTIONS: Record<string, string> = {
   'POST /prayers/:id/attachments': 'media_upload',
 };
 
+/** ----------------------------------------------------------------------------
+ * NEW: Normalized route map for admin endpoints (works with makeRouteKey)
+ * ---------------------------------------------------------------------------*/
+const NORMALIZED_ROUTE_ACTIONS: Record<string, string> = {
+  // Admin comments (typed emits expect this)
+  'POST /api/admin/prayers/:id/comments': 'admin_post_comment',
+  'POST /admin/prayers/:id/comments': 'admin_post_comment', // legacy/non-api fallback
+  'POST /prayers/:id/comments': 'admin_post_comment',       // extra safety
+
+  // Admin delete & status (canonical)
+  'DELETE /api/admin/prayers/:id': 'admin_prayer_delete',
+  'PATCH /api/admin/prayers/:id/status': 'admin_patch_status',
+};
 
 // Generate multiple lookup keys that tolerate the /api prefix and router mounts
 function routeKeyCandidates(req: Request): string[] {
@@ -138,10 +175,17 @@ function routeKeyCandidates(req: Request): string[] {
   ]);
 
   // Drop keys with empty paths
-  return Array.from(set).filter(k => k.split(' ')[1]);
+  return Array.from(set).filter((k) => k.split(' ')[1]);
 }
 
 function resolveExpectedActionFromRoute(req: Request): string | null {
+  // 1) Try strict normalized key first (covers admin comments/delete/status robustly)
+  const normalizedKey = makeRouteKey(req);
+  if (NORMALIZED_ROUTE_ACTIONS[normalizedKey]) {
+    return NORMALIZED_ROUTE_ACTIONS[normalizedKey];
+  }
+
+  // 2) Fall back to legacy candidates against existing ROUTE_ACTIONS
   for (const key of routeKeyCandidates(req)) {
     if (ROUTE_ACTIONS[key]) return ROUTE_ACTIONS[key];
   }
@@ -208,7 +252,10 @@ async function verifyAndAttach(
   } catch (err: unknown) {
     res.status(502).json({
       error: 'reCAPTCHA verification error',
-      message: (err && typeof err === 'object' && 'message' in err) ? String((err as any).message) : String(err),
+      message:
+        err && typeof err === 'object' && 'message' in err
+          ? String((err as any).message)
+          : String(err),
     });
   }
 }
@@ -236,7 +283,9 @@ export function recaptchaGuard(expectedAction: string) {
 /**
  * Smart reCAPTCHA middleware.
  * - If client sends `x-recaptcha-action`, try to match against ACTION_PATTERNS (header-driven).
- * - Otherwise, fall back to legacy route→action resolution (ROUTE_ACTIONS).
+ * - Otherwise, fall back to route→action resolution:
+ *     1) normalized key via makeRouteKey() + NORMALIZED_ROUTE_ACTIONS
+ *     2) legacy ROUTE_ACTIONS with candidate keys
  */
 export async function recaptchaMiddleware(req: Request, res: Response, next: NextFunction): Promise<void> {
   const token =
@@ -253,16 +302,16 @@ export async function recaptchaMiddleware(req: Request, res: Response, next: Nex
   // If we have an action header that we recognize, use path-alias matching
   if (actionHeader && ACTION_PATTERNS[actionHeader]) {
     const method = (req.method || 'GET').toUpperCase();
-    const defs = ACTION_PATTERNS[actionHeader].filter(d => d.method.toUpperCase() === method);
-    const regexes = defs.flatMap(d => d.paths.map(patternToRegex));
+    const defs = ACTION_PATTERNS[actionHeader].filter((d) => d.method.toUpperCase() === method);
+    const regexes = defs.flatMap((d) => d.paths.map(patternToRegex));
     const paths = normalizePaths(req);
-    const matched = regexes.some(rx => paths.some(p => rx.test(p)));
+    const matched = regexes.some((rx) => paths.some((p) => rx.test(p)));
 
     if (!matched) {
       devWarnOnce(
         `${method} ${paths[0] || ''} :: ${actionHeader}`,
         '[reCAPTCHA] Unrecognized route (header-driven). Candidates:',
-        defs.flatMap(d => d.paths.map(p => `${d.method.toUpperCase()} ${p}`))
+        defs.flatMap((d) => d.paths.map((p) => `${d.method.toUpperCase()} ${p}`))
       );
       // Soft-allow (don’t block) to avoid dev noise
       return next();
@@ -270,27 +319,37 @@ export async function recaptchaMiddleware(req: Request, res: Response, next: Nex
 
     // Matched header-driven route; verify if we have a token, else soft-allow
     if (!token) {
-      devWarnOnce(`${method} ${paths[0] || ''} :: missingToken(${actionHeader})`, '[reCAPTCHA] Missing token for action:', actionHeader);
+      devWarnOnce(
+        `${method} ${paths[0] || ''} :: missingToken(${actionHeader})`,
+        '[reCAPTCHA] Missing token for action:',
+        actionHeader
+      );
       return next();
     }
     await verifyAndAttach(req, res, next, actionHeader, token);
     return;
   }
 
-  // Fallback: resolve from route mapping (legacy endpoints)
+  // Fallback: resolve from route mapping
   const expectedAction = resolveExpectedActionFromRoute(req);
   if (!expectedAction) {
+    // Include the normalized key + legacy candidates for debugging (dev only)
+    const candidates = [makeRouteKey(req), ...routeKeyCandidates(req)];
     devWarnOnce(
       `${req.method} ${req.originalUrl || ''} :: routeMap`,
       '[reCAPTCHA] Unrecognized route (route-map). Candidates:',
-      routeKeyCandidates(req)
+      candidates
     );
     // Soft-allow in dev
     return next();
   }
 
   if (!token) {
-    devWarnOnce(`${req.method} ${req.originalUrl || ''} :: missingToken(${expectedAction})`, '[reCAPTCHA] Missing token for route-mapped action:', expectedAction);
+    devWarnOnce(
+      `${req.method} ${req.originalUrl || ''} :: missingToken(${expectedAction})`,
+      '[reCAPTCHA] Missing token for route-mapped action:',
+      expectedAction
+    );
     return next();
   }
 
