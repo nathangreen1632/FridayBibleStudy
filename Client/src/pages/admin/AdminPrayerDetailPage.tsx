@@ -68,7 +68,7 @@ export default function AdminPrayerDetailPage(): React.ReactElement {
 
       if (state && typeof state.deletePrayer === 'function') {
         const res = await state.deletePrayer(prayerId);
-        if (res && res.ok) {
+        if (res?.ok) {
           setShowDeleteConfirm(false);
           onBack();
           return;
@@ -151,7 +151,7 @@ export default function AdminPrayerDetailPage(): React.ReactElement {
             <button
               type="button"
               onClick={onSetStatus}
-              className="rounded-xl bg-[var(--theme-button)] text-[var(--theme-text-white)] px-4 py-2 hover:bg-[var(--theme-button-hover)]"
+              className="rounded-xl bg-[var(--theme-button)] text-[var(--theme-text-white)] px-4 py-2 hover:bg-[var(--theme-button-hover)] hover:text-[var(--theme-textbox)]"
             >
               Update Status
             </button>
@@ -159,7 +159,7 @@ export default function AdminPrayerDetailPage(): React.ReactElement {
             <button
               type="button"
               onClick={onClickDelete}
-              className="rounded-xl bg-[var(--theme-error)] text-[var(--theme-textbox)] px-4 py-2 hover:opacity-90"
+              className="rounded-xl bg-[var(--theme-error)] text-[var(--theme-textbox)] px-4 py-2 hover:bg-[var(--theme-button-error)]"
               aria-label="Delete prayer"
             >
               Delete
