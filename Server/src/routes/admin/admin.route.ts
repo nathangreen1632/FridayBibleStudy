@@ -9,6 +9,7 @@ import {
   addAdminComment,
   setPrayerStatus,
   demoteUser,
+  getPrayerDetail,
 } from '../../controllers/admin/admin.controller.js';
 
 const router: Router = Router();
@@ -19,6 +20,7 @@ router.post('/demote', requireAdmin, recaptchaMiddleware, demoteUser);
 
 // NEW: admin portal endpoints
 router.get('/prayers', requireAdmin, listPrayers);
+router.get('/prayers/:prayerId', requireAdmin, getPrayerDetail);
 router.get('/prayers/:prayerId/comments', requireAdmin, getPrayerThread);
 router.post('/prayers/:prayerId/comments', requireAdmin, recaptchaMiddleware, addAdminComment);
 router.patch('/prayers/:prayerId/status', requireAdmin, recaptchaMiddleware, setPrayerStatus);
