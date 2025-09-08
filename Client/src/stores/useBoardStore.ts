@@ -8,19 +8,14 @@ import type { Category, Status } from '../types/domain.types';
 type ColumnKey = 'active' | 'archived';
 type Item = ListPrayersResponse['items'][number];
 
-// --- Robust numeric sort by position with a tie-breaker ---
-// We coerce to number to avoid NaN (e.g., undefined or string from API)
-// Tie-breaker uses id to keep a stable deterministic order when positions match.
 function sortByPosition(a: Item, b: Item) {
   const pa = Number(a?.position ?? 0);
   const pb = Number(b?.position ?? 0);
   if (pa < pb) return -1;
   if (pa > pb) return 1;
-  // stable tiebreak so order doesn't jitter
   return a.id - b.id;
 }
 
-// insert id at a given index, removing any previous occurrence
 function moveIdWithin(list: number[], movedId: number, toIdx: number): number[] {
   const without = list.filter((x) => x !== movedId);
   const idx = Math.max(0, Math.min(toIdx, without.length));
@@ -28,7 +23,6 @@ function moveIdWithin(list: number[], movedId: number, toIdx: number): number[] 
   return without;
 }
 
-// (Re)build a single column’s order from byId
 function rebuildColumn(byId: Map<number, Item>, ids: number[], status: ColumnKey): number[] {
   return ids
     .map((id) => byId.get(id))
@@ -45,11 +39,8 @@ function msgFrom(err: unknown, fallback: string): string {
 }
 
 type BoardState = {
-  // Data
   byId: Map<number, Item>;
   order: { active: number[]; archived: number[] };
-
-  // UI/controls
   loading: boolean;
   error?: string | null;
   page: number;
@@ -58,43 +49,31 @@ type BoardState = {
   q: string;
   filterStatus?: Status;
   filterCategory?: Category;
-
-  // Drag guard (used by DnD to prevent socket reorders mid-drag)
-  isDragging: boolean;                 // NEW
-  setDragging: (v: boolean) => void;   // NEW
-
-  // Initial fetch
+  isDragging: boolean;
+  setDragging: (v: boolean) => void;
   fetchInitial: () => Promise<void>;
-
-  // Drag/drop persist
   move: (id: number, toStatus: ColumnKey, newIndex: number) => Promise<boolean>;
-
-  // Socket-friendly optimistic patch ops (LOCAL ONLY — NO NETWORK)
   upsertPrayer: (p: Item) => void;
   movePrayer: (id: number, to: Status) => void;
-
-  // NEW: instant visual bump to top for the card’s current board
   bumpToTop: (id: number) => void;
-
   setSort: (s: BoardState['sort']) => void;
   setQuery: (q: string) => void;
+
+  // NEW: local remove for socket delete events
+  removePrayer: (id: number) => void;
 };
 
 export const useBoardStore = create<BoardState>((set, get) => ({
   byId: new Map(),
   order: { active: [], archived: [] },
-
   loading: false,
   error: null,
   page: 1,
   hasMore: true,
   sort: 'date',
   q: '',
-
-  // NEW: drag guard state
   isDragging: false,
   setDragging: (v) => set({ isDragging: v }),
-
   setSort: (s) => set({ sort: s }),
   setQuery: (q) => set({ q }),
 
@@ -132,26 +111,21 @@ export const useBoardStore = create<BoardState>((set, get) => ({
     }
   },
 
-  // ---- Drag/drop persist ----
   move: async (id, toStatus, newIndex) => {
     const { byId, order } = get();
 
-    // Guard: item must exist
     const item = byId.get(id);
     if (!item) {
       set({ error: 'Item not found' });
       return false;
     }
 
-    // Bound newIndex to a safe range for the target column
     const targetList = toStatus === 'active' ? order.active : order.archived;
     const safeIndex = Math.max(0, Math.min(newIndex, targetList.length));
 
-    // Capture previous state for rollback
     const prevById = new Map(byId);
     const prevOrder = { active: [...order.active], archived: [...order.archived] };
 
-    // --- Optimistic update ---
     const nextById = new Map(byId);
     const nextOrder = { active: [...order.active], archived: [...order.archived] };
 
@@ -164,7 +138,6 @@ export const useBoardStore = create<BoardState>((set, get) => ({
         nextOrder.archived = moveIdWithin([...nextOrder.archived, id], id, safeIndex);
       }
 
-      // Update item’s status/position optimistically
       const updated: Item = { ...item, status: toStatus, position: safeIndex };
       nextById.set(id, updated);
 
@@ -174,7 +147,6 @@ export const useBoardStore = create<BoardState>((set, get) => ({
       return false;
     }
 
-    // --- Persist (with reCAPTCHA) ---
     try {
       await apiWithRecaptcha(`/api/prayers/${id}`, 'prayer_update', {
         method: 'PATCH',
@@ -182,7 +154,6 @@ export const useBoardStore = create<BoardState>((set, get) => ({
       });
       return true;
     } catch (err: unknown) {
-      // Roll back on failure
       set({ byId: prevById, order: prevOrder, error: msgFrom(err, 'Failed to save new position') });
       return false;
     }
@@ -278,5 +249,20 @@ export const useBoardStore = create<BoardState>((set, get) => ({
     }
 
     set({ order: next });
+  },
+
+  // NEW: local remove (used by socket delete event)
+  removePrayer: (id) => {
+    try {
+      set((state) => {
+        const byId = new Map(state.byId);
+        byId.delete(id);
+        const active = state.order.active.filter((x) => x !== id);
+        const archived = state.order.archived.filter((x) => x !== id);
+        return { byId, order: { active, archived } };
+      });
+    } catch {
+      // best-effort; never crash
+    }
   },
 }));

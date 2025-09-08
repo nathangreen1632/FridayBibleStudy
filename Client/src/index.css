@@ -54,6 +54,7 @@
     /* cards & interactive */
     --theme-card: var(--c-b);
     --theme-card-hover: var(--c-c);
+    --theme-card-hover-alt: var(--c-b);
     --theme-card-alt: var(--c-f);
     --theme-hover: var(--c-d);
 
@@ -120,6 +121,7 @@
     /* cards & interactive */
     --theme-card: var(--c-d);
     --theme-card-hover: var(--c-b);
+    --theme-card-hover-alt: var(--c-b);
     --theme-card-alt: var(--c-h); /* darker parchment substitute */
     --theme-hover: var(--c-b);
 

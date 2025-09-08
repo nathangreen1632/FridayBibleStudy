@@ -12,6 +12,9 @@ import {
   getPrayerDetail,
 } from '../../controllers/admin/admin.controller.js';
 
+// NEW: bring in deletePrayer from your prayer.controller
+import { deletePrayer } from '../../controllers/prayer.controller.js';
+
 const router: Router = Router();
 
 // Existing
@@ -24,5 +27,8 @@ router.get('/prayers/:prayerId', requireAdmin, getPrayerDetail);
 router.get('/prayers/:prayerId/comments', requireAdmin, getPrayerThread);
 router.post('/prayers/:prayerId/comments', requireAdmin, recaptchaMiddleware, addAdminComment);
 router.patch('/prayers/:prayerId/status', requireAdmin, recaptchaMiddleware, setPrayerStatus);
+
+// NEW: hard delete prayer (admin only)
+router.delete('/prayers/:id', requireAdmin, recaptchaMiddleware, deletePrayer);
 
 export default router;

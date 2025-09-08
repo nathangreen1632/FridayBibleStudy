@@ -57,3 +57,16 @@ export async function patchPrayerStatus(
     }
   );
 }
+
+/** DELETE /admin/prayers/:id — keep Response shape; attach recaptcha header when available */
+export async function deleteAdminPrayer(prayerId: number): Promise<Response> {
+  return apiWithRecaptcha(
+    `/api/admin/prayers/${prayerId}`,
+    'admin_prayer_delete',
+    {
+      method: 'DELETE',
+    }
+  );
+}
+
+

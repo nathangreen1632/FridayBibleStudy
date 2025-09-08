@@ -48,8 +48,16 @@ export async function addAdminComment(req: Request, res: Response): Promise<void
   if (!content?.trim()) { res.status(400).json({ error: 'Content required.' }); return; }
 
   try {
-    const c = await insertAdminComment(Number(prayerId), adminId, content.trim());
-    res.json({ ok: true, comment: c });
+    const result = await insertAdminComment(Number(prayerId), adminId, content.trim());
+    if (!result.ok) { res.status(500).json({ error: result.error }); return; }
+
+    // match the shape the client (and socket handlers) expect:
+    res.json({
+      ok: true,
+      comment: result.comment,
+      newCount: result.newCount,
+      lastCommentAt: result.lastCommentAt ? new Date(result.lastCommentAt).toISOString() : null,
+    });
   } catch {
     res.status(500).json({ error: 'Could not add comment.' });
   }
