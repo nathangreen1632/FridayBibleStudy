@@ -73,6 +73,7 @@ const ACTION_PATTERNS: Record<string, Array<{ method: string; paths: string[] }>
  * ---------------------------------------------------------------------------*/
 
 // Map “METHOD path” → Enterprise action (works with your existing routes)
+// Map “METHOD path” → Enterprise action (works with your existing routes)
 const ROUTE_ACTIONS: Record<string, string> = {
   // AUTH
   'POST /auth/login': 'login',
@@ -80,8 +81,20 @@ const ROUTE_ACTIONS: Record<string, string> = {
   'POST /auth/request-reset': 'password_reset_request',
   'POST /auth/reset-password': 'password_reset',
 
-  // ADMIN
+  // ADMIN (existing)
   'POST /admin/promote': 'admin_promote',
+
+  // ADMIN status patch (expect what your client actually uses)
+  'PATCH /api/admin/prayers/:id/status': 'admin_patch_status',
+  'PATCH /admin/prayers/:id/status': 'admin_patch_status',
+  'PATCH /api/admin/prayers/:prayerId/status': 'admin_patch_status',
+  'PATCH /admin/prayers/:prayerId/status': 'admin_patch_status',
+
+  // ADMIN delete (unchanged)
+  'DELETE /api/admin/prayers/:id': 'admin_prayer_delete',
+  'DELETE /admin/prayers/:id': 'admin_prayer_delete',
+  'DELETE /api/admin/prayers/:prayerId': 'admin_prayer_delete',
+  'DELETE /admin/prayers/:prayerId': 'admin_prayer_delete',
 
   // EXPORT
   'POST /export/prayers': 'export_prayers',
@@ -89,13 +102,14 @@ const ROUTE_ACTIONS: Record<string, string> = {
   // GROUPS
   'PATCH /groups': 'group_update',
 
-  // PRAYERS
+  // PRAYERS (public/user)
   'POST /prayers': 'prayer_create',
   'PATCH /prayers/:id': 'prayer_update',
   'DELETE /prayers/:id': 'prayer_delete',
   'POST /prayers/:id/updates': 'prayer_add_update',
   'POST /prayers/:id/attachments': 'media_upload',
 };
+
 
 // Generate multiple lookup keys that tolerate the /api prefix and router mounts
 function routeKeyCandidates(req: Request): string[] {
