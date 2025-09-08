@@ -12,6 +12,19 @@ function formatStatus(s: string): string {
   return coerced.charAt(0).toUpperCase() + coerced.slice(1);
 }
 
+const InfoRow = React.memo(function InfoRow({
+                                              label,
+                                              value,
+                                            }: Readonly<{ label: string; value?: React.ReactNode }>): React.ReactElement | null {
+  if (!value && value !== 0) return null;
+  return (
+    <div className="flex flex-col sm:flex-row sm:items-center sm:gap-2">
+      <span className="text-xs sm:text-sm opacity-80">{label}:</span>
+      <span className="text-sm sm:text-base">{value}</span>
+    </div>
+  );
+});
+
 export default function AdminPrayerSummaryCard({
                                                  prayerId,
                                                  className,
@@ -36,19 +49,6 @@ export default function AdminPrayerSummaryCard({
   const commentCount = typeof row?.commentCount === 'number' ? row.commentCount : 0;
 
   const content = prayer?.content ?? '';
-
-  function InfoRow({
-                     label,
-                     value,
-                   }: Readonly<{ label: string; value?: React.ReactNode }>): React.ReactElement | null {
-    if (!value && value !== 0) return null;
-    return (
-      <div className="flex flex-col sm:flex-row sm:items-center sm:gap-2">
-        <span className="text-xs sm:text-sm opacity-80">{label}:</span>
-        <span className="text-sm sm:text-base">{value}</span>
-      </div>
-    );
-  }
 
   return (
     <div
