@@ -126,6 +126,13 @@ export default function Navbar(): React.ReactElement {
                     <ShieldCheck className="w-4 h-4" />
                     Admin
                   </NavLink>
+                  <NavLink to="/admin/digest" className={({ isActive }) => linkClass(isActive)}>
+                    <Mail className="w-4 h-4" />
+                    Digest
+                  </NavLink>
+                  <NavLink to="/admin/roster" className={({ isActive }) => linkClass(isActive)}>
+                    Roster
+                  </NavLink>
                   <button
                     onClick={onLogout}
                     className="ml-2 flex items-center gap-1 px-3 py-2 rounded-lg text-sm font-medium bg-[var(--theme-surface)] border border-[var(--theme-border)] hover:bg-[var(--theme-card-hover)]"
@@ -227,6 +234,13 @@ export default function Navbar(): React.ReactElement {
                       <NavLink to="/admin" className={({ isActive }) => linkClass(isActive)} onClick={closeMenu}>
                         <ShieldCheck className="w-4 h-4" />
                         Admin
+                      </NavLink>
+                      <NavLink to="/admin/digest" className={({ isActive }) => linkClass(isActive)} onClick={closeMenu}>
+                        <Mail className="w-4 h-4" />
+                        Digest
+                      </NavLink>
+                      <NavLink to="/admin/roster" className={({ isActive }) => linkClass(isActive)} onClick={closeMenu}>
+                        Roster
                       </NavLink>
                       <button
                         onClick={() => { closeMenu(); void onLogout(); }}
