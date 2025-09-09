@@ -19,6 +19,7 @@
     --c-k: #00274C; /* K: darkest blue (hover) */
     --c-l: #16803D; /* L: green */
     --c-m: #BF5700; /* M: UT burnt orange */
+    --c-n: #9CA3AF;
 
     /* LIGHT MODE */
     --theme-bg: var(--c-b);
@@ -31,6 +32,7 @@
     --theme-strip-text: var(--c-e);
     --theme-textbox: var(--c-f);
     --theme-placeholder: var(--c-e);
+    --theme-pencil: var(--c-e);
 
     /* buttons */
     --theme-button: var(--c-e);
@@ -55,6 +57,7 @@
     --theme-card: var(--c-b);
     --theme-card-hover: var(--c-c);
     --theme-card-hover-alt: var(--c-b);
+    --theme-card-alt-hover: var(--c-n);
     --theme-card-alt: var(--c-f);
     --theme-hover: var(--c-d);
 
@@ -86,6 +89,7 @@
     --c-k: #00274C; /* K: darkest blue (hover) */
     --c-l: #16803D; /* L: green */
     ---c-m: #BF5700; /* M: UT burnt orange */
+    --c-n: #9CA3AF;
 
     /* DARK MODE — 180° from light (A↔E, B↔D, C→B to avoid hold-overs) */
     --theme-bg: var(--c-d);
@@ -98,6 +102,7 @@
     --theme-strip-text: var(--c-a);
     --theme-textbox: var(--c-f);
     --theme-placeholder: var(--c-e);
+    --theme-pencil: var(--c-f);
 
     /* buttons */
     --theme-button: var(--c-a);
@@ -124,6 +129,7 @@
     --theme-card-hover-alt: var(--c-b);
     --theme-card-alt: var(--c-h); /* darker parchment substitute */
     --theme-hover: var(--c-b);
+    --theme-card-alt-hover: var(--c-n);
 
     /* focus & elevation */
     --theme-focus: var(--c-a);
