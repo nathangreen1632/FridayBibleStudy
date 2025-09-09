@@ -3,6 +3,8 @@ import type { RouteObject } from 'react-router-dom';
 import AdminLayout from '../../pages/admin/AdminLayout';
 import AdminPrayersPage from '../../pages/admin/AdminPrayersPage';
 import AdminPrayerDetailPage from '../../pages/admin/AdminPrayerDetailPage';
+import AdminRosterPage from '../../pages/admin/AdminRosterPage';
+import AdminDigestPage from '../../pages/admin/AdminDigestPage';
 import { AdminGuard } from '../../common/admin/AuthGuard';
 
 const adminRoutes: RouteObject[] = [
@@ -16,6 +18,8 @@ const adminRoutes: RouteObject[] = [
     children: [
       { index: true, element: <AdminPrayersPage /> },
       { path: 'prayers/:id', element: <AdminPrayerDetailPage /> },
+      { path: 'roster', element: <AdminRosterPage /> },   // ✅ new
+      { path: 'digest', element: <AdminDigestPage /> },   // ✅ new
     ],
   },
 ];
