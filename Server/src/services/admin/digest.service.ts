@@ -203,8 +203,8 @@ export async function sendDigest(params: {
     try {
       await sendEmail({
         from: groupAddress,
-        to: groupAddress,
-        cc: dedup,
+        to: dedup,                // all user emails are direct recipients
+        cc: groupAddress,         // group inbox just copied
         replyTo: params.replyTo?.includes('@') ? params.replyTo : groupAddress,
         subject,
         html,
