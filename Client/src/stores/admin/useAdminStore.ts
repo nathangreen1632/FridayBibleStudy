@@ -10,6 +10,9 @@ import {
   deleteAdminPrayer,
   // NEW: roster API
   fetchAdminRoster,
+  // NEW: roster update/delete APIs
+  patchAdminRosterUser,
+  deleteAdminRosterUser,
 } from '../../helpers/api/adminApi';
 import type { AdminListResponse, AdminPrayerRow } from '../../types/admin.types';
 import type { Prayer } from '../../types/domain.types';
@@ -66,6 +69,17 @@ type State = {
 
   // NEW: roster loader
   loadRoster: (opts: { q?: string; page?: number; pageSize?: number }) => Promise<{ ok: boolean; message?: string }>;
+
+  // NEW: roster update/delete
+  updateRosterRow: (
+    id: number,
+    patch: Partial<{
+      name: string; email: string; phone: string | null;
+      addressStreet: string | null; addressCity: string | null; addressState: string | null; addressZip: string | null;
+      spouseName: string | null;
+    }>
+  ) => Promise<{ ok: boolean; message?: string }>;
+  deleteRosterRow: (id: number) => Promise<{ ok: boolean; message?: string }>;
 };
 
 function safeIso(input: unknown): string | null {
@@ -305,7 +319,6 @@ export const useAdminStore = create<State>((set, get) => ({
       return { ok: false, message: 'Invalid prayer id.' };
     }
     try {
-      // 1) Load the thread (comments + maybe a light prayer object)
       const res = await fetchPrayerThread(prayerId);
       if (!res.ok) {
         return { ok: false, message: 'Failed to load thread.' };
@@ -315,7 +328,6 @@ export const useAdminStore = create<State>((set, get) => ({
 
       let prayer: Prayer | undefined = threadPrayer;
 
-      // 2) If missing or missing content, hydrate from prayer detail
       if (!prayer?.content) {
         try {
           const pRes = await fetchPrayerDetail(prayerId);
@@ -326,7 +338,6 @@ export const useAdminStore = create<State>((set, get) => ({
             let possible: unknown = undefined;
             if (pData && typeof pData === 'object') {
               const obj = pData as Record<string, unknown>;
-              // Accept several shapes: {prayer}, {item}, or a bare prayer object
               possible = obj.prayer ?? obj.item ?? pData;
             }
 
@@ -339,13 +350,11 @@ export const useAdminStore = create<State>((set, get) => ({
         }
       }
 
-      // 3) Write caches
       set((s) => ({
         detailPrayers: { ...s.detailPrayers, [prayerId]: prayer },
         detailComments: { ...s.detailComments, [prayerId]: Array.isArray(comments) ? comments : [] },
       }));
 
-      // 4) Merge a display row for card meta
       const baseRow =
         get().detailRows[prayerId] ?? get().list.find((r) => r.id === prayerId);
       const merged = mergeDetailRow(baseRow, prayer, comments);
@@ -369,7 +378,6 @@ export const useAdminStore = create<State>((set, get) => ({
         return { ok: false, message: 'Unable to post comment.' };
       }
 
-      // Best-effort refresh
       try {
         await get().loadThread(prayerId);
       } catch {}
@@ -417,12 +425,10 @@ export const useAdminStore = create<State>((set, get) => ({
     }
     try {
       const res = await deleteAdminPrayer(prayerId);
-      // Handle Fetch Response pattern (no custom { ok } wrapper)
       if (!res || !(res.status >= 200 && res.status < 300)) {
         return { ok: false, message: 'Delete failed.' };
       }
 
-      // Optimistically remove from caches to keep UI in sync
       const s = get();
       const nextList = s.list.filter((row) => row.id !== prayerId);
       const nextDetailPrayers = { ...s.detailPrayers };
@@ -470,6 +476,43 @@ export const useAdminStore = create<State>((set, get) => ({
     } catch {
       set({ roster: [], rosterTotal: 0 });
       return { ok: false, message: 'Unable to load roster.' };
+    }
+  },
+
+  // NEW: roster update/delete
+  updateRosterRow: async (id, patch) => {
+    try {
+      const res = await patchAdminRosterUser(id, patch);
+      if (!res?.ok) {
+        return { ok: false, message: res?.error ?? 'Update failed.' };
+      }
+
+      const row = (res).row as RosterRow | undefined;
+      if (row) {
+        const s = get();
+        const next = s.roster.map((r) => (r.id === id ? { ...r, ...row } : r));
+        set({ roster: next });
+      }
+      return { ok: true };
+    } catch {
+      return { ok: false, message: 'Unable to update roster row.' };
+    }
+  },
+
+  deleteRosterRow: async (id) => {
+    try {
+      const res = await deleteAdminRosterUser(id);
+      if (!res?.ok) {
+        return { ok: false, message: res?.error ?? 'Delete failed.' };
+      }
+
+      const s = get();
+      const next = s.roster.filter((r) => r.id !== id);
+      const nextTotal = s.rosterTotal > 0 ? s.rosterTotal - 1 : 0;
+      set({ roster: next, rosterTotal: nextTotal });
+      return { ok: true };
+    } catch {
+      return { ok: false, message: 'Unable to delete roster row.' };
     }
   },
 }));
