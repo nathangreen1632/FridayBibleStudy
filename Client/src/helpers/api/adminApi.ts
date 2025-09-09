@@ -125,3 +125,35 @@ export async function postDigestSendManual(payload: { groupId: number; updateIds
     return { ok: false, error: 'Network error.' };
   }
 }
+
+export async function patchAdminRosterUser(id: number, payload: {
+  name?: string; email?: string; phone?: string | null;
+  addressStreet?: string | null; addressCity?: string | null; addressState?: string | null; addressZip?: string | null;
+  spouseName?: string | null;
+}) {
+  try {
+    const res = await fetch(`/api/admin/roster/${id}`, {
+      method: 'PATCH',
+      credentials: 'include',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(payload),
+    });
+    if (!res.ok) return { ok: false, error: 'Update failed.' };
+    return res.json();
+  } catch {
+    return { ok: false, error: 'Network error.' };
+  }
+}
+
+export async function deleteAdminRosterUser(id: number) {
+  try {
+    const res = await fetch(`/api/admin/roster/${id}`, {
+      method: 'DELETE',
+      credentials: 'include',
+    });
+    if (!res.ok) return { ok: false, error: 'Delete failed.' };
+    return res.json();
+  } catch {
+    return { ok: false, error: 'Network error.' };
+  }
+}
