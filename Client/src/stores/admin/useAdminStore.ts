@@ -8,10 +8,25 @@ import {
   postAdminComment,
   // NEW: hard delete API
   deleteAdminPrayer,
+  // NEW: roster API
+  fetchAdminRoster,
 } from '../../helpers/api/adminApi';
 import type { AdminListResponse, AdminPrayerRow } from '../../types/admin.types';
 import type { Prayer } from '../../types/domain.types';
 import type { Comment } from '../../types/comment.types';
+
+/** Roster row shape (admin roster table) */
+type RosterRow = {
+  id: number;
+  name: string;
+  email: string;
+  phone: string | null;
+  addressStreet: string | null;
+  addressCity: string | null;
+  addressState: string | null;
+  addressZip: string | null;
+  spouseName: string | null;
+};
 
 type State = {
   list: AdminPrayerRow[];
@@ -23,6 +38,12 @@ type State = {
   detailPrayers: Record<number, Prayer | undefined>;
   detailRows: Record<number, AdminPrayerRow | undefined>;
   detailComments: Record<number, Comment[]>;
+
+  // Roster state (admin-only)
+  roster: RosterRow[];
+  rosterTotal: number;
+  rosterPage: number;
+  rosterPageSize: number;
 
   loadList: (opts: {
     q?: string;
@@ -42,6 +63,9 @@ type State = {
 
   // NEW: hard delete
   deletePrayer: (prayerId: number) => Promise<{ ok: boolean; message?: string }>;
+
+  // NEW: roster loader
+  loadRoster: (opts: { q?: string; page?: number; pageSize?: number }) => Promise<{ ok: boolean; message?: string }>;
 };
 
 function safeIso(input: unknown): string | null {
@@ -168,7 +192,7 @@ function mergeDetailRow(
   const authorName = baseRow?.authorName ?? 'Unknown Author';
 
   let title = baseRow?.title ?? 'Untitled';
-  if (prayer?.title.trim()) {
+  if (prayer?.title?.trim()) {
     title = prayer.title;
   }
 
@@ -229,6 +253,12 @@ export const useAdminStore = create<State>((set, get) => ({
   detailPrayers: {},
   detailRows: {},
   detailComments: {},
+
+  // Roster defaults
+  roster: [],
+  rosterTotal: 0,
+  rosterPage: 1,
+  rosterPageSize: 25,
 
   loadList: async (opts) => {
     set({ loading: true });
@@ -413,6 +443,33 @@ export const useAdminStore = create<State>((set, get) => ({
       return { ok: true };
     } catch {
       return { ok: false, message: 'Unable to delete this prayer right now.' };
+    }
+  },
+
+  // NEW: roster loader
+  loadRoster: async (opts) => {
+    try {
+      const q = opts?.q;
+      const page = typeof opts?.page === 'number' ? opts.page : undefined;
+      const pageSize = typeof opts?.pageSize === 'number' ? opts.pageSize : undefined;
+
+      const res = await fetchAdminRoster({ q, page, pageSize });
+      if (!res?.ok) {
+        set({ roster: [], rosterTotal: 0 });
+        return { ok: false, message: res?.message ?? 'Failed to load roster.' };
+      }
+
+      set({
+        roster: res.rows ?? [],
+        rosterTotal: res.total ?? 0,
+        rosterPage: res.page ?? 1,
+        rosterPageSize: res.pageSize ?? 25,
+      });
+
+      return { ok: true };
+    } catch {
+      set({ roster: [], rosterTotal: 0 });
+      return { ok: false, message: 'Unable to load roster.' };
     }
   },
 }));
