@@ -69,4 +69,59 @@ export async function deleteAdminPrayer(prayerId: number): Promise<Response> {
   );
 }
 
+export async function fetchAdminRoster(params: { q?: string; page?: number; pageSize?: number }) {
+  const u = new URL('/api/admin/roster', window.location.origin);
+  if (params.q) u.searchParams.set('q', params.q);
+  if (params.page) u.searchParams.set('page', String(params.page));
+  if (params.pageSize) u.searchParams.set('pageSize', String(params.pageSize));
 
+  try {
+    const res = await fetch(u.toString(), { credentials: 'include' });
+    if (!res.ok) return { ok: false, rows: [], total: 0, page: 1, pageSize: 25, message: 'Request failed.' };
+    return res.json();
+  } catch {
+    return { ok: false, rows: [], total: 0, page: 1, pageSize: 25, message: 'Network error.' };
+  }
+}
+
+export async function postDigestPreview(payload: { groupId: number; days?: number }) {
+  try {
+    const res = await fetch('/api/admin/digests/preview', {
+      method: 'POST', credentials: 'include',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(payload),
+    });
+    if (!res.ok) return { ok: false, updates: [], error: 'Request failed.' };
+    return res.json();
+  } catch {
+    return { ok: false, updates: [], error: 'Network error.' };
+  }
+}
+
+export async function postDigestSendAuto(payload: { groupId: number; days?: number; subject?: string; threadMessageId?: string | null }) {
+  try {
+    const res = await fetch('/api/admin/digests/send-auto', {
+      method: 'POST', credentials: 'include',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(payload),
+    });
+    if (!res.ok) return { ok: false, error: 'Send failed.' };
+    return res.json();
+  } catch {
+    return { ok: false, error: 'Network error.' };
+  }
+}
+
+export async function postDigestSendManual(payload: { groupId: number; updateIds: number[]; subject?: string; threadMessageId?: string | null }) {
+  try {
+    const res = await fetch('/api/admin/digests/send-manual', {
+      method: 'POST', credentials: 'include',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(payload),
+    });
+    if (!res.ok) return { ok: false, error: 'Send failed.' };
+    return res.json();
+  } catch {
+    return { ok: false, error: 'Network error.' };
+  }
+}
