@@ -5,7 +5,7 @@ import AdminPrayersPage from '../../pages/admin/AdminPrayersPage';
 import AdminPrayerDetailPage from '../../pages/admin/AdminPrayerDetailPage';
 import AdminRosterPage from '../../pages/admin/AdminRosterPage';
 import AdminDigestPage from '../../pages/admin/AdminDigestPage';
-import { AdminGuard } from '../../common/admin/AuthGuard';
+import { AdminGuard } from '../../common/admin/AdminAuthGuard.tsx';
 
 const adminRoutes: RouteObject[] = [
   {
