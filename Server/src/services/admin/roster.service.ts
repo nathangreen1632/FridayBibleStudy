@@ -1,4 +1,3 @@
-// Server/src/services/admin/roster.service.ts
 import { Op } from 'sequelize';
 import { User } from '../../models/index.js';
 
@@ -12,6 +11,9 @@ export type RosterRow = {
   addressState: string | null;
   addressZip: string | null;
   spouseName: string | null;
+
+  /** NEW: soft-unsubscribe flag */
+  emailPaused: boolean;
 };
 
 export async function listRoster(opts: {
@@ -37,6 +39,7 @@ export async function listRoster(opts: {
       addressState: 'addressState',
       addressZip: 'addressZip',
       spouseName: 'spouseName',
+      // (intentionally not adding emailPaused to sort keys yet)
     };
 
     const sortCol = opts.sortBy && SORTABLE[opts.sortBy] ? SORTABLE[opts.sortBy] : 'name';
@@ -45,7 +48,6 @@ export async function listRoster(opts: {
     const where: Record<string, unknown> = {};
     if (opts.q?.trim()) {
       const s = `%${opts.q.trim()}%`;
-      // cast to satisfy TS on symbol keys
       (where as any)[Op.or] = [
         { name: { [Op.iLike]: s } },
         { email: { [Op.iLike]: s } },
@@ -70,8 +72,10 @@ export async function listRoster(opts: {
         'addressState',
         'addressZip',
         'spouseName',
+        /** NEW */
+        'emailPaused',
       ],
-      order: [[sortCol, sortDir]], // ✅ now driven by query params, safely whitelisted
+      order: [[sortCol, sortDir]],
       offset: (page - 1) * pageSize,
       limit: pageSize,
     });
@@ -86,6 +90,8 @@ export async function listRoster(opts: {
       addressState: r.addressState ?? null,
       addressZip: r.addressZip ?? null,
       spouseName: r.spouseName ?? null,
+      /** NEW */
+      emailPaused: Boolean((r as any).emailPaused),
     }));
 
     return { ok: true, rows: mapped, total: count, page, pageSize };
@@ -105,6 +111,7 @@ type RosterUpdate = Partial<
     | 'addressState'
     | 'addressZip'
     | 'spouseName'
+    | 'emailPaused'   // NEW
   >
 >;
 
@@ -125,16 +132,22 @@ export async function updateRosterUser(
     }
 
     const next: Record<string, unknown> = {};
-    if ('name' in payload) next.name = norm(payload.name);
-    if ('email' in payload) next.email = norm(payload.email);
-    if ('phone' in payload) next.phone = norm(payload.phone);
-    if ('addressStreet' in payload) next.addressStreet = norm(payload.addressStreet);
-    if ('addressCity' in payload) next.addressCity = norm(payload.addressCity);
-    if ('addressState' in payload) next.addressState = norm(payload.addressState);
-    if ('addressZip' in payload) next.addressZip = norm(payload.addressZip);
-    if ('spouseName' in payload) next.spouseName = norm(payload.spouseName);
 
-    // Email uniqueness (ignore this user)
+    if (Object.prototype.hasOwnProperty.call(payload, 'name') && payload.name !== undefined) next.name = norm(payload.name);
+    if (Object.prototype.hasOwnProperty.call(payload, 'email') && payload.email !== undefined) next.email = norm(payload.email);
+    if (Object.prototype.hasOwnProperty.call(payload, 'phone') && payload.phone !== undefined) next.phone = norm(payload.phone);
+    if (Object.prototype.hasOwnProperty.call(payload, 'addressStreet') && payload.addressStreet !== undefined) next.addressStreet = norm(payload.addressStreet);
+    if (Object.prototype.hasOwnProperty.call(payload, 'addressCity') && payload.addressCity !== undefined) next.addressCity = norm(payload.addressCity);
+    if (Object.prototype.hasOwnProperty.call(payload, 'addressState') && payload.addressState !== undefined) next.addressState = norm(payload.addressState);
+    if (Object.prototype.hasOwnProperty.call(payload, 'addressZip') && payload.addressZip !== undefined) next.addressZip = norm(payload.addressZip);
+    if (Object.prototype.hasOwnProperty.call(payload, 'spouseName') && payload.spouseName !== undefined) next.spouseName = norm(payload.spouseName);
+
+    // NEW: boolean handled directly, but only when present
+    if (Object.prototype.hasOwnProperty.call(payload, 'emailPaused') && typeof payload.emailPaused === 'boolean') {
+      next.emailPaused = payload.emailPaused;
+    }
+
+    // Email uniqueness (only when actually updating email)
     if (typeof next.email === 'string' && next.email.includes('@')) {
       const dupe = await User.findOne({
         where: { email: next.email, id: { [Op.ne]: userId } },
@@ -155,12 +168,14 @@ export async function updateRosterUser(
       addressState: user.addressState ?? null,
       addressZip: user.addressZip ?? null,
       spouseName: user.spouseName ?? null,
+      emailPaused: Boolean((user as any).emailPaused),
     };
     return { ok: true, row };
   } catch {
     return { ok: false, error: 'Update failed.' };
   }
 }
+
 
 /** DELETE user (admin). If FK constraints prevent it, return a friendly error. */
 export async function deleteRosterUser(userId: number): Promise<{ ok: boolean; error?: string }> {
