@@ -13,7 +13,7 @@ import {
   Menu,
   Archive,
   Sparkles,
-  ShieldCheck,
+  ShieldCheck, Users,
 } from 'lucide-react';
 import { useScrollLock } from '../hooks/useScrollLock.ts';
 
@@ -122,7 +122,7 @@ export default function Navbar(): React.ReactElement {
               {/* Admin: ONLY Admin + Sign out */}
               {user.role === 'admin' && (
                 <>
-                  <NavLink to="/admin" className={({ isActive }) => linkClass(isActive)}>
+                  <NavLink to="/admin" end className={({ isActive }) => linkClass(isActive)}>
                     <ShieldCheck className="w-4 h-4" />
                     Admin
                   </NavLink>
@@ -131,6 +131,7 @@ export default function Navbar(): React.ReactElement {
                     Digest
                   </NavLink>
                   <NavLink to="/admin/roster" className={({ isActive }) => linkClass(isActive)}>
+                    <Users className="w-4 h-4" />
                     Roster
                   </NavLink>
                   <button
@@ -231,7 +232,7 @@ export default function Navbar(): React.ReactElement {
                   {/* Admin: ONLY Admin + Sign out */}
                   {user.role === 'admin' && (
                     <>
-                      <NavLink to="/admin" className={({ isActive }) => linkClass(isActive)} onClick={closeMenu}>
+                      <NavLink to="/admin" end className={({ isActive }) => linkClass(isActive)} onClick={closeMenu}>
                         <ShieldCheck className="w-4 h-4" />
                         Admin
                       </NavLink>
