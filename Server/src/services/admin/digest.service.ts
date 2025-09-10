@@ -113,6 +113,10 @@ export async function collectUpdatesLastNDays(
 /**
  * Send the digest to all emails in groupMembers for the group.
  * Uses CC so recipients can "Reply all" and form an email thread.
+ *
+ * IMPORTANT: Excludes paused users (emailPaused = true).
+ * - Option A (preferred): DB-level filter in GroupMember include
+ * - Option B (fallback): JS post-filter if we have to fetch Users directly
  */
 export async function sendDigest(params: {
   groupId: number;
@@ -140,13 +144,22 @@ export async function sendDigest(params: {
         ? groupAddressRaw
         : fallbackGroupAddress;
 
-    // 3) Build CC list from USERS in the group (fallback to all users)
+    // 3) Build recipient list (exclude paused)
     let ccEmails: string[] = [];
 
+    // --- Option A: DB-level filter via GroupMember -> User include
     try {
       const members = await GroupMember.findAll({
         where: { groupId: params.groupId },
-        include: [{ model: User, as: 'user', attributes: ['email'] }],
+        include: [
+          {
+            model: User,
+            as: 'user',
+            required: true,
+            where: { emailPaused: false }, // <-- exclude paused at the DB layer
+            attributes: ['email'],         // we only need the email here
+          },
+        ],
         limit: 5000,
       });
 
@@ -157,10 +170,18 @@ export async function sendDigest(params: {
       // ignore; fallback below
     }
 
+    // --- Fallback: if group membership path failed or produced nothing, fetch users directly
     if (!ccEmails.length) {
       try {
-        const users = await User.findAll({ attributes: ['email'], limit: 5000 });
+        // Option B: JS post-filter (but also filter at DB level for efficiency)
+        const users = await User.findAll({
+          where: { emailPaused: false }, // DB filter; still post-filter defensively below
+          attributes: ['email', 'emailPaused'],
+          limit: 5000,
+        });
+
         ccEmails = users
+          .filter((u: any) => !u?.emailPaused)
           .map((u: any) => u?.email)
           .filter((e: unknown): e is string => typeof e === 'string' && e.includes('@'));
       } catch {
@@ -171,7 +192,7 @@ export async function sendDigest(params: {
     // 3c) de-dup, exclude the group address itself, and cap to a safe limit
     const dedup = Array.from(new Set(ccEmails))
       .filter((e) => e.toLowerCase() !== String(groupAddress).toLowerCase())
-      .slice(0, 95); // safe headroom under typical 100-recipient per-field limits
+      .slice(0, 95); // headroom under typical 100-recipient per-field limits
 
     if (!dedup.length) {
       return { ok: false, error: 'No recipients: users table has no valid emails.' };
@@ -203,8 +224,8 @@ export async function sendDigest(params: {
     try {
       await sendEmail({
         from: groupAddress,
-        to: dedup,                // all user emails are direct recipients
-        cc: groupAddress,         // group inbox just copied
+        to: dedup,                // direct recipients
+        cc: groupAddress,         // group inbox receives a copy
         replyTo: params.replyTo?.includes('@') ? params.replyTo : groupAddress,
         subject,
         html,
