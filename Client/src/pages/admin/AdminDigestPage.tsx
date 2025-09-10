@@ -202,7 +202,7 @@ export default function AdminDigestPage(): React.ReactElement {
               <th className="px-3 py-2 text-left">Prayer</th>
               <th className="px-3 py-2 text-left">Author</th>
               <th className="px-3 py-2 text-left">When</th>
-              <th className="px-3 py-2 text-left">Content</th>
+              <th className="px-3 py-2 text-left">Updates</th>
             </tr>
             </thead>
             <tbody>
