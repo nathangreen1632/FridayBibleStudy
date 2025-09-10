@@ -187,16 +187,16 @@ export default function AdminDigestPage(): React.ReactElement {
           <div className="flex items-center gap-2 text-sm">
             <button
               onClick={() => toggleSelectAll(true)}
-              className="px-2 py-1 rounded-lg bg-[var(--theme-button-blue)] text-[var(--theme-text-white)]
-                 hover:bg-[var(--theme-button-blue-hover)]
+              className="px-2 py-1 rounded-lg bg-[var(--theme-button)] text-[var(--theme-text-white)]
+                 hover:bg-[var(--theme-button-hover)]
                  shadow-md active:translate-y-0.5 active:shadow-inner transition-all"
             >
               Select All
             </button>
             <button
               onClick={() => toggleSelectAll(false)}
-              className="px-2 py-1 rounded-lg bg-[var(--theme-button-gray)] text-[var(--theme-text-white)]
-                 hover:bg-[var(--theme-button-blue-hover)]
+              className="px-2 py-1 rounded-lg bg-[var(--theme-button)] text-[var(--theme-text-white)]
+                 hover:bg-[var(--theme-button-hover)]
                  shadow-md active:translate-y-0.5 active:shadow-inner transition-all"
             >
               Clear
