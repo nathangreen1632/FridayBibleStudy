@@ -2,6 +2,20 @@
 import { apiWithRecaptcha } from '../secure-api.helper'; // <-- adjust path if different
 import type { RosterSortField } from '../../stores/admin/useAdminStore';
 
+type RosterPatch = Partial<{
+  name: string;
+  email: string;
+  phone: string | null;
+  addressStreet: string | null;
+  addressCity: string | null;
+  addressState: string | null;
+  addressZip: string | null;
+  spouseName: string | null;
+
+  // NEW: pause/unpause
+  emailPaused: boolean;
+}>;
+
 /** GET /admin/prayers (list) — returns Response (caller handles .ok/.json()) */
 export async function fetchAdminPrayers(params: URLSearchParams): Promise<Response> {
   return fetch(`/api/admin/prayers?${params.toString()}`, { credentials: 'include' });
@@ -141,20 +155,36 @@ export async function postDigestSendManual(payload: { groupId: number; updateIds
   }
 }
 
-export async function patchAdminRosterUser(id: number, payload: {
-  name?: string; email?: string; phone?: string | null;
-  addressStreet?: string | null; addressCity?: string | null; addressState?: string | null; addressZip?: string | null;
-  spouseName?: string | null;
-}) {
+export async function patchAdminRosterUser(
+  id: number,
+  patch: RosterPatch
+): Promise<{ ok: boolean; row?: unknown; error?: string }> {
   try {
     const res = await fetch(`/api/admin/roster/${id}`, {
       method: 'PATCH',
-      credentials: 'include',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(payload),
+      body: JSON.stringify(patch),
     });
-    if (!res.ok) return { ok: false, error: 'Update failed.' };
-    return res.json();
+
+    if (!res.ok) {
+      let error = 'Update failed.';
+      try {
+        const data = await res.json();
+        if (data?.error) error = String(data.error);
+      } catch {}
+      return { ok: false, error };
+    }
+
+    let data: unknown = null;
+    try {
+      data = await res.json();
+    } catch {
+      // best-effort; server should send JSON but we won’t crash if not
+    }
+    // pass-through; the store merges row safely
+    return (data && typeof data === 'object' ? (data as any) : { ok: true }) as {
+      ok: boolean; row?: unknown; error?: string;
+    };
   } catch {
     return { ok: false, error: 'Network error.' };
   }
