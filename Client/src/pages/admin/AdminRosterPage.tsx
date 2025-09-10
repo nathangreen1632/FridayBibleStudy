@@ -1,7 +1,8 @@
-// Client/src/pages/admin/AdminRosterPage.tsx
 import React, { useEffect, useRef, useState } from 'react';
 import AdminRosterTable from '../../components/admin/AdminRosterTable';
+import AdminRosterPager from '../../components/admin/AdminRosterPager';
 import { useAdminStore } from '../../stores/admin/useAdminStore';
+import type { RosterSortField } from '../../stores/admin/useAdminStore'; // ✅ import the union
 
 export default function AdminRosterPage(): React.ReactElement {
   const { roster, loadRoster } = useAdminStore();
@@ -10,10 +11,23 @@ export default function AdminRosterPage(): React.ReactElement {
   const [qInput, setQInput] = useState('');
   const debounceRef = useRef<number | null>(null);
 
+  // ✅ type these to match the store
+  const [sortBy, setSortBy] = useState<RosterSortField | null>(null);
+  const [sortDir, setSortDir] = useState<'asc' | 'desc'>('asc');
+
   // initial load
   useEffect(() => {
-    void loadRoster({});
+    void loadRoster({ page: 1 });
   }, [loadRoster]);
+
+  // Small helper type for clarity (matches store signature)
+  type LoadArgs = {
+    q?: string;
+    page?: number;
+    pageSize?: number;
+    sortBy?: RosterSortField;
+    sortDir?: 'asc' | 'desc';
+  };
 
   // LIVE SEARCH: debounce server calls on input change
   useEffect(() => {
@@ -25,7 +39,13 @@ export default function AdminRosterPage(): React.ReactElement {
     }
 
     debounceRef.current = window.setTimeout(() => {
-      void loadRoster({ q: next });
+      // reset to page 1 whenever the query changes
+      const args: LoadArgs = { q: next, page: 1 };
+      if (sortBy) {
+        args.sortBy = sortBy;
+        args.sortDir = sortDir;
+      }
+      void loadRoster(args);
     }, 300); // adjust to taste: 200–400ms
 
     return () => {
@@ -34,12 +54,24 @@ export default function AdminRosterPage(): React.ReactElement {
         debounceRef.current = null;
       }
     };
-  }, [qInput, loadRoster]);
+  }, [qInput, sortBy, sortDir, loadRoster]);
+
+  // When sort changes, reload with current query
+  useEffect(() => {
+    if (!sortBy) return;
+    const args: LoadArgs = { q: qInput.trim(), page: 1, sortBy, sortDir };
+    void loadRoster(args);
+  }, [sortBy, sortDir, qInput, loadRoster]);
 
   function clearSearch() {
     setQInput('');
-    // immediate fetch for snappier UX
-    void loadRoster({ q: '' });
+    // immediate fetch for snappier UX; reset to first page
+    const args: LoadArgs = { q: '', page: 1 };
+    if (sortBy) {
+      args.sortBy = sortBy;
+      args.sortDir = sortDir;
+    }
+    void loadRoster(args);
   }
 
   return (
@@ -70,7 +102,22 @@ export default function AdminRosterPage(): React.ReactElement {
         </div>
       </div>
 
-      <AdminRosterTable rows={roster} />
+      <AdminRosterTable
+        rows={roster}
+        sortBy={sortBy}
+        sortDir={sortDir}
+        onSort={(field: RosterSortField) => { // ✅ type callback param
+          if (sortBy === field) {
+            setSortDir((prev) => (prev === 'asc' ? 'desc' : 'asc'));
+          } else {
+            setSortBy(field);
+            setSortDir('asc');
+          }
+        }}
+      />
+
+      {/* Pager */}
+      <AdminRosterPager />
     </div>
   );
 }
