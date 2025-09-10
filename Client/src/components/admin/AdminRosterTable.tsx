@@ -1,20 +1,87 @@
-// Client/src/components/admin/AdminRosterTable.tsx
 import React, { useMemo, useState } from 'react';
-import { Pencil, Save, X, Trash2 } from 'lucide-react';
+import { ArrowUpAZ, ArrowDownAZ, Pencil, Save, X, Trash2 } from 'lucide-react';
 import { useAdminStore } from '../../stores/admin/useAdminStore';
+import type { RosterSortField } from '../../stores/admin/useAdminStore'; // ✅ align types
 
 type Row = {
-  id: number; name: string; email: string; phone: string | null;
-  addressStreet: string | null; addressCity: string | null; addressState: string | null; addressZip: string | null;
+  id: number;
+  name: string;
+  email: string;
+  phone: string | null;
+  addressStreet: string | null;
+  addressCity: string | null;
+  addressState: string | null;
+  addressZip: string | null;
   spouseName: string | null;
 };
 
 type Props = {
   rows: Row[];
   className?: string;
+
+  // ✅ sorting props typed to the union
+  sortBy: RosterSortField | null;
+  sortDir: 'asc' | 'desc';
+  onSort: (field: RosterSortField) => void;
 };
 
-export default function AdminRosterTable({ rows, className }: Readonly<Props>): React.ReactElement {
+// ✅ column keys exactly the allowed sort fields
+type ColumnDef = {
+  key: RosterSortField;
+  label: string;
+};
+
+function SortableHeader(props: Readonly<{
+  label: string;
+  field: RosterSortField;
+  activeField: RosterSortField | null;
+  direction: 'asc' | 'desc';
+  onSort: (field: RosterSortField) => void;
+}>) {
+  const { label, field, activeField, direction, onSort } = props;
+  const isActive = activeField === field;
+
+  let icon: React.ReactElement | null = null;
+  if (isActive && direction === 'asc') {
+    icon = <ArrowUpAZ className="w-5 h-5 text-[var(--theme-button-hover)] ml-auto" aria-hidden="true" />;
+  } else if (isActive && direction === 'desc') {
+    icon = <ArrowDownAZ className="w-5 h-5 text-[var(--theme-pill-orange)] ml-auto" aria-hidden="true" />;
+  }
+
+  // ✅ no nested ternary
+  let ariaSort: 'none' | 'ascending' | 'descending' = 'none';
+  if (isActive) {
+    if (direction === 'asc') {
+      ariaSort = 'ascending';
+    } else {
+      ariaSort = 'descending';
+    }
+  }
+
+  return (
+    <th
+      scope="col"
+      aria-sort={ariaSort}
+      className="text-left px-3 py-2 border-t-2 border-b-2 border-[var(--theme-border)] cursor-pointer select-none"
+      onClick={() => onSort(field)}
+    >
+      <div className="flex items-center justify-between w-full">
+        <span>{label}</span>
+        {icon}
+      </div>
+    </th>
+  );
+}
+
+
+
+export default function AdminRosterTable({
+                                           rows,
+                                           className,
+                                           sortBy,
+                                           sortDir,
+                                           onSort,
+                                         }: Readonly<Props>): React.ReactElement {
   const { updateRosterRow, deleteRosterRow } = useAdminStore();
 
   const [editId, setEditId] = useState<number | null>(null);
@@ -22,18 +89,17 @@ export default function AdminRosterTable({ rows, className }: Readonly<Props>): 
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState('');
 
-  const columns = useMemo(
-    () =>
-      ([
-        { key: 'name', label: 'Name' },
-        { key: 'email', label: 'Email' },
-        { key: 'phone', label: 'Phone' },
-        { key: 'addressStreet', label: 'Street' },
-        { key: 'addressCity', label: 'City' },
-        { key: 'addressState', label: 'State' },
-        { key: 'addressZip', label: 'Zip' },
-        { key: 'spouseName', label: 'Spouse' },
-      ] as const),
+  const columns = useMemo<readonly ColumnDef[]>(
+    () => [
+      { key: 'name', label: 'Name' },
+      { key: 'email', label: 'Email' },
+      { key: 'phone', label: 'Phone' },
+      { key: 'addressStreet', label: 'Street' },
+      { key: 'addressCity', label: 'City' },
+      { key: 'addressState', label: 'State' },
+      { key: 'addressZip', label: 'Zip' },
+      { key: 'spouseName', label: 'Spouse' },
+    ],
     []
   );
 
@@ -128,11 +194,18 @@ export default function AdminRosterTable({ rows, className }: Readonly<Props>): 
           <thead className="bg-[var(--theme-strip)] text-[var(--theme-strip-text)]">
           <tr>
             {columns.map((c) => (
-              <th key={c.key} className="text-left px-3 py-2 border-t-2 border-b-2 border-[var(--theme-border)]">
-                {c.label}
-              </th>
+              <SortableHeader
+                key={c.key}
+                label={c.label}
+                field={c.key}
+                activeField={sortBy}
+                direction={sortDir}
+                onSort={onSort}
+              />
             ))}
-            <th className="px-3 py-2 text-right border-b-2 border-t-2 border-[var(--theme-border)]">Actions</th>
+            <th className="px-3 py-2 text-right border-b-2 border-t-2 border-[var(--theme-border)]">
+              Actions
+            </th>
           </tr>
           </thead>
 
@@ -142,7 +215,10 @@ export default function AdminRosterTable({ rows, className }: Readonly<Props>): 
 
             if (!isEditing) {
               return (
-                <tr key={r.id} className="even:bg-[var(--theme-card-alt)] hover:bg-[var(--theme-card-alt-hover)]">
+                <tr
+                  key={r.id}
+                  className="even:bg-[var(--theme-card-alt)] hover:bg-[var(--theme-card-hover)]"
+                >
                   <td className="px-3 py-2">{r.name}</td>
                   <td className="px-3 py-2">{r.email}</td>
                   <td className="px-3 py-2">{r.phone ?? ''}</td>
@@ -156,7 +232,7 @@ export default function AdminRosterTable({ rows, className }: Readonly<Props>): 
                       <button
                         type="button"
                         onClick={() => startEdit(r)}
-                        className="px-2 py-1 rounded-md border border-[var(--theme-border)] bg-[var(--theme-surface)] text-[var(--theme-pencil)] hover:text-[var(--theme-textbox)] hover:bg-[var(--theme-button-hover)]"
+                        className="px-2 py-1 rounded-md border border-[var(--theme-border)] bg-[var(--theme-surface)] text-[var(--theme-text)] hover:text-[var(--theme-textbox)] hover:bg-[var(--theme-button-hover)]"
                       >
                         <Pencil className="w-4 h-4" />
                       </button>
@@ -165,7 +241,7 @@ export default function AdminRosterTable({ rows, className }: Readonly<Props>): 
                         onClick={() => {
                           void onDelete(r.id, r.name);
                         }}
-                        className="px-2 py-1 rounded-md border border-[var(--theme-border)] bg-[var(--theme-surface)] text-[var(--theme-pencil)] hover:text-[var(--theme-textbox)] hover:bg-[var(--theme-button-hover)]"
+                        className="px-2 py-1 rounded-md border border-[var(--theme-border)] bg-[var(--theme-surface)] text-[var(--theme-text)] hover:text-[var(--theme-textbox)] hover:bg-[var(--theme-button-hover)]"
                       >
                         <Trash2 className="w-4 h-4" />
                       </button>
@@ -191,7 +267,7 @@ export default function AdminRosterTable({ rows, className }: Readonly<Props>): 
                 ).map((k) => (
                   <td key={k} className="px-3 py-2">
                     <input
-                      value={(form as any)[k] ?? ''}
+                      value={(form as Record<string, string | undefined>)[k] ?? ''}
                       onChange={(e) => setForm((f) => ({ ...f, [k]: e.target.value }))}
                       className="w-full px-2 py-1 rounded-md border border-[var(--theme-border)] bg-[var(--theme-textbox)] text-[var(--theme-placeholder)] placeholder:text-[var(--theme-placeholder)]"
                       placeholder="Enter value"
@@ -214,7 +290,7 @@ export default function AdminRosterTable({ rows, className }: Readonly<Props>): 
                       type="button"
                       disabled={busy}
                       onClick={cancelEdit}
-                      className="px-2 py-1 rounded-md border border-[var(--theme-border)] bg-[var(--theme-surface)] hover:bg-[var(--theme-button-error)] hover:text-[var(--theme-textbox)]"
+                      className="px-2 py-1 rounded-md border border-[var(--theme-border)] bg-[var(--theme-surface)] hover:bg-[var(--theme-button-hover)] hover:text-[var(--theme-textbox)]"
                     >
                       <X className="w-4 h-4" />
                     </button>
