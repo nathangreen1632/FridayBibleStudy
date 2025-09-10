@@ -6,11 +6,8 @@ import {
   fetchPrayerThread,
   patchPrayerStatus,
   postAdminComment,
-  // NEW: hard delete API
   deleteAdminPrayer,
-  // NEW: roster API
   fetchAdminRoster,
-  // NEW: roster update/delete APIs
   patchAdminRosterUser,
   deleteAdminRosterUser,
 } from '../../helpers/api/adminApi';
@@ -31,6 +28,26 @@ type RosterRow = {
   spouseName: string | null;
 };
 
+/** NEW: allowed sort fields for roster */
+export type RosterSortField =
+  | 'name'
+  | 'email'
+  | 'phone'
+  | 'addressStreet'
+  | 'addressCity'
+  | 'addressState'
+  | 'addressZip'
+  | 'spouseName';
+
+/** NEW: loadRoster options including sorting */
+type LoadRosterOpts = {
+  q?: string;
+  page?: number;
+  pageSize?: number;
+  sortBy?: RosterSortField;
+  sortDir?: 'asc' | 'desc';
+};
+
 type State = {
   list: AdminPrayerRow[];
   total: number;
@@ -45,8 +62,13 @@ type State = {
   // Roster state (admin-only)
   roster: RosterRow[];
   rosterTotal: number;
-  rosterPage: number;
-  rosterPageSize: number;
+  rosterPage: number;       // 1-based
+  rosterPageSize: number;   // fixed to 15
+  lastRosterQuery?: string; // remember last q for next/prev
+
+  /** NEW: remember last sort so pagination keeps it */
+  lastRosterSortBy?: RosterSortField;
+  lastRosterSortDir?: 'asc' | 'desc';
 
   loadList: (opts: {
     q?: string;
@@ -64,13 +86,12 @@ type State = {
     next: 'active' | 'praise' | 'archived'
   ) => Promise<{ ok: boolean; message?: string }>;
 
-  // NEW: hard delete
   deletePrayer: (prayerId: number) => Promise<{ ok: boolean; message?: string }>;
 
-  // NEW: roster loader
-  loadRoster: (opts: { q?: string; page?: number; pageSize?: number }) => Promise<{ ok: boolean; message?: string }>;
+  // Roster loader
+  loadRoster: (opts: LoadRosterOpts) => Promise<{ ok: boolean; message?: string }>;
 
-  // NEW: roster update/delete
+  // Roster update/delete
   updateRosterRow: (
     id: number,
     patch: Partial<{
@@ -80,6 +101,11 @@ type State = {
     }>
   ) => Promise<{ ok: boolean; message?: string }>;
   deleteRosterRow: (id: number) => Promise<{ ok: boolean; message?: string }>;
+
+  // Pagination helpers (1-based page in UI)
+  setRosterPage: (page: number) => Promise<void>;
+  nextRosterPage: () => Promise<void>;
+  prevRosterPage: () => Promise<void>;
 };
 
 function safeIso(input: unknown): string | null {
@@ -102,7 +128,6 @@ function normalizeThreadPayload(raw: unknown): { prayer?: Prayer; comments: Comm
   const top: Record<string, unknown> = raw as Record<string, unknown>;
   const data = (top.data as Record<string, unknown>) ?? top;
 
-  // Try multiple places a root/prayer could live
   const maybePrayer =
     (data.prayer as Prayer | undefined) ||
     (data.root as Prayer | undefined) ||
@@ -116,18 +141,12 @@ function normalizeThreadPayload(raw: unknown): { prayer?: Prayer; comments: Comm
     out.prayer = maybePrayer;
   }
 
-  // Collect comments from a variety of list shapes
   const candidates: unknown[] = [];
-
-  // direct arrays
   if (Array.isArray((data as any).comments)) candidates.push(...((data as any).comments as unknown[]));
   if (Array.isArray((data as any).replies)) candidates.push(...((data as any).replies as unknown[]));
-
-  // paginated list shapes at top level
   if (Array.isArray((data as any).items)) candidates.push(...((data as any).items as unknown[]));
   if (Array.isArray((data as any).rows)) candidates.push(...((data as any).rows as unknown[]));
 
-  // nested thread containers
   const thread = (data as any).thread;
   if (thread && typeof thread === 'object') {
     if (Array.isArray(thread.comments)) candidates.push(...(thread.comments as unknown[]));
@@ -142,13 +161,11 @@ function normalizeThreadPayload(raw: unknown): { prayer?: Prayer; comments: Comm
     }
   }
 
-  // best-effort map to your Comment shape; accept createdAt/created_at and content/message/body
   const mapped: Comment[] = [];
   for (const anyC of candidates) {
     if (!anyC || typeof anyC !== 'object') continue;
     const c = anyC as Record<string, unknown>;
 
-    // id is required to render a stable key; skip if missing/invalid
     const idVal = c.id;
     const id = typeof idVal === 'number' ? idVal : Number(idVal);
     if (!Number.isFinite(id)) continue;
@@ -165,7 +182,6 @@ function normalizeThreadPayload(raw: unknown): { prayer?: Prayer; comments: Comm
       if (!Number.isNaN(d.getTime())) createdAt = d.toISOString();
     }
 
-    // prefer `content`, but fall back to `message` or `body`
     const contentRaw =
       (c.content as string | undefined) ??
       (c.message as string | undefined) ??
@@ -190,7 +206,6 @@ function seedRowsFromList(items: AdminPrayerRow[]): Record<number, AdminPrayerRo
   return seeded;
 }
 
-/** Merge a row-aligned snapshot for the card meta (no nested ternaries) */
 function mergeDetailRow(
   baseRow: AdminPrayerRow | undefined,
   prayer: Prayer | undefined,
@@ -271,8 +286,13 @@ export const useAdminStore = create<State>((set, get) => ({
   // Roster defaults
   roster: [],
   rosterTotal: 0,
-  rosterPage: 1,
-  rosterPageSize: 25,
+  rosterPage: 1,          // keep 1-based
+  rosterPageSize: 15,     // fixed client-side
+  lastRosterQuery: '',
+
+  // NEW: remember last sort
+  lastRosterSortBy: undefined,
+  lastRosterSortDir: undefined,
 
   loadList: async (opts) => {
     set({ loading: true });
@@ -346,7 +366,7 @@ export const useAdminStore = create<State>((set, get) => ({
             }
           }
         } catch {
-          // best-effort; ignore if detail endpoint fails
+          // best-effort
         }
       }
 
@@ -418,7 +438,6 @@ export const useAdminStore = create<State>((set, get) => ({
     }
   },
 
-  // NEW: hard delete (admin)
   deletePrayer: async (prayerId) => {
     if (!prayerId || Number.isNaN(prayerId)) {
       return { ok: false, message: 'Invalid prayer id.' };
@@ -452,24 +471,31 @@ export const useAdminStore = create<State>((set, get) => ({
     }
   },
 
-  // NEW: roster loader
+  // --- Roster loader (fixed 15/page) ---
   loadRoster: async (opts) => {
     try {
-      const q = opts?.q;
-      const page = typeof opts?.page === 'number' ? opts.page : undefined;
-      const pageSize = typeof opts?.pageSize === 'number' ? opts.pageSize : undefined;
+      const q = opts?.q ?? get().lastRosterQuery ?? '';
+      const page = typeof opts?.page === 'number' ? opts.page : get().rosterPage || 1;
+      const pageSize = 15; // fixed client-side
 
-      const res = await fetchAdminRoster({ q, page, pageSize });
+      // NEW: preserve last-used sort when not provided
+      const sortBy = (opts?.sortBy ?? get().lastRosterSortBy);
+      const sortDir = (opts?.sortDir ?? get().lastRosterSortDir);
+
+      const res = await fetchAdminRoster({ q, page, pageSize, sortBy, sortDir });
       if (!res?.ok) {
         set({ roster: [], rosterTotal: 0 });
         return { ok: false, message: res?.message ?? 'Failed to load roster.' };
       }
 
       set({
+        lastRosterQuery: q,
+        lastRosterSortBy: sortBy,
+        lastRosterSortDir: sortDir,
         roster: res.rows ?? [],
-        rosterTotal: res.total ?? 0,
-        rosterPage: res.page ?? 1,
-        rosterPageSize: res.pageSize ?? 25,
+        rosterTotal: typeof res.total === 'number' ? res.total : 0,
+        rosterPage: page,
+        rosterPageSize: pageSize,
       });
 
       return { ok: true };
@@ -479,7 +505,7 @@ export const useAdminStore = create<State>((set, get) => ({
     }
   },
 
-  // NEW: roster update/delete
+  // --- Roster update/delete ---
   updateRosterRow: async (id, patch) => {
     try {
       const res = await patchAdminRosterUser(id, patch);
@@ -514,5 +540,42 @@ export const useAdminStore = create<State>((set, get) => ({
     } catch {
       return { ok: false, message: 'Unable to delete roster row.' };
     }
+  },
+
+  // --- pagination helpers (1-based) ---
+  setRosterPage: async (page) => {
+    const p = Number.isFinite(page) && page > 0 ? page : 1;
+    const { rosterPageSize, lastRosterQuery, lastRosterSortBy, lastRosterSortDir } = get();
+    await get().loadRoster({
+      q: lastRosterQuery,
+      page: p,
+      pageSize: rosterPageSize,
+      sortBy: lastRosterSortBy,
+      sortDir: lastRosterSortDir,
+    });
+  },
+  nextRosterPage: async () => {
+    const { rosterPage, rosterPageSize, rosterTotal, lastRosterQuery, lastRosterSortBy, lastRosterSortDir } = get();
+    const hasNext = rosterPage * rosterPageSize < (rosterTotal ?? 0);
+    if (!hasNext) return;
+    await get().loadRoster({
+      q: lastRosterQuery,
+      page: rosterPage + 1,
+      pageSize: rosterPageSize,
+      sortBy: lastRosterSortBy,
+      sortDir: lastRosterSortDir,
+    });
+  },
+  prevRosterPage: async () => {
+    const { rosterPage, rosterPageSize, lastRosterQuery, lastRosterSortBy, lastRosterSortDir } = get();
+    const p = Math.max(1, rosterPage - 1);
+    if (p === rosterPage) return;
+    await get().loadRoster({
+      q: lastRosterQuery,
+      page: p,
+      pageSize: rosterPageSize,
+      sortBy: lastRosterSortBy,
+      sortDir: lastRosterSortDir,
+    });
   },
 }));
