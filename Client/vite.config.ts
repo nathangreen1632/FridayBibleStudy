@@ -1,3 +1,4 @@
+// Client/vite.config.ts
 import { defineConfig } from 'vite';
 import react from '@vitejs/plugin-react';
 import tailwindcss from '@tailwindcss/vite';
@@ -10,10 +11,14 @@ export default defineConfig({
         target: 'http://localhost:3001',
         changeOrigin: true,
       },
-      // Socket.IO WS → backend (must proxy the upgrade)
       '/socket.io': {
         target: 'http://localhost:3001',
-        ws: true,            // <<< important: enable WebSocket proxying
+        ws: true,
+        changeOrigin: true,
+      },
+      // ✅ serve uploaded images from the backend in dev
+      '/uploads': {
+        target: 'http://localhost:3001',
         changeOrigin: true,
       },
     },
