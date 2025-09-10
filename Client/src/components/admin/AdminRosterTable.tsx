@@ -241,7 +241,7 @@ export default function AdminRosterTable({
                         onClick={() => {
                           void onDelete(r.id, r.name);
                         }}
-                        className="px-2 py-1 rounded-md border border-[var(--theme-border)] bg-[var(--theme-surface)] text-[var(--theme-text)] hover:text-[var(--theme-textbox)] hover:bg-[var(--theme-button-hover)]"
+                        className="px-2 py-1 rounded-md border border-[var(--theme-border)] bg-[var(--theme-surface)] text-[var(--theme-text)] hover:text-[var(--theme-textbox)] hover:bg-[var(--theme-error)]"
                       >
                         <Trash2 className="w-4 h-4" />
                       </button>
