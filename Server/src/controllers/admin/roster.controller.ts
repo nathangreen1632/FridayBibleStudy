@@ -6,11 +6,16 @@ export async function getAdminRoster(req: Request, res: Response): Promise<void>
   const page = typeof req.query.page === 'string' ? Number(req.query.page) : undefined;
   const pageSize = typeof req.query.pageSize === 'string' ? Number(req.query.pageSize) : undefined;
 
-  const result = await listRoster({ q, page, pageSize });
-  if (!result.ok) { res.status(500).json(result);
+  // ✅ NEW: parse sort params (leave validation to service)
+  const sortBy = typeof req.query.sortBy === 'string' ? req.query.sortBy : undefined;
+  const rawDir = typeof req.query.sortDir === 'string' ? req.query.sortDir.toLowerCase() : undefined;
+  const sortDir = rawDir === 'desc' ? 'desc' : rawDir === 'asc' ? 'asc' : undefined;
+
+  const result = await listRoster({ q, page, pageSize, sortBy, sortDir });
+  if (!result.ok) {
+    res.status(500).json(result);
     return;
   }
-
   res.json(result);
 }
 
