@@ -23,7 +23,8 @@ export async function patchAdminRosterUser(req: Request, res: Response): Promise
   const userId = Number(req.params.id);
   if (!Number.isFinite(userId)) { res.status(400).json({ ok: false, error: 'Invalid user id.' }); return; }
 
-  const allowed = {
+  // Start with all possible fields…
+  const allowed: Record<string, unknown> = {
     name: req.body?.name,
     email: req.body?.email,
     phone: req.body?.phone,
@@ -32,12 +33,20 @@ export async function patchAdminRosterUser(req: Request, res: Response): Promise
     addressState: req.body?.addressState,
     addressZip: req.body?.addressZip,
     spouseName: req.body?.spouseName,
+    emailPaused: req.body?.emailPaused as boolean | undefined,
   };
 
-  const result = await updateRosterUser(userId, allowed);
+  // …then drop any that are undefined so we don't null-out required fields.
+  const clean: Record<string, unknown> = {};
+  for (const [k, v] of Object.entries(allowed)) {
+    if (v !== undefined) clean[k] = v;
+  }
+
+  const result = await updateRosterUser(userId, clean);
   if (!result.ok) { res.status(400).json(result); return; }
   res.json(result);
 }
+
 
 export async function deleteAdminRosterUser(req: Request, res: Response): Promise<void> {
   const userId = Number(req.params.id);
