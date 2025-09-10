@@ -160,20 +160,25 @@ export default function AdminDigestPage(): React.ReactElement {
         </div>
 
         <div className="mt-3 flex flex-wrap gap-2">
-          {/* Removed Refresh Preview button */}
           <button
             onClick={onSendAuto}
-            className="px-4 py-2 rounded-lg bg-[var(--theme-button)] text-[var(--theme-text-white)] hover:bg-[var(--theme-button-hover)] hover:text-[var(--theme-textbox)]"
+            className="px-4 py-2 rounded-lg bg-[var(--theme-button)] text-[var(--theme-text-white)]
+               hover:bg-[var(--theme-button-hover)] hover:text-[var(--theme-textbox)]
+               active:translate-y-0.5 active:shadow-inner transition-all"
           >
             Send Auto (Last {days} Days)
           </button>
+
           <button
             onClick={onSendManual}
-            className="px-4 py-2 rounded-lg bg-[var(--theme-button)] text-[var(--theme-text-white)] hover:bg-[var(--theme-button-hover)] hover:text-[var(--theme-textbox)]"
+            className="px-4 py-2 rounded-lg bg-[var(--theme-button)] text-[var(--theme-text-white)]
+               hover:bg-[var(--theme-button-hover)] hover:text-[var(--theme-textbox)]
+               active:translate-y-0.5 active:shadow-inner transition-all"
           >
             Send Manual (Selected)
           </button>
         </div>
+
       </div>
 
       <div className="rounded-xl border border-[var(--theme-border)] bg-[var(--theme-surface)]">
@@ -182,13 +187,17 @@ export default function AdminDigestPage(): React.ReactElement {
           <div className="flex items-center gap-2 text-sm">
             <button
               onClick={() => toggleSelectAll(true)}
-              className="px-2 py-1 rounded-lg bg-[var(--theme-button-blue)] text-[var(--theme-text-white)] hover:bg-[var(--theme-button-blue-hover)]"
+              className="px-2 py-1 rounded-lg bg-[var(--theme-button-blue)] text-[var(--theme-text-white)]
+                 hover:bg-[var(--theme-button-blue-hover)]
+                 shadow-md active:translate-y-0.5 active:shadow-inner transition-all"
             >
               Select All
             </button>
             <button
               onClick={() => toggleSelectAll(false)}
-              className="px-2 py-1 rounded-lg bg-[var(--theme-button-gray)] text-[var(--theme-text-white)] hover:bg-[var(--theme-button-blue-hover)]"
+              className="px-2 py-1 rounded-lg bg-[var(--theme-button-gray)] text-[var(--theme-text-white)]
+                 hover:bg-[var(--theme-button-blue-hover)]
+                 shadow-md active:translate-y-0.5 active:shadow-inner transition-all"
             >
               Clear
             </button>
