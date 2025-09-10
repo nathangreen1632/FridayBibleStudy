@@ -1,6 +1,6 @@
 // Client/src/components/admin/AdminRosterTable.tsx
 import React, { useMemo, useState } from 'react';
-import { ArrowUpAZ, ArrowDownAZ, Pencil, Save, X, Trash2 } from 'lucide-react';
+import { ArrowUpAZ, ArrowDownAZ, Pencil, Save, X, Trash2, PauseCircle, PlayCircle } from 'lucide-react';
 import { useAdminStore } from '../../stores/admin/useAdminStore';
 import type { RosterSortField } from '../../stores/admin/useAdminStore'; // ✅ align types
 
@@ -14,6 +14,9 @@ type Row = {
   addressState: string | null;
   addressZip: string | null;
   spouseName: string | null;
+
+  /** NEW: UI needs to know if email is paused */
+  emailPaused: boolean;
 };
 
 type Props = {
@@ -74,8 +77,6 @@ function SortableHeader(props: Readonly<{
   );
 }
 
-
-
 export default function AdminRosterTable({
                                            rows,
                                            className,
@@ -83,7 +84,7 @@ export default function AdminRosterTable({
                                            sortDir,
                                            onSort,
                                          }: Readonly<Props>): React.ReactElement {
-  const { updateRosterRow, deleteRosterRow } = useAdminStore();
+  const { updateRosterRow, deleteRosterRow, toggleRosterEmailPaused } = useAdminStore();
 
   const [editId, setEditId] = useState<number | null>(null);
   const [form, setForm] = useState<Partial<Row>>({});
@@ -176,6 +177,18 @@ export default function AdminRosterTable({
     }
   }
 
+  async function onTogglePause(id: number, next: boolean) {
+    if (busy) return;
+    setBusy(true);
+    setError('');
+    const res = await toggleRosterEmailPaused(id, next);
+    setBusy(false);
+    if (!res.ok) {
+      setError(res.message ?? 'Unable to update pause state.');
+    }
+  }
+
+
   return (
     <div
       className={[
@@ -237,6 +250,18 @@ export default function AdminRosterTable({
                       >
                         <Pencil className="w-4 h-4" />
                       </button>
+
+                      {/* NEW: Pause/Play toggle between pencil and delete */}
+                      <button
+                        type="button"
+                        onClick={() => { void onTogglePause(r.id, !r.emailPaused); }}
+                        className="px-2 py-1 rounded-md border border-[var(--theme-border)] bg-[var(--theme-surface)] text-[var(--theme-text)] hover:text-[var(--theme-textbox)] hover:bg-[var(--theme-button-hover)]"
+                        aria-label={r.emailPaused ? 'Resume email updates' : 'Pause email updates'}
+                        title={r.emailPaused ? 'Resume email updates' : 'Pause email updates'}
+                      >
+                        {r.emailPaused ? <PlayCircle className="w-6 h-6" /> : <PauseCircle className="w-4 h-4" />}
+                      </button>
+
                       <button
                         type="button"
                         onClick={() => {
