@@ -18,12 +18,31 @@ export async function listRoster(opts: {
   q?: string;
   page?: number;
   pageSize?: number;
+  /** NEW: requested sort column (raw from controller) */
+  sortBy?: string;
+  /** NEW: 'asc' | 'desc' (normalized in controller, but we guard anyway) */
+  sortDir?: 'asc' | 'desc';
 }): Promise<{ ok: boolean; rows: RosterRow[]; total: number; page: number; pageSize: number; message?: string }> {
   try {
     const page = typeof opts.page === 'number' && opts.page > 0 ? opts.page : 1;
     const pageSize = typeof opts.pageSize === 'number' && opts.pageSize > 0 ? opts.pageSize : 25;
-    const where: Record<string, unknown> = {};
 
+    // ✅ strict whitelist to prevent ORDER BY injection
+    const SORTABLE: Record<string, string> = {
+      name: 'name',
+      email: 'email',
+      phone: 'phone',
+      addressStreet: 'addressStreet',
+      addressCity: 'addressCity',
+      addressState: 'addressState',
+      addressZip: 'addressZip',
+      spouseName: 'spouseName',
+    };
+
+    const sortCol = opts.sortBy && SORTABLE[opts.sortBy] ? SORTABLE[opts.sortBy] : 'name';
+    const sortDir = opts.sortDir === 'desc' ? 'DESC' : 'ASC';
+
+    const where: Record<string, unknown> = {};
     if (opts.q?.trim()) {
       const s = `%${opts.q.trim()}%`;
       // cast to satisfy TS on symbol keys
@@ -52,7 +71,7 @@ export async function listRoster(opts: {
         'addressZip',
         'spouseName',
       ],
-      order: [['name', 'ASC']],
+      order: [[sortCol, sortDir]], // ✅ now driven by query params, safely whitelisted
       offset: (page - 1) * pageSize,
       limit: pageSize,
     });
