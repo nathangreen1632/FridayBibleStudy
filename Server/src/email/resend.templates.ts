@@ -239,6 +239,72 @@ export function renderContactHtml(opts: {
   return { subject, html };
 }
 
+// -------------------- Digest (Weekly/Periodic) --------------------
+export function renderDigestEmailHtml(opts: {
+  groupName: string;
+  updates: Array<{
+    prayerTitle: string;
+    authorName: string;
+    content: string;
+    createdAt: Date | string | number;
+  }>;
+  periodLabel?: string;   // e.g., "Last 7 Days"
+  actionUrl?: string;     // optional deep link
+}): string {
+  const { groupName, updates, periodLabel, actionUrl } = opts;
+
+  // Local safe date -> string
+  function toDateSafeLocal(input: unknown): Date {
+    try {
+      const d = new Date(String(input));
+      if (Number.isNaN(d.getTime())) return new Date();
+      return d;
+    } catch {
+      return new Date();
+    }
+  }
+
+  const rows = updates
+    .map((u) => {
+      const ts = toDateSafeLocal(u.createdAt).toLocaleString();
+      return `
+        <tr>
+          <td style="padding:8px;border-bottom:1px solid ${COL.BORDER};">
+            <div style="font-weight:600;margin:0 0 4px 0;">${escapeHtml(u.prayerTitle)}</div>
+            <div style="opacity:.8;font-size:12px;margin:0 0 8px 0;">${escapeHtml(u.authorName)} • ${escapeHtml(ts)}</div>
+            <div style="margin-top:6px;white-space:pre-wrap;line-height:1.5;">${escapeHtml(u.content)}</div>
+          </td>
+        </tr>`;
+    })
+    .join('');
+
+  const tableHtml = `
+    <h2 style="margin:0 0 12px 0;font-size:18px;font-weight:800;color:${COL.ACCENT};">
+      ${escapeHtml(groupName)} • Prayer Digest${periodLabel ? ` — ${escapeHtml(periodLabel)}` : ''}
+    </h2>
+    <table role="presentation" cellpadding="0" cellspacing="0" width="100%" style="border-collapse:collapse;">
+      ${rows || '<tr><td style="padding:16px;">No updates in this period.</td></tr>'}
+    </table>
+    <div style="margin-top:12px;font-size:12px;opacity:.8;line-height:1.5;">
+      You’re receiving this because you’re a member of ${escapeHtml(groupName)}. Reply to this email to keep the conversation going.
+    </div>
+  `;
+
+  const preheader =
+    updates.length > 0
+      ? `${updates.length} update${updates.length === 1 ? '' : 's'} in the recent period.`
+      : 'No updates in the recent period.';
+
+  return renderBase({
+    title: `${groupName} • Prayer Digest${periodLabel ? ` (${periodLabel})` : ''}`,
+    preheader,
+    bodyHtml: tableHtml,
+    actionText: actionUrl ? 'Open in Friday Bible Study' : undefined,
+    actionUrl,
+  });
+}
+
+
 /* -------------------- Utilities -------------------- */
 function escapeHtml(s: string): string {
   return String(s)

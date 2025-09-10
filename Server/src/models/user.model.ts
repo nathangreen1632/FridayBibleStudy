@@ -11,6 +11,9 @@ export interface UserAttributes {
   role: Role;
   emailVerified: boolean;
 
+  /** NEW: soft-unsubscribe flag (maps to users.email_paused) */
+  emailPaused: boolean;
+
   // Roster additions
   addressStreet: string | null;
   addressCity: string | null;
@@ -26,6 +29,7 @@ export type UserCreation = Optional<
   | 'id'
   | 'role'
   | 'emailVerified'
+  | 'emailPaused'        // NEW: defaulted in DB, optional on create
   | 'addressStreet'
   | 'addressCity'
   | 'addressState'
@@ -43,6 +47,9 @@ export class User extends Model<UserAttributes, UserCreation> implements UserAtt
   declare passwordHash: string;
   declare role: Role;
   declare emailVerified: boolean;
+
+  /** NEW */
+  declare emailPaused: boolean;
 
   declare addressStreet: string | null;
   declare addressCity: string | null;
@@ -63,6 +70,14 @@ export class User extends Model<UserAttributes, UserCreation> implements UserAtt
         passwordHash: { type: DataTypes.STRING(200), allowNull: false },
         role: { type: DataTypes.ENUM('classic', 'admin'), allowNull: false, defaultValue: 'classic' },
         emailVerified: { type: DataTypes.BOOLEAN, allowNull: false, defaultValue: false },
+
+        /** NEW: maps to column "email_paused" */
+        emailPaused: {
+          type: DataTypes.BOOLEAN,
+          allowNull: false,
+          defaultValue: false,
+          field: 'email_paused',
+        },
 
         // Roster additions
         addressStreet: { type: DataTypes.STRING(180), allowNull: true },

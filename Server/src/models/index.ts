@@ -27,9 +27,9 @@ function initAll(s: Sequelize): void {
 
   // associations (+ cascades)
   GroupMember.belongsTo(User,  { foreignKey: 'userId',  onDelete: 'CASCADE', onUpdate: 'CASCADE' });
-  GroupMember.belongsTo(Group, { foreignKey: 'groupId', onDelete: 'CASCADE', onUpdate: 'CASCADE' });
+  GroupMember.belongsTo(Group, { foreignKey: 'groupId', as: 'group', onDelete: 'CASCADE', onUpdate: 'CASCADE' });
   User.hasMany(GroupMember,    { foreignKey: 'userId',  onDelete: 'CASCADE', onUpdate: 'CASCADE' });
-  Group.hasMany(GroupMember,   { foreignKey: 'groupId', onDelete: 'CASCADE', onUpdate: 'CASCADE' });
+  Group.hasMany(GroupMember, { foreignKey: 'groupId', as: 'members', onDelete: 'CASCADE', onUpdate: 'CASCADE' });
 
   // ✅ Explicit aliases to match your service includes
   Prayer.belongsTo(User,  { foreignKey: 'authorUserId', as: 'author', onDelete: 'SET NULL', onUpdate: 'CASCADE' });
@@ -42,7 +42,7 @@ function initAll(s: Sequelize): void {
   Prayer.hasMany(PrayerUpdate, { foreignKey: 'prayerId', as: 'updates',     onDelete: 'CASCADE', onUpdate: 'CASCADE' });
   Prayer.hasMany(Attachment,   { foreignKey: 'prayerId', as: 'attachments', onDelete: 'CASCADE', onUpdate: 'CASCADE' });
 
-  PrayerUpdate.belongsTo(Prayer, { foreignKey: 'prayerId', onDelete: 'CASCADE', onUpdate: 'CASCADE' });
+  PrayerUpdate.belongsTo(Prayer, { foreignKey: 'prayerId', as: 'prayer', onDelete: 'CASCADE', onUpdate: 'CASCADE' });
   PrayerUpdate.belongsTo(User,   { foreignKey: 'authorUserId', as: 'author', onDelete: 'SET NULL', onUpdate: 'CASCADE' });
 
   Attachment.belongsTo(Prayer, { foreignKey: 'prayerId', onDelete: 'CASCADE', onUpdate: 'CASCADE' });
@@ -69,7 +69,7 @@ function initAll(s: Sequelize): void {
   });
 
   // Comments
-  Comment.belongsTo(Prayer, { foreignKey: 'prayerId', onDelete: 'CASCADE', onUpdate: 'CASCADE' });
+  Comment.belongsTo(Prayer, { foreignKey: 'prayerId', as: 'prayer', onDelete: 'CASCADE', onUpdate: 'CASCADE' });
   Prayer.hasMany(Comment,   { foreignKey: 'prayerId', as: 'comments', onDelete: 'CASCADE', onUpdate: 'CASCADE' });
 
   Comment.belongsTo(User,   { foreignKey: 'authorId', as: 'author', onDelete: 'CASCADE', onUpdate: 'CASCADE' });

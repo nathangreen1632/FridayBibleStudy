@@ -13,7 +13,7 @@ import {
   Menu,
   Archive,
   Sparkles,
-  ShieldCheck,
+  ShieldCheck, Users,
 } from 'lucide-react';
 import { useScrollLock } from '../hooks/useScrollLock.ts';
 
@@ -122,9 +122,17 @@ export default function Navbar(): React.ReactElement {
               {/* Admin: ONLY Admin + Sign out */}
               {user.role === 'admin' && (
                 <>
-                  <NavLink to="/admin" className={({ isActive }) => linkClass(isActive)}>
+                  <NavLink to="/admin" end className={({ isActive }) => linkClass(isActive)}>
                     <ShieldCheck className="w-4 h-4" />
                     Admin
+                  </NavLink>
+                  <NavLink to="/admin/digest" className={({ isActive }) => linkClass(isActive)}>
+                    <Mail className="w-4 h-4" />
+                    Digest
+                  </NavLink>
+                  <NavLink to="/admin/roster" className={({ isActive }) => linkClass(isActive)}>
+                    <Users className="w-4 h-4" />
+                    Roster
                   </NavLink>
                   <button
                     onClick={onLogout}
@@ -224,9 +232,16 @@ export default function Navbar(): React.ReactElement {
                   {/* Admin: ONLY Admin + Sign out */}
                   {user.role === 'admin' && (
                     <>
-                      <NavLink to="/admin" className={({ isActive }) => linkClass(isActive)} onClick={closeMenu}>
+                      <NavLink to="/admin" end className={({ isActive }) => linkClass(isActive)} onClick={closeMenu}>
                         <ShieldCheck className="w-4 h-4" />
                         Admin
+                      </NavLink>
+                      <NavLink to="/admin/digest" className={({ isActive }) => linkClass(isActive)} onClick={closeMenu}>
+                        <Mail className="w-4 h-4" />
+                        Digest
+                      </NavLink>
+                      <NavLink to="/admin/roster" className={({ isActive }) => linkClass(isActive)} onClick={closeMenu}>
+                        Roster
                       </NavLink>
                       <button
                         onClick={() => { closeMenu(); void onLogout(); }}
