@@ -1,3 +1,4 @@
+// Client/src/pages/admin/AdminRosterPage.tsx
 import React, { useEffect, useRef, useState } from 'react';
 import AdminRosterTable from '../../components/admin/AdminRosterTable';
 import AdminRosterPager from '../../components/admin/AdminRosterPager';
