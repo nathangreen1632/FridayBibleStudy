@@ -1,5 +1,6 @@
 // Client/src/helpers/api/adminApi.ts
 import { apiWithRecaptcha } from '../secure-api.helper'; // <-- adjust path if different
+import type { RosterSortField } from '../../stores/admin/useAdminStore';
 
 /** GET /admin/prayers (list) — returns Response (caller handles .ok/.json()) */
 export async function fetchAdminPrayers(params: URLSearchParams): Promise<Response> {
@@ -12,7 +13,6 @@ export async function fetchPrayerThread(prayerId: number): Promise<Response> {
 }
 
 /** ✅ GET /admin/prayers/:id (detail) — returns Response (same shape as other GETs) */
-// NEW / confirmed: GET detail without a request body
 export async function fetchPrayerDetail(
   prayerId: number,
   recaptchaToken?: string
@@ -26,7 +26,6 @@ export async function fetchPrayerDetail(
     headers,
   });
 }
-
 
 /** POST comment — keep Response shape; attach recaptcha header when available */
 export async function postAdminComment(
@@ -69,15 +68,31 @@ export async function deleteAdminPrayer(prayerId: number): Promise<Response> {
   );
 }
 
-export async function fetchAdminRoster(params: { q?: string; page?: number; pageSize?: number }) {
+/**
+ * UPDATED: add sortBy/sortDir (no breaking changes).
+ * Builds a querystring with q, page, pageSize, sortBy, sortDir.
+ * Returns server JSON or a graceful { ok:false, ... } object on failure.
+ */
+export async function fetchAdminRoster(params: {
+  q?: string;
+  page?: number;
+  pageSize?: number;
+  sortBy?: RosterSortField;
+  sortDir?: 'asc' | 'desc';
+}) {
   const u = new URL('/api/admin/roster', window.location.origin);
-  if (params.q) u.searchParams.set('q', params.q);
-  if (params.page) u.searchParams.set('page', String(params.page));
-  if (params.pageSize) u.searchParams.set('pageSize', String(params.pageSize));
+
+  if (typeof params.q === 'string') u.searchParams.set('q', params.q);
+  if (typeof params.page === 'number') u.searchParams.set('page', String(params.page));
+  if (typeof params.pageSize === 'number') u.searchParams.set('pageSize', String(params.pageSize));
+  if (typeof params.sortBy === 'string') u.searchParams.set('sortBy', params.sortBy);
+  if (params.sortDir === 'asc' || params.sortDir === 'desc') u.searchParams.set('sortDir', params.sortDir);
 
   try {
     const res = await fetch(u.toString(), { credentials: 'include' });
-    if (!res.ok) return { ok: false, rows: [], total: 0, page: 1, pageSize: 25, message: 'Request failed.' };
+    if (!res.ok) {
+      return { ok: false, rows: [], total: 0, page: 1, pageSize: 25, message: 'Request failed.' };
+    }
     return res.json();
   } catch {
     return { ok: false, rows: [], total: 0, page: 1, pageSize: 25, message: 'Network error.' };
