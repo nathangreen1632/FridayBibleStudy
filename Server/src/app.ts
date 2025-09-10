@@ -1,3 +1,4 @@
+// Server/src/app.ts
 import express, { Express } from 'express';
 import type { Server as HttpServer } from 'http';
 import path from 'path';
@@ -21,22 +22,37 @@ export function createApp(): Express {
   app.use(express.json({ limit: '5mb' }));
   app.use(cookieParser());
 
+  // Your custom CSP first (keeps control in one place)
   app.use(cspMiddleware);
 
   app.use(
     helmet({
-      // We already set our own CSP header in cspMiddleware.
+      // We already set CSP via cspMiddleware.
       contentSecurityPolicy: false,
-
-      // keep other Helmet protections on:
+      // COEP off because we serve our own static assets
       crossOriginEmbedderPolicy: false,
     })
   );
 
+  // ---- API (JSON) ----
   app.use('/api', apiRouter);
 
+  // ---- Static: uploads (user content) ----
+  // Photos saved by multer land under <repo>/uploads; expose them at /uploads
+  const uploadsDir = path.resolve(process.cwd(), 'uploads');
+  app.use(
+    '/uploads',
+    express.static(uploadsDir, {
+      index: false,
+      maxAge: '1h',
+      fallthrough: true,
+    })
+  );
+
+  // ---- Static: built client (Vite) ----
   const clientDist = path.resolve(__dirname, '../../Client/dist');
 
+  // hashed assets (immutable)
   app.use(
     '/assets',
     express.static(path.join(clientDist, 'assets'), {
@@ -46,20 +62,31 @@ export function createApp(): Express {
     })
   );
 
+  // other static files from dist (e.g., index.html is served by the SPA fallback below)
   app.use(
     express.static(clientDist, {
-      index: false,          // we'll handle SPA fallback below
+      index: false,          // SPA fallback handles routes
       maxAge: '1h',
       fallthrough: true,
     })
   );
 
+  // ---- SPA fallback ----
+  // Only for non-API, non-static requests; send index.html so client router can handle it
   app.use((req, res, next) => {
-    if (req.path.startsWith('/api') || req.path.startsWith('/assets')) return next();
+    if (
+      req.path.startsWith('/api') ||
+      req.path.startsWith('/assets') ||
+      req.path.startsWith('/uploads')
+    ) {
+      return next();
+    }
     res.sendFile(path.join(clientDist, 'index.html'));
   });
 
+  // ---- Error handler ----
   app.use(errorHandler);
+
   return app;
 }
 
