@@ -26,6 +26,9 @@ type RosterRow = {
   addressState: string | null;
   addressZip: string | null;
   spouseName: string | null;
+
+  /** NEW: pause email updates without deleting their account/content */
+  emailPaused: boolean;
 };
 
 /** NEW: allowed sort fields for roster */
@@ -98,9 +101,14 @@ type State = {
       name: string; email: string; phone: string | null;
       addressStreet: string | null; addressCity: string | null; addressState: string | null; addressZip: string | null;
       spouseName: string | null;
+      /** NEW: allow updating via generic patch */
+      emailPaused: boolean;
     }>
   ) => Promise<{ ok: boolean; message?: string }>;
   deleteRosterRow: (id: number) => Promise<{ ok: boolean; message?: string }>;
+
+  /** NEW: convenience action for the pause button */
+  toggleRosterEmailPaused: (id: number, next: boolean) => Promise<{ ok: boolean; message?: string }>;
 
   // Pagination helpers (1-based page in UI)
   setRosterPage: (page: number) => Promise<void>;
@@ -539,6 +547,25 @@ export const useAdminStore = create<State>((set, get) => ({
       return { ok: true };
     } catch {
       return { ok: false, message: 'Unable to delete roster row.' };
+    }
+  },
+
+  /** NEW: pause/unpause emails for a roster member */
+  toggleRosterEmailPaused: async (id, next) => {
+    try {
+      const res = await patchAdminRosterUser(id, { emailPaused: next });
+      if (!res?.ok) {
+        return { ok: false, message: res?.error ?? 'Unable to update pause state.' };
+      }
+      const updated = (res).row as RosterRow | undefined;
+      if (updated) {
+        const s = get();
+        const nextRoster = s.roster.map((r) => (r.id === id ? { ...r, ...updated } : r));
+        set({ roster: nextRoster });
+      }
+      return { ok: true };
+    } catch {
+      return { ok: false, message: 'Unable to update pause state.' };
     }
   },
 
