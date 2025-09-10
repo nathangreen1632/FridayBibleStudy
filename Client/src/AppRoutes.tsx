@@ -1,48 +1,24 @@
 // Client/src/AppRoutes.tsx
-import React, { useEffect } from 'react';
-import { Route, Routes, Navigate, useLocation } from 'react-router-dom';
+import React from 'react';
+import { Route, Routes, Navigate } from 'react-router-dom';
+
 import HomePage from './pages/HomePage.tsx';
 import Register from './pages/RegisterPage.tsx';
 import Login from './pages/LoginPage.tsx';
-
-import AccountPage from './pages/AccountPage.tsx';
 import ContactPageWrapper from './pages/contact/ContactPageWrapper.tsx';
-import { useAuthStore } from './stores/useAuthStore.ts';
 
-// NEW: dedicated board pages
-import ActiveBoard from './pages/board/ActiveBoardPage.tsx';
-import ArchiveBoard from './pages/board/ArchiveBoardPage.tsx';
-import PraisesBoard from './pages/board/PraisesBoardPage.tsx';
-
-// NEW: Forgot Password pages
+// Forgot Password
 import RequestReset from './pages/RequestReset.tsx';
 import ResetPassword from './pages/ResetPassword.tsx';
+
+// Route groups
 import adminRoutes from './routes/admin/AdminRoutes';
-
-function RequireAuth({ children }: Readonly<{ children: React.ReactElement }>): React.ReactElement {
-  const { user, me } = useAuthStore();
-  const loc = useLocation();
-
-  useEffect(() => {
-    if (!user) {
-      (async () => {
-        try {
-          await me();
-        } catch {
-          // swallow errors (or add logging)
-        }
-      })();
-    }
-  }, [user, me]);
-
-
-  if (!user) return <Navigate to="/login" replace state={{ from: loc.pathname }} />;
-  return children;
-}
+import friendRoutes from './routes/friend/FriendRoutes';
 
 export default function AppRoutes(): React.ReactElement {
   return (
     <Routes>
+      {/* Public */}
       <Route path="/" element={<HomePage />} />
       <Route path="/register" element={<Register />} />
       <Route path="/login" element={<Login />} />
@@ -52,16 +28,23 @@ export default function AppRoutes(): React.ReactElement {
       <Route path="/request-reset" element={<RequestReset />} />
       <Route path="/reset-password" element={<ResetPassword />} />
 
-      {/* Portal / Boards */}
-      <Route path="/portal" element={<RequireAuth><ActiveBoard /></RequireAuth>} />
-      <Route path="/board/active" element={<RequireAuth><ActiveBoard /></RequireAuth>} />
-      <Route path="/board/archive" element={<RequireAuth><ArchiveBoard /></RequireAuth>} />
-      <Route path="/board/praises" element={<RequireAuth><PraisesBoard /></RequireAuth>} />
-      <Route path="/profile" element={<RequireAuth><AccountPage /></RequireAuth>} />
+      {/* Member (Friend) Routes */}
+      {friendRoutes.map((route) => (
+        <Route key={route.path || 'friend-root'} path={route.path} element={route.element}>
+          {route.children?.map((child) => (
+            <Route
+              key={child.path || 'index'}
+              index={child.index}
+              path={child.path}
+              element={child.element}
+            />
+          ))}
+        </Route>
+      ))}
 
-      {/* --- Admin Portal Routes --- */}
+      {/* Admin Portal Routes */}
       {adminRoutes.map((route) => (
-        <Route key={route.path} path={route.path} element={route.element}>
+        <Route key={route.path || 'admin-root'} path={route.path} element={route.element}>
           {route.children?.map((child) => (
             <Route
               key={child.path || 'index'}
@@ -78,4 +61,3 @@ export default function AppRoutes(): React.ReactElement {
     </Routes>
   );
 }
-
