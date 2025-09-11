@@ -9,6 +9,7 @@ import apiRouter from './routes/index.js';
 import { errorHandler } from './middleware/error.middleware.js';
 import { cspMiddleware } from './middleware/csp.middleware.js';
 import { initSocket } from './config/socket.config.js';
+import { env } from './config/env.config.js';
 
 const __filename: string = fileURLToPath(import.meta.url);
 const __dirname: string = path.dirname(__filename);
@@ -38,8 +39,8 @@ export function createApp(): Express {
   app.use('/api', apiRouter);
 
   // ---- Static: uploads (user content) ----
-  // Photos saved by multer land under <repo>/uploads; expose them at /uploads
-  const uploadsDir = path.resolve(process.cwd(), 'uploads');
+  // Use env.UPLOAD_DIR so Render disk mount can match exactly (defaults to 'uploads')
+  const uploadsDir = path.resolve(process.cwd(), env.UPLOAD_DIR || 'uploads');
   app.use(
     '/uploads',
     express.static(uploadsDir, {
