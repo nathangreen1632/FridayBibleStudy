@@ -2,7 +2,8 @@
 import React, { useMemo, useState } from 'react';
 import { ArrowUpAZ, ArrowDownAZ, Pencil, Save, X, Trash2, PauseCircle, PlayCircle } from 'lucide-react';
 import { useAdminStore } from '../../stores/admin/useAdminStore';
-import type { RosterSortField } from '../../stores/admin/useAdminStore'; // ✅ align types
+import type { RosterSortField } from '../../stores/admin/useAdminStore';
+import {pressBtn} from "../../../ui/press.ts";
 
 type Row = {
   id: number;
@@ -246,7 +247,7 @@ export default function AdminRosterTable({
                       <button
                         type="button"
                         onClick={() => startEdit(r)}
-                        className="px-2 py-1 rounded-md border border-[var(--theme-border)] bg-[var(--theme-surface)] text-[var(--theme-text)] hover:text-[var(--theme-textbox)] hover:bg-[var(--theme-button-hover)]"
+                        className={pressBtn("px-2 py-1 rounded-md border border-[var(--theme-border)] bg-[var(--theme-surface)] text-[var(--theme-text)] hover:text-[var(--theme-textbox)] hover:bg-[var(--theme-button-hover)]")}
                       >
                         <Pencil className="w-4 h-4" />
                       </button>
@@ -255,7 +256,7 @@ export default function AdminRosterTable({
                       <button
                         type="button"
                         onClick={() => { void onTogglePause(r.id, !r.emailPaused); }}
-                        className="px-2 py-1 rounded-md border border-[var(--theme-border)] bg-[var(--theme-surface)] text-[var(--theme-text)] hover:text-[var(--theme-textbox)] hover:bg-[var(--theme-button-hover)]"
+                        className={pressBtn("px-2 py-1 rounded-md border border-[var(--theme-border)] bg-[var(--theme-surface)] text-[var(--theme-text)] hover:text-[var(--theme-textbox)] hover:bg-[var(--theme-button-hover)]")}
                         aria-label={r.emailPaused ? 'Resume email updates' : 'Pause email updates'}
                         title={r.emailPaused ? 'Resume email updates' : 'Pause email updates'}
                       >
@@ -267,7 +268,7 @@ export default function AdminRosterTable({
                         onClick={() => {
                           void onDelete(r.id, r.name);
                         }}
-                        className="px-2 py-1 rounded-md border border-[var(--theme-border)] bg-[var(--theme-surface)] text-[var(--theme-text)] hover:text-[var(--theme-textbox)] hover:bg-[var(--theme-error)]"
+                        className={pressBtn("px-2 py-1 rounded-md border border-[var(--theme-border)] bg-[var(--theme-surface)] text-[var(--theme-text)] hover:text-[var(--theme-textbox)] hover:bg-[var(--theme-error)]")}
                       >
                         <Trash2 className="w-4 h-4" />
                       </button>
@@ -308,7 +309,7 @@ export default function AdminRosterTable({
                       onClick={() => {
                         void saveEdit(r.id);
                       }}
-                      className="px-2 py-1 rounded-md border border-[var(--theme-border)] bg-[var(--theme-surface)] hover:bg-[var(--theme-button-hover)] hover:text-[var(--theme-textbox)]"
+                      className={pressBtn("px-2 py-1 rounded-md border border-[var(--theme-border)] bg-[var(--theme-surface)] hover:bg-[var(--theme-button-hover)] hover:text-[var(--theme-textbox)]")}
                     >
                       <Save className="w-4 h-4" />
                     </button>
@@ -316,7 +317,7 @@ export default function AdminRosterTable({
                       type="button"
                       disabled={busy}
                       onClick={cancelEdit}
-                      className="px-2 py-1 rounded-md border border-[var(--theme-border)] bg-[var(--theme-surface)] hover:bg-[var(--theme-button-hover)] hover:text-[var(--theme-textbox)]"
+                      className={pressBtn("px-2 py-1 rounded-md border border-[var(--theme-border)] bg-[var(--theme-surface)] hover:bg-[var(--theme-button-hover)] hover:text-[var(--theme-textbox)]")}
                     >
                       <X className="w-4 h-4" />
                     </button>
