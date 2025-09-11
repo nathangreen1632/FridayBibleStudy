@@ -12,8 +12,19 @@ type State = {
   pageSize: number;
   loading: boolean;
 
-  load: (page?: number, pageSize?: number, recaptchaToken?: string) => Promise<{ ok: boolean; message?: string }>;
-  upload: (files: File[], recaptchaToken?: string) => Promise<{ ok: boolean; message?: string }>;
+  load: (
+    page?: number,
+    pageSize?: number,
+    recaptchaToken?: string
+  ) => Promise<{ ok: boolean; message?: string }>;
+
+  // ✅ updated: allow an optional note to be attached to this batch
+  upload: (
+    files: File[],
+    note?: string,
+    recaptchaToken?: string
+  ) => Promise<{ ok: boolean; message?: string }>;
+
   remove: (photoId: number, recaptchaToken?: string) => Promise<{ ok: boolean; message?: string }>;
 };
 
@@ -75,7 +86,8 @@ export const usePhotoStore = create<State>((set, get) => ({
     }
   },
 
-  async upload(files: File[], recaptchaToken?: string) {
+  // ✅ updated signature: (files, note?, recaptchaToken?)
+  async upload(files: File[], note?: string, recaptchaToken?: string) {
     const MAX_FILES = 4;
     const MAX_BYTES = 10 * 1024 * 1024;
 
@@ -98,8 +110,12 @@ export const usePhotoStore = create<State>((set, get) => ({
         return { ok: false, message: 'Upload too large' };
       }
 
-      // Helper uses options object { prayerId?, recaptchaToken? }
-      const res = await uploadPhotos(compressed, { recaptchaToken });
+      // ✅ pass note + recaptcha to helper as options (note is trimmed + optional)
+      const opts: { note?: string; recaptchaToken?: string } = {};
+      if (note && note.trim().length > 0) opts.note = note.trim();
+      if (recaptchaToken) opts.recaptchaToken = recaptchaToken;
+
+      const res = await uploadPhotos(compressed, opts);
       if (!res.ok) {
         const message = summarizeError(res);
         toast.error(message);
