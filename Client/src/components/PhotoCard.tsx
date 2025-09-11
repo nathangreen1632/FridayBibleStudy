@@ -1,3 +1,4 @@
+// Client/src/components/PhotoCard.tsx
 import React from 'react';
 import type { Photo } from '../types/photo.types';
 import { useAuthStore } from '../stores/useAuthStore';
@@ -40,6 +41,14 @@ export default function PhotoCard({ photo, onDelete }: Readonly<Props>): React.R
           loading="lazy"
         />
       </div>
+
+      {/* Optional note under the image */}
+      {photo.note && photo.note.trim().length > 0 && (
+        <div className="px-3 py-2 text-sm bg-[var(--theme-surface)] border-t border-[var(--theme-border)]">
+          <div className="italic">{photo.note}</div>
+        </div>
+      )}
+
 
       {/* Footer meta + actions */}
       <div className="p-2 flex items-center justify-between gap-2">
