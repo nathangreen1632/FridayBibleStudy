@@ -12,7 +12,7 @@ type UploadOptions = {
 */
 export async function fetchPhotos(
   page = 1,
-  pageSize = 24,
+  pageSize = 25,
   recaptchaToken?: string
 ): Promise<Response> {
   const headers: Record<string, string> = { 'Content-Type': 'application/json' };
