@@ -1,25 +1,30 @@
+// Server/src/middleware/photosUpload.middleware.ts
 import multer from 'multer';
 import path from 'path';
 import fs from 'fs';
+import { env } from '../config/env.config.js';
 
-const uploadRoot = path.resolve(process.cwd(), 'uploads');
+const uploadRoot = path.resolve(process.cwd(), env.UPLOAD_DIR || 'uploads');
 
 function ensureUploadsDir() {
   try {
     fs.mkdirSync(uploadRoot, { recursive: true });
   } catch {
-    // no-op; graceful
+    // graceful fallback: ignore if already exists or no permission
   }
 }
 
 ensureUploadsDir();
 
 const storage = multer.diskStorage({
-  destination: (_req, _file, cb) => cb(null, uploadRoot),
-  filename: (_req, file, cb) => {
+  destination(_req, _file, cb) {
+    cb(null, uploadRoot);
+  },
+  filename(_req, file, cb) {
     const ts = Date.now();
-    const safe = file.originalname.replace(/\s+/g, '_');
-    cb(null, `${ts}-${safe}`);
+    // replace anything not alphanumeric, dot, underscore, or dash
+    const safe = file.originalname.replace(/[^\w.-]+/g, '_');
+    cb(null, `${ts}_${safe}`);
   },
 });
 
@@ -36,7 +41,7 @@ export const photosUpload = multer({
   storage,
   fileFilter,
   limits: {
-    files: 4,                 // hard cap by server
-    fileSize: 10 * 1024 * 1024, // per-file cap fallback (we’ll also check total)
+    files: 4,                  // hard cap by server
+    fileSize: 10 * 1024 * 1024, // per-file cap fallback (also checked elsewhere)
   },
 });
