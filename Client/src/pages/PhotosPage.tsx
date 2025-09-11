@@ -13,6 +13,7 @@ export default function PhotosPage(): React.ReactElement {
   const [noteText, setNoteText] = useState(''); // NEW: batch note input
   const [lightboxSrc, setLightboxSrc] = useState<string | null>(null);
   const [lightboxAlt, setLightboxAlt] = useState<string>('');
+  const [lightboxNote, setLightboxNote] = useState<string>(''); // NEW
 
   useEffect(() => {
     void load(1, pageSize);
@@ -55,9 +56,10 @@ export default function PhotosPage(): React.ReactElement {
     await remove(id);
   }
 
-  function openLightbox(src: string, alt?: string) {
+  function openLightbox(src: string, alt?: string, note?: string | null) {
     setLightboxSrc(src);
     setLightboxAlt(alt || 'Photo');
+    setLightboxNote((note ?? '').trim());
   }
 
   function closeLightbox() {
@@ -146,7 +148,7 @@ export default function PhotosPage(): React.ReactElement {
             {/* Clickable thumbnail opens lightbox */}
             <button
               type="button"
-              onClick={() => openLightbox(p.url, p.filename)}
+              onClick={() => openLightbox(p.url, p.filename, p.note)} // pass note
               className="block w-full aspect-[4/3] bg-[var(--theme-card-alt)]"
               aria-label="Open photo"
             >
@@ -158,13 +160,6 @@ export default function PhotosPage(): React.ReactElement {
                 decoding="async"
               />
             </button>
-
-            {/* NEW: optional note strip under the image */}
-            {p.note && p.note.trim().length > 0 && (
-              <div className="px-3 py-2 text-sm bg-[var(--theme-surface)] border-t border-[var(--theme-border)]">
-                <div className="italic">{p.note}</div>
-              </div>
-            )}
 
             <footer className="flex items-center justify-between px-3 py-2 text-xs bg-[var(--theme-hover)] text-[var(--theme-text-white)]">
               <div className="leading-tight">
@@ -195,6 +190,7 @@ export default function PhotosPage(): React.ReactElement {
         open={Boolean(lightboxSrc)}
         src={lightboxSrc || ''}
         alt={lightboxAlt}
+        caption={lightboxNote}           // ✅ NEW
         onClose={closeLightbox}
       />
     </div>
