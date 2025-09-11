@@ -105,11 +105,11 @@ export async function fetchAdminRoster(params: {
   try {
     const res = await fetch(u.toString(), { credentials: 'include' });
     if (!res.ok) {
-      return { ok: false, rows: [], total: 0, page: 1, pageSize: 25, message: 'Request failed.' };
+      return { ok: false, rows: [], total: 0, page: 1, pageSize: 24, message: 'Request failed.' };
     }
     return res.json();
   } catch {
-    return { ok: false, rows: [], total: 0, page: 1, pageSize: 25, message: 'Network error.' };
+    return { ok: false, rows: [], total: 0, page: 1, pageSize: 24, message: 'Network error.' };
   }
 }
 
