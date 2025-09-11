@@ -9,7 +9,6 @@ import {
   validateUploadBatch,
 } from '../services/photos.service.js';
 import { photosUpload } from '../middleware/photosUpload.middleware.js';
-import { Attachment } from '../models/attachment.model.js';
 
 const router: Router = Router();
 
@@ -36,7 +35,7 @@ function sanitizeNote(input: unknown): string | null {
 /** GET /api/photos?page=&pageSize= */
 router.get('/', requireAuth, async (req, res) => {
   const page = toInt(req.query.page, 1);
-  const pageSize = toInt(req.query.pageSize, 24);
+  const pageSize = toInt(req.query.pageSize, 25);
 
   try {
     const result = await listPhotoDtos(page, pageSize);
