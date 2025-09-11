@@ -12,6 +12,7 @@ import {
   sortRootItemsDesc, // helper
 } from '../helpers/commentsPanel.helper';
 import { useOutsideCollapse } from '../hooks/useOutsideCollapse';
+import {pressBtn} from "../../ui/press.ts";
 
 /** Capture pointer/mouse on a wrapper element to block DnD start without adding onMouseDown props. */
 function StopDragGroup(props: Readonly<{
@@ -97,7 +98,7 @@ function RootComposer(props: Readonly<{
           type="button"
           onClick={props.onSubmit}
           disabled={!props.value.trim() || props.disabled}
-          className="px-3 py-1 rounded-lg text-base border border-[var(--theme-border)] bg-[var(--theme-button-dark)] text-[var(--theme-text)] hover:bg-[var(--theme-button-hover)] hover:text-[var(--theme-textbox)] transition-colors cursor-pointer disabled:cursor-not-allowed"
+          className={pressBtn("px-3 py-1 rounded-lg text-base border border-[var(--theme-border)] bg-[var(--theme-button-dark)] text-[var(--theme-text)] hover:bg-[var(--theme-button-hover)] hover:text-[var(--theme-textbox)] transition-colors cursor-pointer disabled:cursor-not-allowed")}
         >
           Post
         </button>
