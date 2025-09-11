@@ -1,32 +1,41 @@
+// Server/src/middleware/csp.middleware.ts
 import type { NextFunction, Request, Response } from 'express';
 
 export function cspMiddleware(_req: Request, res: Response, next: NextFunction) {
-  // Single, explicit CSP header. Keep it simple & allow what we actually use.
   res.setHeader(
     'Content-Security-Policy',
     [
       "default-src 'self'",
       "base-uri 'self'",
+      "frame-ancestors 'self'",
       "object-src 'none'",
 
-      // JS: our own bundle + reCAPTCHA loaders. No 'strict-dynamic' (it can suppress host allowlists).
+      // JS: our bundle + reCAPTCHA
+      // (Keep 'unsafe-inline' until you switch to nonces)
       "script-src 'self' 'unsafe-inline' https://www.google.com https://www.gstatic.com https://www.recaptcha.net",
 
-      // CSS: Tailwind sometimes inlines styles in dev; keep 'unsafe-inline' for safety.
-      "style-src 'self' 'unsafe-inline'",
+      // CSS: local + Google Fonts stylesheet
+      "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com",
 
-      // Images & fonts (vite assets may use data: / blob:)
-      // + Gravatar (avatars can come from www.gravatar.com or secure.gravatar.com; wildcard covers both)
-      "img-src 'self' data: blob: https://www.gstatic.com https://*.gravatar.com",
-      "font-src 'self' data: https://www.gstatic.com",
+      // Images: local uploads + data/blob, gravatar, and gstatic as needed
+      "img-src 'self' data: blob: https://*.gravatar.com https://www.gstatic.com",
 
-      // XHR/fetch/websockets + reCAPTCHA Enterprise endpoint
-      "connect-src 'self' https://recaptchaenterprise.googleapis.com https://www.google.com https://www.gstatic.com wss:",
+      // Fonts: local + Google Fonts files (note: fonts.gstatic.com)
+      "font-src 'self' data: https://fonts.gstatic.com",
+
+      // XHR/fetch/websockets + reCAPTCHA Enterprise
+      "connect-src 'self' https://recaptchaenterprise.googleapis.com https://www.google.com https://www.gstatic.com https://www.recaptcha.net wss:",
 
       // reCAPTCHA iframes
       "frame-src https://www.google.com https://www.gstatic.com https://www.recaptcha.net",
 
-      // app manifest (harmless to allow)
+      // Media (your uploaded videos/audio) + blobs
+      "media-src 'self' data: blob:",
+
+      // Workers (if ever used)
+      "worker-src 'self' blob:",
+
+      // App manifest
       "manifest-src 'self'",
     ].join('; ')
   );
