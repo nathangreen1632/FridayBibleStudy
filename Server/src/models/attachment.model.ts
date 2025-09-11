@@ -7,18 +7,27 @@ export interface AttachmentAttributes {
   fileName: string;
   mimeType: string;
   size: number;
+  note?: string | null; // ✅ new
   createdAt: Date;
   updatedAt: Date;
 }
-export type AttachmentCreation = Optional<AttachmentAttributes, 'id'|'createdAt'|'updatedAt'>;
 
-export class Attachment extends Model<AttachmentAttributes, AttachmentCreation> implements AttachmentAttributes {
+export type AttachmentCreation = Optional<
+  AttachmentAttributes,
+  'id' | 'createdAt' | 'updatedAt' | 'note'
+>;
+
+export class Attachment
+  extends Model<AttachmentAttributes, AttachmentCreation>
+  implements AttachmentAttributes
+{
   declare id: number;
   declare prayerId: number;
   declare filePath: string;
   declare fileName: string;
   declare mimeType: string;
   declare size: number;
+  declare note?: string | null; // ✅ new
   declare createdAt: Date;
   declare updatedAt: Date;
 
@@ -31,8 +40,12 @@ export class Attachment extends Model<AttachmentAttributes, AttachmentCreation> 
         fileName: { type: DataTypes.STRING(200), allowNull: false },
         mimeType: { type: DataTypes.STRING(80), allowNull: false },
         size: { type: DataTypes.INTEGER, allowNull: false },
+        note: {
+          type: DataTypes.STRING(512), // or DataTypes.TEXT if you want unlimited
+          allowNull: true,
+        },
         createdAt: DataTypes.DATE,
-        updatedAt: DataTypes.DATE
+        updatedAt: DataTypes.DATE,
       },
       { sequelize, tableName: 'attachments' }
     );
