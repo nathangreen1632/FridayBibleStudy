@@ -90,7 +90,7 @@ router.delete('/:id', requireAuth, async (req, res) => {
 router.post(
   '/',
   requireAuth,
-  photosUpload.array('files', 4),
+  photosUpload.array('files', 4), // matches client FormData 'files'
   async (req, res) => {
     const auth = getAuthedUser(req, res);
     if (!auth) return;
@@ -103,25 +103,58 @@ router.post(
         return;
       }
 
+      const note = sanitizeNote(req.body?.note);
+
+      // ----- Resolve explicit prayer target (highest priority) -----
       const explicitRaw = req.body?.prayerId ?? req.query?.prayerId;
       const explicit = Number(explicitRaw);
       let targetPrayerId: number | undefined;
 
-      // 1) explicit beats all
       if (Number.isFinite(explicit) && explicit > 0) {
         targetPrayerId = Math.floor(explicit);
       }
 
-      // 2) admin → resolve a *real* group, then ensure Media Bin there
+      // ----- Admin: resolve group target (env fallback first for single-group setup) -----
       if (!targetPrayerId && isAdminRole(auth.role)) {
-        const resolvedGroupId = await resolveAdminUploadGroupId(req, auth.id); // ✅ now async/DB-backed
-        if (typeof resolvedGroupId === 'number' && resolvedGroupId > 0) {
-          const bin = await ensureMediaBinPrayer(resolvedGroupId, auth.id);
+        // 1) ENV single-group fallback (recommended for your current setup)
+        const fallbackGroupIdRaw = process.env.GROUP_ID ?? '';
+        const fallbackGroupIdNum = Number(fallbackGroupIdRaw);
+        const hasEnvGroup =
+          Number.isFinite(fallbackGroupIdNum) &&
+          fallbackGroupIdNum > 0;
+
+        if (hasEnvGroup) {
+          const bin = await ensureMediaBinPrayer(Math.floor(fallbackGroupIdNum), auth.id);
           if (bin.ok && bin.prayerId) {
             targetPrayerId = bin.prayerId;
           }
         }
-        // If still not set, try system group again (defensive)
+
+        // 2) If still not set, accept body/query groupId; else use auth.groupId
+        if (!targetPrayerId) {
+          const maybeGroupRaw = req.body?.groupId ?? req.query?.groupId ?? auth.groupId;
+          const fromPayload = Number(maybeGroupRaw);
+          let resolvedGroupId: number | undefined;
+
+          if (Number.isFinite(fromPayload) && fromPayload > 0) {
+            resolvedGroupId = Math.floor(fromPayload);
+          } else {
+            // Optional DB-backed resolution; harmless if it returns undefined
+            const resolved = await resolveAdminUploadGroupId(req, auth.id);
+            if (typeof resolved === 'number' && resolved > 0) {
+              resolvedGroupId = resolved;
+            }
+          }
+
+          if (typeof resolvedGroupId === 'number' && resolvedGroupId > 0) {
+            const bin = await ensureMediaBinPrayer(resolvedGroupId, auth.id);
+            if (bin.ok && bin.prayerId) {
+              targetPrayerId = bin.prayerId;
+            }
+          }
+        }
+
+        // 3) Last defensive fallback if bin still not resolved (system group 1)
         if (!targetPrayerId) {
           const bin2 = await ensureMediaBinPrayer(1, auth.id);
           if (bin2.ok && bin2.prayerId) {
@@ -130,24 +163,43 @@ router.post(
         }
       }
 
-      // 3) non-admin or still unresolved → your existing user fallback
+      // ----- Non-admin or still unresolved → existing user fallback -----
       if (!targetPrayerId) {
         const fallback = await resolveTargetPrayerId(undefined, auth);
         if (fallback) targetPrayerId = fallback;
       }
 
       if (!targetPrayerId) {
+        // Helpful breadcrumb in logs
+        console.warn('[photos.controller] no targetPrayerId', {
+          userId: auth.id,
+          role: auth.role,
+          groupId: auth.groupId ?? null,
+          bodyGroupId: req.body?.groupId ?? null,
+          queryGroupId: req.query?.groupId ?? null,
+          envGroupId: process.env.GROUP_ID ?? null,
+        });
+
         res.status(400).json({
           error:
-            'No target post found to attach photos. Admin uploads should auto-route to Media Bin—verify group membership/availability.',
+            'No target post found to attach photos. Provide prayerId, or set GROUP_ID for admin Media Bin uploads.',
         });
         return;
       }
 
-      const note = sanitizeNote(req.body?.note);
+      // Create DB rows & return URLs the client can render immediately
       const createdIds = await saveUploadedPhotos(files, targetPrayerId, note);
 
-      res.status(201).json({ ok: true, ids: createdIds });
+      const items = files.map((f, idx) => ({
+        id: createdIds[idx] ?? null,
+        url: `/uploads/${f.filename}`,
+        filename: f.originalname,
+        size: f.size,
+        note: note || null,
+        prayerId: targetPrayerId,
+      }));
+
+      res.status(201).json({ ok: true, items });
     } catch (err) {
       // eslint-disable-next-line no-console
       console.error('[photos.controller] upload error:', err);
@@ -155,5 +207,7 @@ router.post(
     }
   }
 );
+
+
 
 export default router;

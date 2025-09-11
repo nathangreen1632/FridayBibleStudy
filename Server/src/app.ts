@@ -9,7 +9,8 @@ import apiRouter from './routes/index.js';
 import { errorHandler } from './middleware/error.middleware.js';
 import { cspMiddleware } from './middleware/csp.middleware.js';
 import { initSocket } from './config/socket.config.js';
-import { env } from './config/env.config.js';
+// ⬇️ use Render-safe upload path helpers
+import { getUploadRoot, ensureDirSafe } from './config/paths.js';
 
 const __filename: string = fileURLToPath(import.meta.url);
 const __dirname: string = path.dirname(__filename);
@@ -39,14 +40,22 @@ export function createApp(): Express {
   app.use('/api', apiRouter);
 
   // ---- Static: uploads (user content) ----
-  // Use env.UPLOAD_DIR so Render disk mount can match exactly (defaults to 'uploads')
-  const uploadsDir = path.resolve(process.cwd(), env.UPLOAD_DIR || 'uploads');
+  // Use a subdirectory on the mounted disk (e.g., /var/data/fbs-uploads on Render)
+  const UPLOAD_ROOT = getUploadRoot();
+  // fire-and-forget; do not change createApp() to async
+  void ensureDirSafe(UPLOAD_ROOT);
+
   app.use(
     '/uploads',
-    express.static(uploadsDir, {
+    express.static(UPLOAD_ROOT, {
       index: false,
-      maxAge: '1h',
       fallthrough: true,
+      // user content can be relatively cacheable; tune as you like
+      maxAge: '1y',
+      setHeaders: (res) => {
+        // immutable helps hashed filenames; harmless for user content too
+        res.setHeader('Cache-Control', 'public, max-age=31536000, immutable');
+      },
     })
   );
 
@@ -66,7 +75,7 @@ export function createApp(): Express {
   // other static files from dist (e.g., index.html is served by the SPA fallback below)
   app.use(
     express.static(clientDist, {
-      index: false,          // SPA fallback handles routes
+      index: false, // SPA fallback handles routes
       maxAge: '1h',
       fallthrough: true,
     })
