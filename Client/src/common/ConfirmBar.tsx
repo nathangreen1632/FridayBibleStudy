@@ -1,5 +1,6 @@
 // Client/src/common/ConfirmBar.tsx
 import React from 'react';
+import {pressBtn} from "../../ui/press.ts";
 
 type ConfirmBarProps = {
   message?: string;
@@ -25,14 +26,14 @@ export default function ConfirmBar({
         <button
           type="button"
           onClick={onCancel}
-          className="rounded-xl bg-[var(--theme-button)] text-[var(--theme-text-white)] px-4 py-2 hover:bg-[var(--theme-button-hover)] hover:text-[var(--theme-textbox)]"
+          className={pressBtn("rounded-xl bg-[var(--theme-button)] text-[var(--theme-text-white)] px-4 py-2 hover:bg-[var(--theme-button-hover)] hover:text-[var(--theme-textbox)]")}
         >
           {cancelLabel}
         </button>
         <button
           type="button"
           onClick={onConfirm}
-          className="rounded-xl bg-[var(--theme-error)] text-[var(--theme-textbox)] px-4 py-2 hover:bg-[var(--theme-button-error)]"
+          className={pressBtn("rounded-xl bg-[var(--theme-error)] text-[var(--theme-textbox)] px-4 py-2 hover:bg-[var(--theme-button-error)]")}
         >
           {confirmLabel}
         </button>
