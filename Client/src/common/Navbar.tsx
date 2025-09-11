@@ -3,7 +3,7 @@ import React, { useState, useEffect, useRef } from 'react';
 import { NavLink, useNavigate, useLocation } from 'react-router-dom';
 import { useAuthStore } from '../stores/useAuthStore.ts';
 import {
-  Home,
+  // Home,
   Mail,
   LogIn,
   UserPlus,
@@ -96,10 +96,10 @@ export default function Navbar(): React.ReactElement {
         {/* Desktop nav (≥ 1280px) */}
         <nav className="hidden xl:flex items-center gap-2">
           {/* Public */}
-          <NavLink to="/" className={({ isActive }) => linkClass(isActive)} end>
-            <Home className="w-4 h-4" />
-            Home
-          </NavLink>
+          {/*<NavLink to="/" className={({ isActive }) => linkClass(isActive)} end>*/}
+          {/*  <Home className="w-4 h-4" />*/}
+          {/*  Home*/}
+          {/*</NavLink>*/}
 
           <NavLink to="/contact" className={({ isActive }) => linkClass(isActive)}>
             <Mail className="w-4 h-4" />
@@ -220,10 +220,10 @@ export default function Navbar(): React.ReactElement {
                  bg-[var(--theme-surface)] rounded-xl shadow-md
                  px-3 py-3 space-y-2"
             >
-              <NavLink to="/" className={({ isActive }) => linkClass(isActive)} end onClick={closeMenu}>
-                <Home className="w-4 h-4" />
-                Home
-              </NavLink>
+              {/*<NavLink to="/" className={({ isActive }) => linkClass(isActive)} end onClick={closeMenu}>*/}
+              {/*  <Home className="w-4 h-4" />*/}
+              {/*  Home*/}
+              {/*</NavLink>*/}
 
               <NavLink to="/contact" className={({ isActive }) => linkClass(isActive)} onClick={closeMenu}>
                 <Mail className="w-4 h-4" />
