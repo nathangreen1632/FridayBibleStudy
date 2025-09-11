@@ -56,10 +56,10 @@ export const usePhotoStore = create<State>((set, get) => ({
   items: [],
   total: 0,
   page: 1,
-  pageSize: 25,
+  pageSize: 24,
   loading: false,
 
-  async load(page = 1, pageSize = 25, recaptchaToken?: string) {
+  async load(page = 1, pageSize = 24, recaptchaToken?: string) {
     set({ loading: true });
     try {
       const res = await fetchPhotos(page, pageSize, recaptchaToken);
