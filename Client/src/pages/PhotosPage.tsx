@@ -46,7 +46,6 @@ export default function PhotosPage(): React.ReactElement {
       setPendingFiles([]);
       setNoteText(''); // reset the note after successful upload
       if (fileRef.current) fileRef.current.value = '';
-      toast.success('Uploaded!');
     } else if (res.message) {
       toast.error(res.message);
     }
