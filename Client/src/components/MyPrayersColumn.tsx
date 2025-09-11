@@ -4,6 +4,7 @@ import { useMyPrayersStore } from '../stores/useMyPrayersStore';
 import type { Category, Prayer, Status } from '../types/domain.types';
 import ConfirmBar from '../common/ConfirmBar';
 import {ChevronDown} from "lucide-react";
+import {pressBtn} from "../../ui/press.ts";
 
 function StatusPill({ s }: Readonly<{ s: Status }>) {
   let label: string;
@@ -56,21 +57,21 @@ function RowActions(props: Readonly<{
         <button
           type="button"
           onClick={() => props.onMove('active')}
-          className="px-2 py-1 rounded bg-[var(--theme-card)] hover:bg-[var(--theme-pill-orange)] hover:text-[var(--theme-textbox)] cursor-pointer"
+          className={pressBtn("px-2 py-1 rounded bg-[var(--theme-card)] hover:bg-[var(--theme-pill-orange)] hover:text-[var(--theme-textbox)] cursor-pointer")}
         >
           Prayers
         </button>
         <button
           type="button"
           onClick={() => props.onMove('praise')}
-          className="px-2 py-1 rounded bg-[var(--theme-card)] hover:bg-[var(--theme-pill-green)] hover:text-[var(--theme-textbox)] cursor-pointer"
+          className={pressBtn("px-2 py-1 rounded bg-[var(--theme-card)] hover:bg-[var(--theme-pill-green)] hover:text-[var(--theme-textbox)] cursor-pointer")}
         >
           Praise
         </button>
         <button
           type="button"
           onClick={() => props.onMove('archived')}
-          className="px-2 py-1 rounded bg-[var(--theme-card)] hover:bg-[var(--theme-button-hover)] hover:text-[var(--theme-textbox)] cursor-pointer"
+          className={pressBtn("px-2 py-1 rounded bg-[var(--theme-card)] hover:bg-[var(--theme-button-hover)] hover:text-[var(--theme-textbox)] cursor-pointer")}
         >
           Archive
         </button>
@@ -80,7 +81,7 @@ function RowActions(props: Readonly<{
       <button
         type="button"
         onClick={props.onEdit}
-        className="px-3 py-1.5 rounded-md bg-[var(--theme-button)] text-[var(--theme-text-white)] hover:bg-[var(--theme-button-hover)] hover:text-[var(--theme-textbox)] cursor-pointer"
+        className={pressBtn("px-3 py-1.5 rounded-md bg-[var(--theme-button)] text-[var(--theme-text-white)] hover:bg-[var(--theme-button-hover)] hover:text-[var(--theme-textbox)] cursor-pointer")}
       >
         Edit
       </button>
@@ -303,7 +304,7 @@ export default function MyPrayersColumn(): React.ReactElement {
                             setConfirmingDeleteId(null);
                             cancelEdit(p.id);
                           }}
-                          className="px-3 py-1.5 rounded-md bg-[var(--theme-button)] text-[var(--theme-text-white)] hover:bg-[var(--theme-button-hover)] hover:text-[var(--theme-textbox)] disabled:opacity-60 cursor-pointer"
+                          className={pressBtn("px-3 py-1.5 rounded-md bg-[var(--theme-button)] text-[var(--theme-text-white)] hover:bg-[var(--theme-button-hover)] hover:text-[var(--theme-textbox)] disabled:opacity-60 cursor-pointer")}
                         >
                           Cancel
                         </button>
@@ -315,7 +316,7 @@ export default function MyPrayersColumn(): React.ReactElement {
                             await onSave(p.id);
                           }}
                           disabled={savingId === p.id}
-                          className="px-3 py-1.5 rounded-md bg-[var(--theme-button)] text-[var(--theme-text-white)] hover:bg-[var(--theme-button-hover)] hover:text-[var(--theme-textbox)] disabled:opacity-60 cursor-pointer"
+                          className={pressBtn("px-3 py-1.5 rounded-md bg-[var(--theme-button)] text-[var(--theme-text-white)] hover:bg-[var(--theme-button-hover)] hover:text-[var(--theme-textbox)] disabled:opacity-60 cursor-pointer")}
                         >
                           Save
                         </button>
@@ -323,7 +324,7 @@ export default function MyPrayersColumn(): React.ReactElement {
                         <button
                           type="button"
                           onClick={() => setConfirmingDeleteId(p.id)}
-                          className="px-3 py-1.5 rounded-md bg-[var(--theme-error)] text-[var(--theme-text-white)] hover:bg-[var(--theme-button-error)] hover:text-[var(--theme-textbox)] cursor-pointer"
+                          className={pressBtn("px-3 py-1.5 rounded-md bg-[var(--theme-error)] text-[var(--theme-text-white)] hover:bg-[var(--theme-button-error)] hover:text-[var(--theme-textbox)] cursor-pointer")}
                         >
                           Delete
                         </button>
