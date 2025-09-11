@@ -14,7 +14,7 @@ export async function ensureMediaBinPrayer(
   authorUserId: number
 ): Promise<EnsureBinResult> {
   try {
-    const title = '[System] Media Bin';
+    const title = 'Admin Media Bin';
 
     // 1) Reuse if it already exists for this group
     const existing = await Prayer.findOne({ where: { groupId, title } });
@@ -52,7 +52,7 @@ export async function ensureMediaBinPrayer(
       const a = (attrs as any)['content'];
       if (a?.allowNull === false) {
         payload['content'] =
-          'Auto-created media bucket for admin uploads. Files here can be reassigned to a specific prayer.';
+          'Auto-created media bucket for admin uploads.';
       } else if (payload['content'] === undefined) {
         // Set anyway to be safe
         payload['content'] = 'Media bin';

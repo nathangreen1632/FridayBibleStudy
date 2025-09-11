@@ -1,5 +1,6 @@
 // Client/src/components/contact/ContactForm.view.tsx
 import React from 'react';
+import {pressBtn} from "../../ui/press.ts";
 
 type Props = {
   form: { name: string; email: string; message: string };
@@ -63,7 +64,7 @@ export default function ContactFormView({
           onClick={onSubmit}
           disabled={!canSubmit}
           title={!messageHasText ? 'Please enter a message first' : undefined}
-          className="w-full mt-2 rounded-2xl px-4 py-2.5 sm:py-3 font-semibold text-sm sm:text-base bg-[var(--theme-button)] text-[var(--theme-text-white)] hover:bg-[var(--theme-button-hover)] hover:text-[var(--theme-textbox)] disabled:opacity-60 disabled:cursor-not-allowed"
+          className={pressBtn("w-full mt-2 rounded-2xl px-4 py-2.5 sm:py-3 font-semibold text-sm sm:text-base bg-[var(--theme-button)] text-[var(--theme-text-white)] hover:bg-[var(--theme-button-hover)] hover:text-[var(--theme-textbox)] disabled:opacity-60 disabled:cursor-not-allowed")}
           aria-disabled={!canSubmit}
         >
           {submitting ? 'Sending…' : 'Send Message'}

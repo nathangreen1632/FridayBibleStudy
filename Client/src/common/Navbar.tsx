@@ -18,14 +18,15 @@ import {
   Image as ImageIcon, // ✅ NEW
 } from 'lucide-react';
 import { useScrollLock } from '../hooks/useScrollLock.ts';
+import {pressBtn} from "../../ui/press.ts";
 
 function linkClass(isActive: boolean): string {
-  return [
-    'flex items-center gap-1 px-3 py-2 rounded-lg text-sm font-medium transition-colors',
-    isActive
-      ? 'bg-[var(--theme-button)] text-[var(--theme-text-white)]'
-      : 'text-[var(--theme-text)] hover:text-[var(--theme-textbox)] hover:bg-[var(--theme-button-hover)]',
-  ].join(' ');
+  const base =
+    'flex items-center gap-1 px-3 py-2 rounded-lg text-sm font-medium transition-colors';
+  const state = isActive
+    ? 'bg-[var(--theme-button)] text-[var(--theme-text-white)]'
+    : 'text-[var(--theme-text)] hover:text-[var(--theme-textbox)] hover:bg-[var(--theme-button-hover)]';
+  return pressBtn(`${base} ${state}`);
 }
 
 export default function Navbar(): React.ReactElement {

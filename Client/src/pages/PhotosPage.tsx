@@ -4,6 +4,7 @@ import toast from 'react-hot-toast';
 import { Trash } from 'lucide-react';
 import { usePhotoStore } from '../stores/usePhotoStore';
 import LightboxModal from '../modals/LightboxModal';
+import { pressBtn } from '../../ui/press';
 
 export default function PhotosPage(): React.ReactElement {
   const fileRef = useRef<HTMLInputElement | null>(null);
@@ -98,10 +99,11 @@ export default function PhotosPage(): React.ReactElement {
   return (
     <div className="max-w-7xl mx-auto px-3 py-4">
       {/* Header / Actions */}
-      <div className="flex items-center justify-between gap-3 mb-4">
+      <div className="mb-4 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
         <h1 className="text-2xl font-extrabold text-[var(--theme-accent)]">Photos</h1>
 
-        <div className="flex items-center gap-2">
+        <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:gap-2">
+          {/* hidden input */}
           <input
             ref={fileRef}
             type="file"
@@ -111,31 +113,35 @@ export default function PhotosPage(): React.ReactElement {
             onChange={onFilesSelected}
           />
 
-          {/* NEW: note input (applies to all files in this batch) */}
+          {/* Note (full width on mobile, fixed on desktop) */}
           <input
             type="text"
             value={noteText}
             onChange={(e) => setNoteText(e.target.value)}
             placeholder="Optional note under the photo"
             aria-label="Photo note to display under image"
-            className="min-w-[16rem] px-3 py-2 rounded-lg bg-[var(--theme-textbox)] text-[var(--theme-placeholder)] placeholder-[var(--theme-placeholder)] border border-[var(--theme-border)]"
+            className="w-full sm:w-72 px-3 py-2 rounded-lg bg-[var(--theme-textbox)] text-[var(--theme-text)] placeholder-[var(--theme-placeholder)] border border-[var(--theme-border)]"
           />
 
-          <button
-            type="button"
-            onClick={onPick}
-            className="px-3 py-2 rounded-lg bg-[var(--theme-button)] text-[var(--theme-text-white)] hover:bg-[var(--theme-button-hover)] hover:text-[var(--theme-textbox)]"
-          >
-            Select Photos
-          </button>
-          <button
-            type="button"
-            onClick={onUpload}
-            disabled={loading || pendingFiles.length === 0}
-            className="px-3 py-2 rounded-lg border border-[var(--theme-border)] bg-[var(--theme-pill-orange)] text-[var(--theme-textbox)] hover:bg-[var(--theme-button-hover)] hover:text-[var(--theme-textbox)] disabled:opacity-50 disabled:cursor-not-allowed"
-          >
-            Upload ({pendingFiles.length || 0})
-          </button>
+          {/* Buttons: full-width on mobile, inline on desktop */}
+          <div className="grid grid-cols-2 gap-2 sm:flex sm:grid-cols-none sm:gap-2">
+            <button
+              type="button"
+              onClick={onPick}
+              className={pressBtn("w-full sm:w-auto px-3 py-2 rounded-lg bg-[var(--theme-button)] text-[var(--theme-text-white)] hover:bg-[var(--theme-button-hover)] hover:text-[var(--theme-textbox)]")}
+            >
+              Select Photos
+            </button>
+
+            <button
+              type="button"
+              onClick={onUpload}
+              disabled={loading || pendingFiles.length === 0}
+              className={pressBtn("w-full sm:w-auto px-3 py-2 rounded-lg border border-[var(--theme-border)] bg-[var(--theme-pill-orange)] text-[var(--theme-textbox)] hover:bg-[var(--theme-button-hover)] hover:text-[var(--theme-textbox)] disabled:opacity-50 disabled:cursor-not-allowed")}
+            >
+              Upload ({pendingFiles.length || 0})
+            </button>
+          </div>
         </div>
       </div>
 
@@ -155,12 +161,7 @@ export default function PhotosPage(): React.ReactElement {
       )}
 
       {/* Grid */}
-      <div
-        className={[
-          'grid gap-3',
-          'grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5',
-        ].join(' ')}
-      >
+      <div className="grid gap-3 grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-4">
         {items.map((p) => (
           <article
             key={p.id}
@@ -169,7 +170,7 @@ export default function PhotosPage(): React.ReactElement {
             {/* Clickable thumbnail opens lightbox */}
             <button
               type="button"
-              onClick={() => openLightbox(p.url, p.filename, p.note)} // pass note
+              onClick={() => openLightbox(p.url, p.filename, p.note)}
               className="block w-full aspect-[4/3] bg-[var(--theme-card-alt)]"
               aria-label="Open photo"
             >
@@ -182,7 +183,7 @@ export default function PhotosPage(): React.ReactElement {
               />
             </button>
 
-            <footer className="flex items-center justify-between px-3 py-2 text-xs bg-[var(--theme-hover)] text-[var(--theme-text-white)]">
+            <footer className="flex items-center justify-between gap-2 px-3 py-2 text-xs bg-[var(--theme-hover)] text-[var(--theme-text-white)]">
               <div className="leading-tight">
                 <div>Uploaded by {p.uploaderName}</div>
                 <div>{new Date(p.createdAt).toLocaleString()}</div>
@@ -191,12 +192,12 @@ export default function PhotosPage(): React.ReactElement {
               <button
                 type="button"
                 onClick={() => onDelete(p.id)}
-                className="inline-flex items-center gap-1 px-2 py-1 rounded-md border border-[var(--theme-border)] hover:bg-[var(--theme-card-hover)]"
+                className={pressBtn("inline-flex items-center justify-center gap-1 px-2 py-1 rounded-md border border-[var(--theme-border)] hover:bg-[var(--theme-card-hover)]")}
                 aria-label="Delete photo"
                 title="Delete photo"
               >
                 <Trash className="w-4 h-4" />
-                Delete
+                <span className="hidden sm:inline">Delete</span>
               </button>
             </footer>
           </article>
@@ -204,25 +205,28 @@ export default function PhotosPage(): React.ReactElement {
       </div>
 
       {/* Footer */}
-      <div className="mt-6 flex items-center justify-between text-sm">
+      <div className="mt-6 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between text-sm">
         <div className="opacity-70">{renderFooterNote()}</div>
 
-        <div className="flex items-center gap-2">
+        <div className="w-full sm:w-auto grid grid-cols-2 gap-2 sm:flex sm:items-center sm:gap-2">
           <button
             onClick={goPrev}
             disabled={loading || page <= 1}
-            className="rounded-lg border border-[var(--theme-border)] px-3 py-1 bg-[var(--theme-pill-orange)] hover:bg-[var(--theme-button-hover)] disabled:opacity-50 disabled:cursor-not-allowed"
+            className={pressBtn("w-full sm:w-auto rounded-lg border border-[var(--theme-border)] px-3 py-2 bg-[var(--theme-pill-orange)] hover:bg-[var(--theme-button-hover)] disabled:opacity-50 disabled:cursor-not-allowed")}
             aria-label="Previous page of photos"
           >
             Prev
           </button>
-          <div>
+
+          <div className="hidden sm:flex sm:col-span-1 sm:mx-2 sm:items-center sm:justify-center">
             Page {page} / {totalPages()}
           </div>
+
+
           <button
             onClick={goNext}
             disabled={loading || page >= totalPages()}
-            className="rounded-lg border border-[var(--theme-border)] px-3 py-1 bg-[var(--theme-pill-orange)] hover:bg-[var(--theme-button-hover)] disabled:opacity-50 disabled:cursor-not-allowed"
+            className={pressBtn("w-full sm:w-auto rounded-lg border border-[var(--theme-border)] px-3 py-2 bg-[var(--theme-pill-orange)] hover:bg-[var(--theme-button-hover)] disabled:opacity-50 disabled:cursor-not-allowed")}
             aria-label="Next page of photos"
           >
             Next
@@ -235,7 +239,7 @@ export default function PhotosPage(): React.ReactElement {
         open={Boolean(lightboxSrc)}
         src={lightboxSrc || ''}
         alt={lightboxAlt}
-        caption={lightboxNote}           // ✅ NEW
+        caption={lightboxNote}
         onClose={closeLightbox}
       />
     </div>

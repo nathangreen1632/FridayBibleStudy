@@ -188,7 +188,7 @@ export default function AdminDigestPage(): React.ReactElement {
             <button
               onClick={() => toggleSelectAll(true)}
               className="px-2 py-1 rounded-lg bg-[var(--theme-button)] text-[var(--theme-text-white)]
-                 hover:bg-[var(--theme-button-hover)]
+                 hover:bg-[var(--theme-button-hover)] hover:text-[var(--theme-textbox)]
                  shadow-md active:translate-y-0.5 active:shadow-inner transition-all"
             >
               Select All
@@ -196,7 +196,7 @@ export default function AdminDigestPage(): React.ReactElement {
             <button
               onClick={() => toggleSelectAll(false)}
               className="px-2 py-1 rounded-lg bg-[var(--theme-button)] text-[var(--theme-text-white)]
-                 hover:bg-[var(--theme-button-hover)]
+                 hover:bg-[var(--theme-button-hover)] hover:text-[var(--theme-textbox)]
                  shadow-md active:translate-y-0.5 active:shadow-inner transition-all"
             >
               Clear

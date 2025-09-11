@@ -3,6 +3,7 @@ import React, { useEffect, useState, useMemo } from 'react';
 import { toast } from 'react-hot-toast';
 import { useAuthStore } from '../stores/useAuthStore.ts';
 import { loadRecaptchaEnterprise, getRecaptchaToken } from '../lib/recaptcha.lib.ts';
+import {pressBtn} from "../../ui/press.ts";
 
 const SITE_KEY = import.meta.env.VITE_RECAPTCHA_SITE_KEY as string | undefined;
 
@@ -276,8 +277,7 @@ export default function Register(): React.ReactElement {
 
         <button
           disabled={loading || !ready || !passwordsMatch}
-          className="w-full rounded-2xl bg-[var(--theme-button)] px-4 py-2.5 sm:py-3 text-[var(--theme-text-white)] text-sm sm:text-base font-semibold
-                     hover:bg-[var(--theme-button-hover)] hover:text-[var(--theme-textbox)] disabled:opacity-60 disabled:cursor-not-allowed"
+          className={pressBtn("w-full rounded-2xl bg-[var(--theme-button)] px-4 py-2.5 sm:py-3 text-[var(--theme-text-white)] text-sm sm:text-base font-semibold hover:bg-[var(--theme-button-hover)] hover:text-[var(--theme-textbox)] disabled:opacity-60 disabled:cursor-not-allowed")}
         >
           {loading ? '…' : 'Create account'}
         </button>
