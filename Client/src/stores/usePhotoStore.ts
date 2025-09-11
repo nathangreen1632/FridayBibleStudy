@@ -3,7 +3,7 @@ import { create } from 'zustand';
 import toast from 'react-hot-toast';
 import type { Photo, PhotoListResponse } from '../types/photo.types';
 import { fetchPhotos, uploadPhotos, deletePhoto } from '../helpers/api/photoApi';
-import { compressImage } from '../utils/imageCompress'; // ✅ new
+import { compressImage } from '../utils/imageCompress';
 
 type State = {
   items: Photo[];
@@ -56,10 +56,10 @@ export const usePhotoStore = create<State>((set, get) => ({
   items: [],
   total: 0,
   page: 1,
-  pageSize: 24,
+  pageSize: 25,
   loading: false,
 
-  async load(page = 1, pageSize = 24, recaptchaToken?: string) {
+  async load(page = 1, pageSize = 25, recaptchaToken?: string) {
     set({ loading: true });
     try {
       const res = await fetchPhotos(page, pageSize, recaptchaToken);
