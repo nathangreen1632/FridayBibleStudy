@@ -11,6 +11,7 @@ import Modal from '../modals/Modal.tsx';
 import ConfirmBar from '../common/ConfirmBar.tsx';
 import ProfileInfo from '../components/ProfileInfo.tsx';
 import MyPrayersColumn from "../components/MyPrayersColumn.tsx";
+import {pressBtn} from "../../ui/press.ts";
 
 const SITE_KEY = import.meta.env.VITE_RECAPTCHA_SITE_KEY as string | undefined;
 
@@ -166,7 +167,7 @@ export default function AccountPage(): React.ReactElement {
           <button
             type="button"
             onClick={openProfile}
-            className="rounded-xl bg-[var(--theme-button)] text-[var(--theme-text-white)] hover:bg-[var(--theme-button-hover)] hover:text-[var(--theme-textbox)] px-4 py-2 text-sm sm:text-base"
+            className={pressBtn("rounded-xl bg-[var(--theme-button)] text-[var(--theme-text-white)] hover:bg-[var(--theme-button-hover)] hover:text-[var(--theme-textbox)] px-4 py-2 text-sm sm:text-base")}
           >
             Edit My Profile
           </button>
@@ -253,8 +254,7 @@ export default function AccountPage(): React.ReactElement {
             {/* Post */}
             <div className="pt-2">
               <button
-                className="w-full sm:w-auto rounded-xl bg-[var(--theme-button)] px-5 py-2.5 text-[var(--theme-text-white)] text-sm sm:text-base font-semibold
-                           hover:bg-[var(--theme-button-hover)] hover:text-[var(--theme-textbox)] disabled:opacity-60 disabled:cursor-not-allowed"
+                className={pressBtn("w-full sm:w-auto rounded-xl bg-[var(--theme-button)] px-5 py-2.5 text-[var(--theme-text-white)] text-sm sm:text-base font-semibold hover:bg-[var(--theme-button-hover)] hover:text-[var(--theme-textbox)] disabled:opacity-60 disabled:cursor-not-allowed")}
                 type="submit"
                 disabled={posting}
               >
@@ -284,14 +284,14 @@ export default function AccountPage(): React.ReactElement {
           ) : (
             <>
               <button
-                className="rounded-xl bg-[var(--theme-button)] text-[var(--theme-text-white)] px-4 py-2 hover:bg-[var(--theme-button-hover)] hover:text-[var(--theme-textbox)]"
+                className={pressBtn("rounded-xl bg-[var(--theme-button)] text-[var(--theme-text-white)] px-4 py-2 hover:bg-[var(--theme-button-hover)] hover:text-[var(--theme-textbox)]")}
                 type="button"
                 onClick={requestCloseProfile}
               >
                 Close
               </button>
               <button
-                className="rounded-xl bg-[var(--theme-button)] text-[var(--theme-text-white)] px-4 py-2 hover:bg-[var(--theme-button-hover)] hover:text-[var(--theme-textbox)] disabled:opacity-60 disabled:cursor-not-allowed"
+                className={pressBtn("rounded-xl bg-[var(--theme-button)] text-[var(--theme-text-white)] px-4 py-2 hover:bg-[var(--theme-button-hover)] hover:text-[var(--theme-textbox)] disabled:opacity-60 disabled:cursor-not-allowed")}
                 type="submit"
                 form="profile-form"
                 disabled={loading || saving || !formDirty}
