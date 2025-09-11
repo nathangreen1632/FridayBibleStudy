@@ -10,6 +10,7 @@ export default function PhotosPage(): React.ReactElement {
   const { items, page, pageSize, total, loading, load, upload, remove } = usePhotoStore();
 
   const [pendingFiles, setPendingFiles] = useState<File[]>([]);
+  const [noteText, setNoteText] = useState(''); // NEW: batch note input
   const [lightboxSrc, setLightboxSrc] = useState<string | null>(null);
   const [lightboxAlt, setLightboxAlt] = useState<string>('');
 
@@ -38,10 +39,15 @@ export default function PhotosPage(): React.ReactElement {
       toast.error('Please select up to 4 images (≤ 10MB total)');
       return;
     }
-    const res = await upload(pendingFiles);
+    // NEW: pass noteText to upload; store handles trimming + optionality
+    const res = await upload(pendingFiles, noteText);
     if (res.ok) {
       setPendingFiles([]);
+      setNoteText(''); // reset the note after successful upload
       if (fileRef.current) fileRef.current.value = '';
+      toast.success('Uploaded!');
+    } else if (res.message) {
+      toast.error(res.message);
     }
   }
 
@@ -81,6 +87,17 @@ export default function PhotosPage(): React.ReactElement {
             className="hidden"
             onChange={onFilesSelected}
           />
+
+          {/* NEW: note input (applies to all files in this batch) */}
+          <input
+            type="text"
+            value={noteText}
+            onChange={(e) => setNoteText(e.target.value)}
+            placeholder="Optional note under the photo"
+            aria-label="Photo note to display under image"
+            className="min-w-[16rem] px-3 py-2 rounded-lg bg-[var(--theme-textbox)] text-[var(--theme-placeholder)] placeholder-[var(--theme-placeholder)] border border-[var(--theme-border)]"
+          />
+
           <button
             type="button"
             onClick={onPick}
@@ -106,6 +123,11 @@ export default function PhotosPage(): React.ReactElement {
             Ready to upload: <span className="font-semibold">{pendingFiles.length}</span> file(s).
             Limit: 4 images, 10MB total.
           </div>
+          {noteText.trim().length > 0 && (
+            <div className="text-xs mt-1 opacity-80">
+              Note to attach:&nbsp;<span className="italic">“{noteText}”</span>
+            </div>
+          )}
         </div>
       )}
 
@@ -113,7 +135,7 @@ export default function PhotosPage(): React.ReactElement {
       <div
         className={[
           'grid gap-3',
-          'grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5'
+          'grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5',
         ].join(' ')}
       >
         {items.map((p) => (
@@ -136,6 +158,13 @@ export default function PhotosPage(): React.ReactElement {
                 decoding="async"
               />
             </button>
+
+            {/* NEW: optional note strip under the image */}
+            {p.note && p.note.trim().length > 0 && (
+              <div className="px-3 py-2 text-sm bg-[var(--theme-surface)] border-t border-[var(--theme-border)]">
+                <div className="italic">{p.note}</div>
+              </div>
+            )}
 
             <footer className="flex items-center justify-between px-3 py-2 text-xs bg-[var(--theme-hover)] text-[var(--theme-text-white)]">
               <div className="leading-tight">
@@ -162,7 +191,12 @@ export default function PhotosPage(): React.ReactElement {
       <div className="mt-6">{renderFooterNote()}</div>
 
       {/* Lightbox modal */}
-      <LightboxModal open={Boolean(lightboxSrc)} src={lightboxSrc || ''} alt={lightboxAlt} onClose={closeLightbox} />
+      <LightboxModal
+        open={Boolean(lightboxSrc)}
+        src={lightboxSrc || ''}
+        alt={lightboxAlt}
+        onClose={closeLightbox}
+      />
     </div>
   );
 }
