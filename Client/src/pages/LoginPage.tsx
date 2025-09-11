@@ -4,6 +4,7 @@ import {Link, useLocation, useNavigate} from 'react-router-dom';
 import {toast} from 'react-hot-toast';
 import {useAuthStore} from '../stores/useAuthStore.ts';
 import {getRecaptchaToken, loadRecaptchaEnterprise} from '../lib/recaptcha.lib.ts';
+import {pressBtn} from "../../ui/press.ts";
 
 const SITE_KEY = import.meta.env.VITE_RECAPTCHA_SITE_KEY as string | undefined;
 
@@ -161,8 +162,7 @@ export default function Login(): React.ReactElement {
         <button
           type="submit"
           disabled={disabled}
-          className="w-full rounded-xl bg-[var(--theme-button)] px-4 py-2.5 sm:py-3 text-[var(--theme-text-white)] text-sm sm:text-base font-semibold
-                     hover:bg-[var(--theme-button-hover)] hover:text-[var(--theme-textbox)] disabled:opacity-60 disabled:cursor-not-allowed"
+          className={pressBtn("w-full rounded-xl bg-[var(--theme-button)] px-4 py-2.5 sm:py-3 text-[var(--theme-text-white)] text-sm sm:text-base font-semibold) hover:bg-[var(--theme-button-hover)] hover:text-[var(--theme-textbox)] disabled:opacity-60 disabled:cursor-not-allowed")}
         >
           {loading ? '…' : 'Sign in'}
         </button>
