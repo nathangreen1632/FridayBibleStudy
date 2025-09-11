@@ -111,7 +111,7 @@ export default function PhotosPage(): React.ReactElement {
             type="button"
             onClick={onUpload}
             disabled={loading || pendingFiles.length === 0}
-            className="px-3 py-2 rounded-lg border border-[var(--theme-border)] bg-[var(--theme-pill-orange)] text-[var(--theme-textbox)] hover:bg-[var(--theme-button-hover)] hover:text-[var(--theme-textbox)]"
+            className="px-3 py-2 rounded-lg border border-[var(--theme-border)] bg-[var(--theme-pill-orange)] text-[var(--theme-textbox)] hover:bg-[var(--theme-button-hover)] hover:text-[var(--theme-textbox)] disabled:opacity-50 disabled:cursor-not-allowed"
           >
             Upload ({pendingFiles.length || 0})
           </button>
