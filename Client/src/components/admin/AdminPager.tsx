@@ -1,6 +1,7 @@
 // Client/src/components/admin/AdminPager.tsx
 import React from 'react';
 import { useAdminUiStore } from '../../stores/admin/useAdminUiStore';
+import {pressBtn} from "../../../ui/press.ts";
 
 export default function AdminPager({ total, page, pageSize }: Readonly<{
   total: number;
@@ -21,9 +22,9 @@ export default function AdminPager({ total, page, pageSize }: Readonly<{
     <div className="flex items-center justify-between text-sm">
       <div>Total: {total}</div>
       <div className="flex gap-2">
-        <button onClick={prev} className="rounded-lg border px-3 py-1 hover:bg-[var(--theme-button-hover)]" disabled={page <= 1}>Prev</button>
+        <button onClick={prev} className={pressBtn("rounded-lg border px-3 py-1 bg-[var(--theme-pill-orange)] hover:bg-[var(--theme-button-hover)]")} disabled={page <= 1}>Prev</button>
         <div>Page {page} / {totalPages}</div>
-        <button onClick={next} className="rounded-lg border px-3 py-1 hover:bg-[var(--theme-button-hover)]" disabled={page >= totalPages}>Next</button>
+        <button onClick={next} className={pressBtn("rounded-lg border px-3 py-1 bg-[var(--theme-pill-orange)] hover:bg-[var(--theme-button-hover)]")} disabled={page >= totalPages}>Next</button>
       </div>
     </div>
   );
