@@ -4,6 +4,7 @@ import toast from 'react-hot-toast';
 import { Trash } from 'lucide-react';
 import { usePhotoStore } from '../stores/usePhotoStore';
 import LightboxModal from '../modals/LightboxModal';
+import { pressBtn } from '../../ui/press';
 
 export default function PhotosPage(): React.ReactElement {
   const fileRef = useRef<HTMLInputElement | null>(null);
@@ -127,7 +128,7 @@ export default function PhotosPage(): React.ReactElement {
             <button
               type="button"
               onClick={onPick}
-              className="w-full sm:w-auto px-3 py-2 rounded-lg bg-[var(--theme-button)] text-[var(--theme-text-white)] hover:bg-[var(--theme-button-hover)] hover:text-[var(--theme-textbox)]"
+              className={pressBtn("w-full sm:w-auto px-3 py-2 rounded-lg bg-[var(--theme-button)] text-[var(--theme-text-white)] hover:bg-[var(--theme-button-hover)] hover:text-[var(--theme-textbox)]")}
             >
               Select Photos
             </button>
@@ -136,7 +137,7 @@ export default function PhotosPage(): React.ReactElement {
               type="button"
               onClick={onUpload}
               disabled={loading || pendingFiles.length === 0}
-              className="w-full sm:w-auto px-3 py-2 rounded-lg border border-[var(--theme-border)] bg-[var(--theme-pill-orange)] text-[var(--theme-textbox)] hover:bg-[var(--theme-button-hover)] hover:text-[var(--theme-textbox)] disabled:opacity-50 disabled:cursor-not-allowed"
+              className={pressBtn("w-full sm:w-auto px-3 py-2 rounded-lg border border-[var(--theme-border)] bg-[var(--theme-pill-orange)] text-[var(--theme-textbox)] hover:bg-[var(--theme-button-hover)] hover:text-[var(--theme-textbox)] disabled:opacity-50 disabled:cursor-not-allowed")}
             >
               Upload ({pendingFiles.length || 0})
             </button>
@@ -160,7 +161,7 @@ export default function PhotosPage(): React.ReactElement {
       )}
 
       {/* Grid */}
-      <div className="grid gap-3 grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5">
+      <div className="grid gap-3 grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-4">
         {items.map((p) => (
           <article
             key={p.id}
@@ -191,7 +192,7 @@ export default function PhotosPage(): React.ReactElement {
               <button
                 type="button"
                 onClick={() => onDelete(p.id)}
-                className="inline-flex items-center justify-center gap-1 px-2 py-1 rounded-md border border-[var(--theme-border)] hover:bg-[var(--theme-card-hover)]"
+                className={pressBtn("inline-flex items-center justify-center gap-1 px-2 py-1 rounded-md border border-[var(--theme-border)] hover:bg-[var(--theme-card-hover)]")}
                 aria-label="Delete photo"
                 title="Delete photo"
               >
@@ -211,7 +212,7 @@ export default function PhotosPage(): React.ReactElement {
           <button
             onClick={goPrev}
             disabled={loading || page <= 1}
-            className="w-full sm:w-auto rounded-lg border border-[var(--theme-border)] px-3 py-2 bg-[var(--theme-pill-orange)] hover:bg-[var(--theme-button-hover)] disabled:opacity-50 disabled:cursor-not-allowed"
+            className={pressBtn("w-full sm:w-auto rounded-lg border border-[var(--theme-border)] px-3 py-2 bg-[var(--theme-pill-orange)] hover:bg-[var(--theme-button-hover)] disabled:opacity-50 disabled:cursor-not-allowed")}
             aria-label="Previous page of photos"
           >
             Prev
@@ -225,7 +226,7 @@ export default function PhotosPage(): React.ReactElement {
           <button
             onClick={goNext}
             disabled={loading || page >= totalPages()}
-            className="w-full sm:w-auto rounded-lg border border-[var(--theme-border)] px-3 py-2 bg-[var(--theme-pill-orange)] hover:bg-[var(--theme-button-hover)] disabled:opacity-50 disabled:cursor-not-allowed"
+            className={pressBtn("w-full sm:w-auto rounded-lg border border-[var(--theme-border)] px-3 py-2 bg-[var(--theme-pill-orange)] hover:bg-[var(--theme-button-hover)] disabled:opacity-50 disabled:cursor-not-allowed")}
             aria-label="Next page of photos"
           >
             Next
