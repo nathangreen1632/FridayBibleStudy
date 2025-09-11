@@ -54,7 +54,7 @@ function getAuthedUser(req: any, res: any): NarrowAuth | null {
 /** GET /api/photos?page=&pageSize= */
 router.get('/', requireAuth, async (req, res) => {
   const page = toInt(req.query.page, 1);
-  const pageSize = toInt(req.query.pageSize, 25);
+  const pageSize = toInt(req.query.pageSize, 24);
 
   try {
     const result = await listPhotoDtos(page, pageSize);
