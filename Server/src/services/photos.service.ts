@@ -1,3 +1,4 @@
+// Server/src/services/photos.service.ts
 import { Op } from 'sequelize';
 import { Attachment, Prayer, User } from '../models/index.js';
 
@@ -8,6 +9,7 @@ export type PhotoDto = {
   userId: number;        // owner of the related prayer (authorUserId)
   uploaderName: string;
   createdAt: string;     // ISO
+  note?: string | null;  // ✅ optional footer note
 };
 
 function totalBytes(files: Express.Multer.File[]): number {
@@ -83,6 +85,7 @@ export async function listPhotoDtos(page: number, pageSize: number): Promise<{
       userId: ownerId, // == prayers.authorUserId
       uploaderName: nameById.get(ownerId) ?? 'Unknown',
       createdAt: safeIso(a.createdAt),
+      note: a.note ?? null, // ✅ surface the note to the client
     };
   });
 
@@ -138,21 +141,36 @@ export async function resolveTargetPrayerId(
   return latest ? Number(latest.id) : null;
 }
 
-/** Persist uploaded files into attachments */
+/**
+ * Persist a batch of uploaded files as Attachment rows.
+ * Applies the SAME optional `note` to every created row in this request.
+ *
+ * @returns array of created attachment IDs
+ */
 export async function saveUploadedPhotos(
   files: Express.Multer.File[],
-  prayerId: number
+  prayerId: number,
+  note?: string | null // ✅ new param
 ): Promise<number[]> {
+  if (!Array.isArray(files) || files.length === 0) return [];
+
   const ids: number[] = [];
   for (const f of files) {
-    const row = await Attachment.create({
-      prayerId,
-      filePath: `uploads/${f.filename}`,
-      fileName: f.originalname,
-      mimeType: f.mimetype || 'application/octet-stream',
-      size: f.size || 0,
-    });
-    ids.push(Number(row.id));
+    try {
+      const row = await Attachment.create({
+        prayerId,
+        filePath: `uploads/${f.filename}`, // keep consistent with your existing pathing
+        fileName: f.originalname,
+        mimeType: f.mimetype || 'application/octet-stream',
+        size: f.size || 0,
+        note: note ?? null, // ✅ persist the batch note
+      });
+      if (row?.id) ids.push(Number(row.id));
+    } catch (e) {
+      // eslint-disable-next-line no-console
+      console.error('[photos.service] saveUploadedPhotos create failed:', e);
+      // continue to next file (graceful)
+    }
   }
   return ids;
 }
