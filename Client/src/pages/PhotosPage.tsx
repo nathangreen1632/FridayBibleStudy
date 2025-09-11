@@ -211,7 +211,7 @@ export default function PhotosPage(): React.ReactElement {
           <button
             onClick={goPrev}
             disabled={loading || page <= 1}
-            className="rounded-lg border border-[var(--theme-border)] px-3 py-1 bg-[var(--theme-pill-orange)] hover:bg-[var(--theme-button-hover)] disabled:opacity-50"
+            className="rounded-lg border border-[var(--theme-border)] px-3 py-1 bg-[var(--theme-pill-orange)] hover:bg-[var(--theme-button-hover)] disabled:opacity-50 disabled:cursor-not-allowed"
             aria-label="Previous page of photos"
           >
             Prev
@@ -222,7 +222,7 @@ export default function PhotosPage(): React.ReactElement {
           <button
             onClick={goNext}
             disabled={loading || page >= totalPages()}
-            className="rounded-lg border border-[var(--theme-border)] px-3 py-1 bg-[var(--theme-pill-orange)] hover:bg-[var(--theme-button-hover)] disabled:opacity-50"
+            className="rounded-lg border border-[var(--theme-border)] px-3 py-1 bg-[var(--theme-pill-orange)] hover:bg-[var(--theme-button-hover)] disabled:opacity-50 disabled:cursor-not-allowed"
             aria-label="Next page of photos"
           >
             Next
