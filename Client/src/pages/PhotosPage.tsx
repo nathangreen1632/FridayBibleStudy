@@ -74,6 +74,28 @@ export default function PhotosPage(): React.ReactElement {
     return <div className="text-sm opacity-70">{text}</div>;
   }
 
+  function totalPages(): number {
+    const denom = pageSize || 1;
+    const totalCount = total || 0;
+    const pages = Math.ceil(totalCount / denom);
+    return Math.max(1, pages);
+  }
+
+  async function goPrev() {
+    if (page > 1 && !loading) {
+      await load(page - 1, pageSize);
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+    }
+  }
+
+  async function goNext() {
+    const tp = totalPages();
+    if (page < tp && !loading) {
+      await load(page + 1, pageSize);
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+    }
+  }
+
   return (
     <div className="max-w-7xl mx-auto px-3 py-4">
       {/* Header / Actions */}
@@ -183,7 +205,31 @@ export default function PhotosPage(): React.ReactElement {
       </div>
 
       {/* Footer */}
-      <div className="mt-6">{renderFooterNote()}</div>
+      <div className="mt-6 flex items-center justify-between text-sm">
+        <div className="opacity-70">{renderFooterNote()}</div>
+
+        <div className="flex items-center gap-2">
+          <button
+            onClick={goPrev}
+            disabled={loading || page <= 1}
+            className="rounded-lg border border-[var(--theme-border)] px-3 py-1 bg-[var(--theme-pill-orange)] hover:bg-[var(--theme-button-hover)] disabled:opacity-50"
+            aria-label="Previous page of photos"
+          >
+            Prev
+          </button>
+          <div>
+            Page {page} / {totalPages()}
+          </div>
+          <button
+            onClick={goNext}
+            disabled={loading || page >= totalPages()}
+            className="rounded-lg border border-[var(--theme-border)] px-3 py-1 bg-[var(--theme-pill-orange)] hover:bg-[var(--theme-button-hover)] disabled:opacity-50"
+            aria-label="Next page of photos"
+          >
+            Next
+          </button>
+        </div>
+      </div>
 
       {/* Lightbox modal */}
       <LightboxModal
