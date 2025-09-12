@@ -1,3 +1,4 @@
+// Server/src/models/user.model.ts
 import { DataTypes, Model, Optional, Sequelize } from 'sequelize';
 
 export type Role = 'classic' | 'admin';
@@ -14,6 +15,9 @@ export interface UserAttributes {
   /** NEW: soft-unsubscribe flag (maps to users.email_paused) */
   emailPaused: boolean;
 
+  /** NEW: user's preferred API.Bible version id (maps to users.preferred_bible_id) */
+  preferredBibleId: string | null;
+
   // Roster additions
   addressStreet: string | null;
   addressCity: string | null;
@@ -24,12 +28,14 @@ export interface UserAttributes {
   createdAt: Date;
   updatedAt: Date;
 }
+
 export type UserCreation = Optional<
   UserAttributes,
   | 'id'
   | 'role'
   | 'emailVerified'
-  | 'emailPaused'        // NEW: defaulted in DB, optional on create
+  | 'emailPaused'         // defaulted in DB, optional on create
+  | 'preferredBibleId'    // NEW: optional on create
   | 'addressStreet'
   | 'addressCity'
   | 'addressState'
@@ -50,6 +56,9 @@ export class User extends Model<UserAttributes, UserCreation> implements UserAtt
 
   /** NEW */
   declare emailPaused: boolean;
+
+  /** NEW */
+  declare preferredBibleId: string | null;
 
   declare addressStreet: string | null;
   declare addressCity: string | null;
@@ -72,12 +81,10 @@ export class User extends Model<UserAttributes, UserCreation> implements UserAtt
         emailVerified: { type: DataTypes.BOOLEAN, allowNull: false, defaultValue: false },
 
         /** NEW: maps to column "email_paused" */
-        emailPaused: {
-          type: DataTypes.BOOLEAN,
-          allowNull: false,
-          defaultValue: false,
-          field: 'email_paused',
-        },
+        emailPaused: { type: DataTypes.BOOLEAN, allowNull: false, defaultValue: false, field: 'email_paused' },
+
+        /** NEW: maps to column "preferred_bible_id" */
+        preferredBibleId: { type: DataTypes.STRING(64), allowNull: true, field: 'preferred_bible_id' },
 
         // Roster additions
         addressStreet: { type: DataTypes.STRING(180), allowNull: true },
@@ -87,7 +94,7 @@ export class User extends Model<UserAttributes, UserCreation> implements UserAtt
         spouseName:    { type: DataTypes.STRING(120), allowNull: true },
 
         createdAt: DataTypes.DATE,
-        updatedAt: DataTypes.DATE
+        updatedAt: DataTypes.DATE,
       },
       { sequelize, tableName: 'users' }
     );
