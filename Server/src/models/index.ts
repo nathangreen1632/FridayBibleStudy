@@ -11,6 +11,7 @@ import { OtpToken } from './otpToken.model.js';
 import { PrayerParticipant } from './prayerParticipant.model.js';
 import { Comment } from './comment.model.js';
 import { CommentRead } from './commentRead.model.js';
+import { Event } from './event.model.js'; // ✅ NEW
 
 function initAll(s: Sequelize): void {
   // init models
@@ -24,6 +25,7 @@ function initAll(s: Sequelize): void {
   PrayerParticipant.initModel(s);
   Comment.initModel(s);
   CommentRead.initModel(s);
+  Event.initModel(s); // ✅ NEW
 
   // associations (+ cascades)
   GroupMember.belongsTo(User,  { foreignKey: 'userId',  onDelete: 'CASCADE', onUpdate: 'CASCADE' });
@@ -35,7 +37,7 @@ function initAll(s: Sequelize): void {
   Prayer.belongsTo(User,  { foreignKey: 'authorUserId', as: 'author', onDelete: 'SET NULL', onUpdate: 'CASCADE' });
   Prayer.belongsTo(Group, { foreignKey: 'groupId',      as: 'group',  onDelete: 'CASCADE',  onUpdate: 'CASCADE' });
 
-  // Optional inverse relations (helpful in other queries)
+  // Optional inverse relations
   User.hasMany(Prayer,  { foreignKey: 'authorUserId', as: 'authoredPrayers', onDelete: 'SET NULL', onUpdate: 'CASCADE' });
   Group.hasMany(Prayer, { foreignKey: 'groupId',      as: 'prayers',         onDelete: 'CASCADE',  onUpdate: 'CASCADE' });
 
@@ -77,6 +79,13 @@ function initAll(s: Sequelize): void {
   Comment.belongsTo(Comment, { foreignKey: 'threadRootId', as: 'root',   onDelete: 'SET NULL', onUpdate: 'CASCADE' });
 
   CommentRead.belongsTo(Prayer, { foreignKey: 'prayerId', onDelete: 'CASCADE', onUpdate: 'CASCADE' });
+
+  // ✅ Events associations
+  Event.belongsTo(User,  { foreignKey: 'authorUserId', as: 'author', onDelete: 'SET NULL', onUpdate: 'CASCADE' });
+  Event.belongsTo(Group, { foreignKey: 'groupId',      as: 'group',  onDelete: 'CASCADE',  onUpdate: 'CASCADE' });
+
+  User.hasMany(Event,  { foreignKey: 'authorUserId', as: 'events',  onDelete: 'SET NULL', onUpdate: 'CASCADE' });
+  Group.hasMany(Event, { foreignKey: 'groupId',      as: 'events',  onDelete: 'CASCADE',  onUpdate: 'CASCADE' });
 }
 
 initAll(sequelize);
@@ -93,4 +102,5 @@ export {
   PrayerParticipant,
   Comment,
   CommentRead,
+  Event, // ✅ NEW
 };
