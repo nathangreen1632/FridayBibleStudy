@@ -2,66 +2,61 @@
 import type { Request, Response, NextFunction } from 'express';
 import { verifyJwt, type AppJwtPayload } from '../utils/jwt.util.js';
 import { env } from '../config/env.config.js';
+import type { Role, UserJwtPayload } from '../types/auth.types.js';
 
-/** App-wide role type used in admin checks */
-type AppRole = 'admin' | 'classic';
-
-/** The normalized shape we want everywhere in the app. */
-type AuthUser = AppJwtPayload & {
-  id: number;          // normalized numeric user id
-  role?: AppRole;      // normalized role (defaults to 'classic')
-};
-
-/** Teach Express about our normalized user shape. */
-declare module 'express-serve-static-core' {
-  interface Request {
-    user?: AuthUser;
-  }
-}
-
-/** Safely coerce an unknown role into our AppRole union. */
-function normalizeRole(role: unknown): AppRole {
+/** Coerce any unknown role into the app's Role union. */
+function normalizeRole(role: unknown): Role {
   return role === 'admin' ? 'admin' : 'classic';
 }
 
 /** Extract a numeric id from common JWT fields without throwing. */
-function extractUserId(payload: Partial<Record<'id' | 'sub' | 'userId', unknown>>): number {
-  // small helper: parse to number if valid
-  function asNumber(val: unknown): number | null {
-    if (typeof val === 'number' && Number.isFinite(val)) return val;
-    if (typeof val === 'string') {
-      const n = Number(val);
+function extractNumericId(payload: Partial<Record<'id' | 'sub' | 'userId', unknown>>): number {
+  const asNumber = (v: unknown): number | null => {
+    if (typeof v === 'number' && Number.isFinite(v)) return v;
+    if (typeof v === 'string') {
+      const n = Number(v);
       if (Number.isFinite(n)) return n;
     }
     return null;
+  };
+
+  for (const key of ['id', 'sub', 'userId'] as const) {
+    const n = asNumber(payload[key]);
+    if (n !== null) return n;
   }
-
-  // check each known field in order
-  const fields: (keyof typeof payload)[] = ['id', 'sub', 'userId'];
-
-  for (const key of fields) {
-    const candidate = asNumber(payload[key]);
-    if (candidate !== null) return candidate;
-  }
-
-  // fallback if nothing usable
   return 0;
 }
-
 
 export function requireAuth(req: Request, res: Response, next: NextFunction): void {
   const cookieName = env.JWT_COOKIE_NAME;
   const token = req.cookies?.[cookieName];
-  if (!token) { res.status(401).json({ error: 'Unauthorized' }); return; }
+  if (!token) {
+    res.status(401).json({ error: 'Unauthorized' });
+    return;
+  }
 
   try {
-    const payload = verifyJwt(token); // AppJwtPayload
+    const raw = verifyJwt(token) as AppJwtPayload;
 
-    // Normalize id + role while preserving the rest of your payload
-    const id = extractUserId(payload as any);
-    const role = normalizeRole((payload as any).role);
+    const id = extractNumericId(raw as any);
+    const role = normalizeRole((raw as any).role);
 
-    req.user = { ...payload, id, role };
+    // Pass through groupId when valid; otherwise leave undefined
+    const rawGroupId = (raw as any)?.groupId;
+    const groupId =
+      typeof rawGroupId === 'number' && Number.isFinite(rawGroupId) && rawGroupId > 0
+        ? rawGroupId
+        : undefined;
+
+    // Build normalized request user using your production shape
+    const user: UserJwtPayload = {
+      ...(raw as object),
+      id,
+      role,
+      groupId,
+    };
+
+    req.user = user;
     next();
   } catch {
     res.status(401).json({ error: 'Invalid token' });
