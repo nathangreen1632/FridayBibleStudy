@@ -336,7 +336,7 @@ export default function BiblePage(): React.ReactElement {
             <button
               type="submit"
               disabled={loading}
-              className="h-12 px-4 rounded-xl bg-[var(--theme-button)] text-[var(--theme-text-white)] hover:bg-[var(--theme-button-hover)] disabled:opacity-60"
+              className="h-12 px-4 rounded-xl bg-[var(--theme-button)] text-[var(--theme-text-white)] hover:bg-[var(--theme-button-hover)] hover:text-[var(--theme-textbox)] disabled:opacity-60"
             >
               {loading ? 'Loading…' : 'Read'}
             </button>
