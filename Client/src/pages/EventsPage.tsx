@@ -1,6 +1,7 @@
 // Client/src/pages/EventsPage.tsx
 import React, { useEffect, useMemo, useState } from 'react';
 import toast from 'react-hot-toast';
+import { ChevronDown } from 'lucide-react'; // if you use react-lucide, change to: import { ChevronDown } from 'react-lucide';
 import { useAuthStore } from '../stores/useAuthStore';
 import {
   fetchEvents,
@@ -23,6 +24,9 @@ export default function EventsPage(): React.ReactElement {
   const [startsAt, setStartsAt] = useState('');
   const [location, setLocation] = useState('');
   const [endsAt, setEndsAt] = useState('');
+
+  // collapse toggle for create form
+  const [isCreateOpen, setIsCreateOpen] = useState(false);
 
   // edit state
   const [editingId, setEditingId] = useState<number | null>(null);
@@ -96,6 +100,9 @@ export default function EventsPage(): React.ReactElement {
       setItems(list);
     }
     toast.success('Event created');
+
+    // optionally close the form after save
+    setIsCreateOpen(false);
   }
 
   function beginEdit(id: number) {
@@ -163,54 +170,70 @@ export default function EventsPage(): React.ReactElement {
       <h1 className="mb-3 text-2xl font-extrabold">Events</h1>
 
       {isAdmin && (
-        <form
-          onSubmit={onCreate}
-          className="mb-4 flex flex-col gap-2 rounded-xl border border-[var(--theme-border)] bg-[var(--theme-surface)] p-3"
-        >
-          <div className="font-semibold">Create Event</div>
-
-          <input
-            value={title}
-            onChange={(e) => setTitle(e.target.value)}
-            placeholder="Title"
-            className="rounded-lg border border-[var(--theme-border)] bg-[var(--theme-textbox)] text-[var(--theme-placeholder)] px-3 py-2 placeholder:text-[var(--theme-placeholder)]/80"
-          />
-
-          <textarea
-            value={content}
-            onChange={(e) => setContent(e.target.value)}
-            placeholder="Details"
-            className="min-h-[120px] rounded-lg border border-[var(--theme-border)] bg-[var(--theme-textbox)] text-[var(--theme-placeholder)] px-3 py-2 placeholder:text-[var(--theme-placeholder)]/80"
-          />
-
-          <div className="grid grid-cols-1 gap-2 sm:grid-cols-2">
-            <input
-              type="datetime-local"
-              value={startsAt}
-              onChange={(e) => setStartsAt(e.target.value)}
-              className="rounded-lg border border-[var(--theme-border)] bg-[var(--theme-textbox)] text-[var(--theme-placeholder)] px-3 py-2 placeholder:text-[var(--theme-placeholder)]/80"
+        <div className="mb-4 rounded-xl border border-[var(--theme-border)] bg-[var(--theme-surface)]">
+          {/* Toggle header */}
+          <button
+            type="button"
+            aria-expanded={isCreateOpen}
+            onClick={() => setIsCreateOpen((v) => !v)}
+            className="flex w-full items-center justify-between gap-3 rounded-t-xl px-3 py-2"
+          >
+            <span className="font-semibold">Create Event</span>
+            <ChevronDown
+              className={`h-4 w-4 transition-transform ${isCreateOpen ? 'rotate-180' : ''}`}
             />
-            <input
-              type="datetime-local"
-              value={endsAt}
-              onChange={(e) => setEndsAt(e.target.value)}
-              className="rounded-lg border border-[var(--theme-border)] bg-[var(--theme-textbox)] text-[var(--theme-placeholder)] px-3 py-2 placeholder:text-[var(--theme-placeholder)]/80"
-            />
-          </div>
+          </button>
 
-          <input
-            value={location}
-            onChange={(e) => setLocation(e.target.value)}
-            placeholder="Location"
-            className="rounded-lg border border-[var(--theme-border)] bg-[var(--theme-textbox)] text-[var(--theme-placeholder)] px-3 py-2 placeholder:text-[var(--theme-placeholder)]/80"
-          />
+          {/* Collapsible body */}
+          {isCreateOpen && (
+            <form
+              onSubmit={onCreate}
+              className="flex flex-col gap-2 border-t border-[var(--theme-border)] p-3 bg-[var(--theme-surface)]"
+            >
+              <input
+                value={title}
+                onChange={(e) => setTitle(e.target.value)}
+                placeholder="Title"
+                className="rounded-lg border border-[var(--theme-border)] bg-[var(--theme-textbox)] text-[var(--theme-placeholder)] px-3 py-2 placeholder:text-[var(--theme-placeholder)]/80"
+              />
 
-          <div className="flex justify-end">
-            <button className="rounded-xl px-4 py-2 bg-[var(--theme-button)] text-[var(--theme-text-white)] hover:bg-[var(--theme-button-hover)] hover:text-[var(--theme-textbox)]">
-              Save
-            </button>
-          </div>
-        </form>
+              <textarea
+                value={content}
+                onChange={(e) => setContent(e.target.value)}
+                placeholder="Details"
+                className="min-h-[120px] rounded-lg border border-[var(--theme-border)] bg-[var(--theme-textbox)] text-[var(--theme-placeholder)] px-3 py-2 placeholder:text-[var(--theme-placeholder)]/80"
+              />
+
+              <div className="grid grid-cols-1 gap-2 sm:grid-cols-2">
+                <input
+                  type="datetime-local"
+                  value={startsAt}
+                  onChange={(e) => setStartsAt(e.target.value)}
+                  className="rounded-lg border border-[var(--theme-border)] bg-[var(--theme-textbox)] text-[var(--theme-placeholder)] px-3 py-2 placeholder:text-[var(--theme-placeholder)]/80"
+                />
+                <input
+                  type="datetime-local"
+                  value={endsAt}
+                  onChange={(e) => setEndsAt(e.target.value)}
+                  className="rounded-lg border border-[var(--theme-border)] bg-[var(--theme-textbox)] text-[var(--theme-placeholder)] px-3 py-2 placeholder:text-[var(--theme-placeholder)]/80"
+                />
+              </div>
+
+              <input
+                value={location}
+                onChange={(e) => setLocation(e.target.value)}
+                placeholder="Location"
+                className="rounded-lg border border-[var(--theme-border)] bg-[var(--theme-textbox)] text-[var(--theme-placeholder)] px-3 py-2 placeholder:text-[var(--theme-placeholder)]/80"
+              />
+
+              <div className="flex justify-end">
+                <button className="rounded-xl px-4 py-2 bg-[var(--theme-button)] text-[var(--theme-text-white)] hover:bg-[var(--theme-button-hover)] hover:text-[var(--theme-textbox)]">
+                  Save
+                </button>
+              </div>
+            </form>
+          )}
+        </div>
       )}
 
       <div className="rounded-xl border border-[var(--theme-border)] bg-[var(--theme-surface)]">
@@ -289,22 +312,22 @@ export default function EventsPage(): React.ReactElement {
             }
 
             return (
-              <li key={ev.id} className="p-3">
-                <div className="flex items-start justify-between gap-3">
+              <li key={ev.id} className="rounded-xl p-3 bg-[var(--theme-accent)]">
+                <div className="flex items-start justify-between gap-3 bg-[var(--theme-accent)]">
                   <div>
-                    <div className="font-semibold">{ev.title}</div>
+                    <div className="font-semibold text-xl text-[var(--theme-text-white)]">{ev.title}</div>
 
                     {ev.startsAt && (
                       <>
                         {/* Date line */}
-                        <div className="text-sm opacity-80">
+                        <div className="text-base opacity-80 text-[var(--theme-text-white)]">
                           <span className="font-semibold">Date:</span>{' '}
                           {new Date(ev.startsAt).toLocaleDateString()}
                           {ev.endsAt && ` – ${new Date(ev.endsAt).toLocaleDateString()}`}
                         </div>
 
                         {/* Time line */}
-                        <div className="text-sm opacity-80">
+                        <div className="text-base opacity-80 text-[var(--theme-text-white)]">
                           <span className="font-semibold">Time:</span>{' '}
                           {new Date(ev.startsAt).toLocaleTimeString([], {
                             hour: '2-digit',
@@ -320,7 +343,7 @@ export default function EventsPage(): React.ReactElement {
                     )}
 
                     {ev.location && (
-                      <div className="text-sm opacity-80">
+                      <div className="text-base opacity-80 text-[var(--theme-text-white)]">
                         <span className="font-semibold">Location:</span>{' '}
                         {ev.location}
                       </div>
@@ -346,7 +369,7 @@ export default function EventsPage(): React.ReactElement {
                     </div>
                   )}
                 </div>
-                {ev.content && <div className="mt-2 whitespace-pre-wrap">{ev.content}</div>}
+                {ev.content && <div className="mt-2 whitespace-pre-wrap text-lg text-[var(--theme-text-white)]">{ev.content}</div>}
               </li>
             );
           })}
