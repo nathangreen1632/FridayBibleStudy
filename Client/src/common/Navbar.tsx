@@ -146,7 +146,7 @@ export default function Navbar(): React.ReactElement {
                   </NavLink>
 
                   {/* ✅ NEW: Bible & Events visible to admins */}
-                  <NavLink to="/events" className={({ isActive }) => linkClass(isActive)}>
+                  <NavLink to="/admin/events" className={({ isActive }) => linkClass(isActive)}>
                     <CalendarDays className="w-4 h-4" />
                     Events
                   </NavLink>
