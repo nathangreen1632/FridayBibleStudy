@@ -1,17 +1,14 @@
 // Client/src/pages/EventsPage.tsx
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
 import toast from 'react-hot-toast';
 import { useAuthStore } from '../stores/useAuthStore';
-
-type EventRow = {
-  id: number;
-  title: string;
-  content: string;
-  location?: string | null;
-  startsAt?: string | null;
-  endsAt?: string | null;
-  createdAt: string;
-};
+import {
+  fetchEvents,
+  createEvent,
+  updateEvent,
+  deleteEvent,
+  type EventRow,
+} from '../helpers/api/eventsApi';
 
 export default function EventsPage(): React.ReactElement {
   const { user } = useAuthStore();
@@ -20,63 +17,145 @@ export default function EventsPage(): React.ReactElement {
   const [items, setItems] = useState<EventRow[]>([]);
   const [loading, setLoading] = useState(true);
 
-  // Admin create form state
+  // create form (admin)
   const [title, setTitle] = useState('');
   const [content, setContent] = useState('');
   const [startsAt, setStartsAt] = useState('');
   const [location, setLocation] = useState('');
+  const [endsAt, setEndsAt] = useState('');
+
+  // edit state
+  const [editingId, setEditingId] = useState<number | null>(null);
+  const editing = useMemo(
+    () => items.find((x) => x.id === editingId) || null,
+    [items, editingId]
+  );
+
+  const [eTitle, setETitle] = useState('');
+  const [eContent, setEContent] = useState('');
+  const [eStartsAt, setEStartsAt] = useState('');
+  const [eEndsAt, setEEndsAt] = useState('');
+  const [eLocation, setELocation] = useState('');
+
+  // Disable Save unless something actually changed (uses `editing`)
+  const hasChanges = useMemo(() => {
+    if (!editing) return false;
+    const sAt = editing.startsAt ? toLocalInputValue(editing.startsAt) : '';
+    const eAt = editing.endsAt ? toLocalInputValue(editing.endsAt) : '';
+    return (
+      eTitle !== (editing.title || '') ||
+      eContent !== (editing.content || '') ||
+      eLocation !== (editing.location || '') ||
+      eStartsAt !== sAt ||
+      eEndsAt !== eAt
+    );
+  }, [editing, eTitle, eContent, eLocation, eStartsAt, eEndsAt]);
 
   useEffect(() => {
     let cancelled = false;
-
-    fetch('/api/events', { credentials: 'include' })
-      .then((r) => r.json())
-      .then((body) => {
-        if (!cancelled) {
-          setItems(Array.isArray(body?.data) ? body.data : []);
-        }
-      })
-      .catch(() => toast.error('Unable to load events'))
-      .finally(() => {
+    (async () => {
+      try {
+        const list = await fetchEvents();
+        if (!cancelled) setItems(list);
+      } catch {
+        toast.error('Unable to load events');
+      } finally {
         if (!cancelled) setLoading(false);
-      });
-
+      }
+    })();
     return () => {
       cancelled = true;
     };
   }, []);
 
-  async function createEvent(e: React.FormEvent) {
+  async function onCreate(e: React.FormEvent) {
     e.preventDefault();
 
-    try {
-      const res = await fetch('/api/admin/events', {
-        method: 'POST',
-        credentials: 'include',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ title, content, startsAt, location }),
-      });
+    const payload: any = { title, content };
+    if (startsAt) payload.startsAt = startsAt;
+    if (endsAt) payload.endsAt = endsAt;
+    if (location) payload.location = location;
 
-      if (!res.ok) {
-        toast.error('Create failed');
-        return;
-      }
-
-      // Reset form
-      setTitle('');
-      setContent('');
-      setStartsAt('');
-      setLocation('');
-
-      // Reload events
-      const r = await fetch('/api/events', { credentials: 'include' });
-      const body = await r.json();
-      setItems(Array.isArray(body?.data) ? body.data : []);
-
-      toast.success('Event created');
-    } catch {
-      toast.error('Network error');
+    const res = await createEvent(payload);
+    if (!res.ok) {
+      toast.error('Create failed');
+      return;
     }
+    setTitle('');
+    setContent('');
+    setStartsAt('');
+    setEndsAt('');
+    setLocation('');
+
+    // append without refetch
+    if (res.data) {
+      setItems((prev) => [res.data as EventRow, ...prev]);
+    } else {
+      // fallback refetch
+      const list = await fetchEvents();
+      setItems(list);
+    }
+    toast.success('Event created');
+  }
+
+  function beginEdit(id: number) {
+    const row = items.find((x) => x.id === id);
+    if (!row) return;
+
+    setEditingId(id);
+    setETitle(row.title || '');
+    setEContent(row.content || '');
+    setELocation(row.location || '');
+    setEStartsAt(row.startsAt ? toLocalInputValue(row.startsAt) : '');
+    setEEndsAt(row.endsAt ? toLocalInputValue(row.endsAt) : '');
+  }
+
+  function cancelEdit() {
+    setEditingId(null);
+    setETitle('');
+    setEContent('');
+    setELocation('');
+    setEStartsAt('');
+    setEEndsAt('');
+  }
+
+  async function saveEdit(id: number) {
+    const patch: any = {
+      title: eTitle,
+      content: eContent,
+      location: eLocation,
+    };
+    if (eStartsAt) patch.startsAt = new Date(eStartsAt).toISOString();
+    if (eEndsAt) patch.endsAt = new Date(eEndsAt).toISOString();
+
+    const res = await updateEvent(id, patch);
+    if (!res.ok) {
+      toast.error('Update failed');
+      return;
+    }
+
+    if (res.data) {
+      setItems((prev) => prev.map((x) => (x.id === id ? (res.data as EventRow) : x)));
+    } else {
+      // fallback refetch
+      const list = await fetchEvents();
+      setItems(list);
+    }
+    cancelEdit();
+    toast.success('Event updated');
+  }
+
+  async function removeRow(id: number) {
+    const ok = window.confirm('Delete this event?');
+    if (!ok) return;
+
+    const success = await deleteEvent(id);
+    if (!success) {
+      toast.error('Delete failed');
+      return;
+    }
+    setItems((prev) => prev.filter((x) => x.id !== id));
+    toast.success('Event deleted');
   }
 
   return (
@@ -85,7 +164,7 @@ export default function EventsPage(): React.ReactElement {
 
       {isAdmin && (
         <form
-          onSubmit={createEvent}
+          onSubmit={onCreate}
           className="mb-4 flex flex-col gap-2 rounded-xl border border-[var(--theme-border)] bg-[var(--theme-surface)] p-3"
         >
           <div className="font-semibold">Create Event</div>
@@ -104,12 +183,20 @@ export default function EventsPage(): React.ReactElement {
             className="min-h-[120px] rounded-lg border border-[var(--theme-border)] bg-[var(--theme-textbox)] text-[var(--theme-placeholder)] px-3 py-2 placeholder:text-[var(--theme-placeholder)]/80"
           />
 
-          <input
-            type="datetime-local"
-            value={startsAt}
-            onChange={(e) => setStartsAt(e.target.value)}
-            className="rounded-lg border border-[var(--theme-border)] bg-[var(--theme-textbox)] text-[var(--theme-placeholder)] px-3 py-2 placeholder:text-[var(--theme-placeholder)]/80"
-          />
+          <div className="grid grid-cols-1 gap-2 sm:grid-cols-2">
+            <input
+              type="datetime-local"
+              value={startsAt}
+              onChange={(e) => setStartsAt(e.target.value)}
+              className="rounded-lg border border-[var(--theme-border)] bg-[var(--theme-textbox)] text-[var(--theme-placeholder)] px-3 py-2 placeholder:text-[var(--theme-placeholder)]/80"
+            />
+            <input
+              type="datetime-local"
+              value={endsAt}
+              onChange={(e) => setEndsAt(e.target.value)}
+              className="rounded-lg border border-[var(--theme-border)] bg-[var(--theme-textbox)] text-[var(--theme-placeholder)] px-3 py-2 placeholder:text-[var(--theme-placeholder)]/80"
+            />
+          </div>
 
           <input
             value={location}
@@ -119,7 +206,7 @@ export default function EventsPage(): React.ReactElement {
           />
 
           <div className="flex justify-end">
-            <button className="rounded-xl bg-[var(--theme-button)] px-4 py-2 text-[var(--theme-text-white)] hover:bg-[var(--theme-button-hover)]">
+            <button className="rounded-xl px-4 py-2 bg-[var(--theme-button)] text-[var(--theme-text-white)] hover:bg-[var(--theme-button-hover)] hover:text-[var(--theme-textbox)]">
               Save
             </button>
           </div>
@@ -129,28 +216,158 @@ export default function EventsPage(): React.ReactElement {
       <div className="rounded-xl border border-[var(--theme-border)] bg-[var(--theme-surface)]">
         <ul className="divide-y divide-[var(--theme-border)]">
           {loading && <li className="p-3">Loading…</li>}
-          {!loading && items.length === 0 && (
-            <li className="p-3">No events yet.</li>
-          )}
-          {items.map((ev) => (
-            <li key={ev.id} className="p-3">
-              <div className="font-semibold">{ev.title}</div>
+          {!loading && items.length === 0 && <li className="p-3">No events yet.</li>}
 
-              {ev.startsAt && (
-                <div className="text-sm opacity-80">
-                  {new Date(ev.startsAt).toLocaleString()}
+          {items.map((ev) => {
+            const isEditing = editingId === ev.id;
+
+            if (isEditing) {
+              return (
+                <li key={ev.id} className="p-3">
+                  {/* Label showing what is being edited (uses `editing`) */}
+                  {editingId === ev.id && (
+                    <div className="mb-2 text-xs opacity-60">
+                      Editing “{eTitle || (editing?.title ?? 'Untitled')}”
+                    </div>
+                  )}
+
+                  <input
+                    value={eTitle}
+                    onChange={(e) => setETitle(e.target.value)}
+                    placeholder="Title"
+                    className="mb-2 w-full rounded-lg border border-[var(--theme-border)] bg-[var(--theme-textbox)] text-[var(--theme-placeholder)] px-3 py-2 placeholder:text-[var(--theme-placeholder)]/80"
+                  />
+
+                  <textarea
+                    value={eContent}
+                    onChange={(e) => setEContent(e.target.value)}
+                    placeholder="Details"
+                    className="mb-2 min-h-[100px] w-full rounded-lg border border-[var(--theme-border)] bg-[var(--theme-textbox)] text-[var(--theme-placeholder)] px-3 py-2 placeholder:text-[var(--theme-placeholder)]/80"
+                  />
+
+                  <div className="mb-2 grid grid-cols-1 gap-2 sm:grid-cols-2">
+                    <input
+                      type="datetime-local"
+                      value={eStartsAt}
+                      onChange={(e) => setEStartsAt(e.target.value)}
+                      className="rounded-lg border border-[var(--theme-border)] bg-[var(--theme-textbox)] text-[var(--theme-placeholder)] px-3 py-2 placeholder:text-[var(--theme-placeholder)]/80"
+                    />
+                    <input
+                      type="datetime-local"
+                      value={eEndsAt}
+                      onChange={(e) => setEEndsAt(e.target.value)}
+                      className="rounded-lg border border-[var(--theme-border)] bg-[var(--theme-textbox)] text-[var(--theme-placeholder)] px-3 py-2 placeholder:text-[var(--theme-placeholder)]/80"
+                    />
+                  </div>
+
+                  <input
+                    value={eLocation}
+                    onChange={(e) => setELocation(e.target.value)}
+                    placeholder="Location"
+                    className="mb-3 w-full rounded-lg border border-[var(--theme-border)] bg-[var(--theme-textbox)] text-[var(--theme-placeholder)] px-3 py-2 placeholder:text-[var(--theme-placeholder)]/80"
+                  />
+
+                  <div className="flex gap-2">
+                    <button
+                      type="button"
+                      onClick={() => saveEdit(ev.id)}
+                      disabled={!hasChanges}
+                      className="rounded-xl px-4 py-2 bg-[var(--theme-button)] text-[var(--theme-text-white)] hover:bg-[var(--theme-button-hover)] hover:text-[var(--theme-textbox)] disabled:opacity-60 disabled:cursor-not-allowed"
+                    >
+                      Save
+                    </button>
+                    <button
+                      type="button"
+                      onClick={cancelEdit}
+                      className="rounded-xl bg-[var(--theme-pill-orange)] px-4 py-2 hover:bg-[var(--theme-button-hover)]"
+                    >
+                      Cancel
+                    </button>
+                  </div>
+                </li>
+              );
+            }
+
+            return (
+              <li key={ev.id} className="p-3">
+                <div className="flex items-start justify-between gap-3">
+                  <div>
+                    <div className="font-semibold">{ev.title}</div>
+
+                    {ev.startsAt && (
+                      <>
+                        {/* Date line */}
+                        <div className="text-sm opacity-80">
+                          <span className="font-semibold">Date:</span>{' '}
+                          {new Date(ev.startsAt).toLocaleDateString()}
+                          {ev.endsAt && ` – ${new Date(ev.endsAt).toLocaleDateString()}`}
+                        </div>
+
+                        {/* Time line */}
+                        <div className="text-sm opacity-80">
+                          <span className="font-semibold">Time:</span>{' '}
+                          {new Date(ev.startsAt).toLocaleTimeString([], {
+                            hour: '2-digit',
+                            minute: '2-digit',
+                          })}
+                          {ev.endsAt &&
+                            ` – ${new Date(ev.endsAt).toLocaleTimeString([], {
+                              hour: '2-digit',
+                              minute: '2-digit',
+                            })}`}
+                        </div>
+                      </>
+                    )}
+
+                    {ev.location && (
+                      <div className="text-sm opacity-80">
+                        <span className="font-semibold">Location:</span>{' '}
+                        {ev.location}
+                      </div>
+                    )}
+                  </div>
+
+                  {isAdmin && (
+                    <div className="flex shrink-0 gap-2">
+                      <button
+                        type="button"
+                        onClick={() => beginEdit(ev.id)}
+                        className="rounded-lg border border-[var(--theme-border)] px-3 py-1 text-sm bg-[var(--theme-button)] text-[var(--theme-text-white)] hover:bg-[var(--theme-button-hover)] hover:text-[var(--theme-textbox)]"
+                      >
+                        Edit
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => removeRow(ev.id)}
+                        className="rounded-lg bg-[var(--theme-error)] px-3 py-1 text-sm text-white hover:opacity-90"
+                      >
+                        Delete
+                      </button>
+                    </div>
+                  )}
                 </div>
-              )}
-
-              {ev.location && (
-                <div className="text-sm opacity-80">{ev.location}</div>
-              )}
-
-              <div className="mt-2 whitespace-pre-wrap">{ev.content}</div>
-            </li>
-          ))}
+                {ev.content && <div className="mt-2 whitespace-pre-wrap">{ev.content}</div>}
+              </li>
+            );
+          })}
         </ul>
       </div>
     </div>
   );
+}
+
+// Convert stored ISO to datetime-local input value (YYYY-MM-DDTHH:mm)
+function toLocalInputValue(iso: string): string {
+  try {
+    const d = new Date(iso);
+    if (Number.isNaN(d.getTime())) return '';
+    const yr = d.getFullYear();
+    const mo = String(d.getMonth() + 1).padStart(2, '0');
+    const da = String(d.getDate()).padStart(2, '0');
+    const hr = String(d.getHours()).padStart(2, '0');
+    const mi = String(d.getMinutes()).padStart(2, '0');
+    return `${yr}-${mo}-${da}T${hr}:${mi}`;
+  } catch {
+    return '';
+  }
 }
