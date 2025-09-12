@@ -93,11 +93,12 @@ export default function VerseOfDayPanel(): React.ReactElement {
         {!loading && !html && <div>Unavailable.</div>}
         {html && (
           <>
-            {refText && <div className="text-sm mb-2 opacity-80 select-none">{refText}</div>}
-            <div
-              className="prose max-w-none eb-container"
-              dangerouslySetInnerHTML={{ __html: html }}
-            />
+            {refText && (
+              <div className="text-sm mb-2 opacity-80 select-none">{refText}</div>
+            )}
+            <div className="scripture-styles">
+              <div dangerouslySetInnerHTML={{ __html: html }} />
+            </div>
           </>
         )}
       </aside>
