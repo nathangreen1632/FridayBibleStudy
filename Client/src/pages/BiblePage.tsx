@@ -9,6 +9,8 @@ import {
   fetchBooks,      // tolerant books fetch
   fetchChapters,
 } from '../helpers/api/bibleApi';
+import { ChevronDown } from 'lucide-react';
+
 
 type BibleMeta = { id: string; name: string; abbreviationLocal?: string; language?: { name?: string } };
 type PassageItem = { content?: string; reference?: string };
@@ -296,33 +298,55 @@ export default function BiblePage(): React.ReactElement {
         <h1 className="text-xl md:text-2xl font-extrabold mb-2 md:mb-3">Bible</h1>
 
         <form onSubmit={onSearch} className="flex flex-col gap-2 md:gap-3">
+          {/* Version */}
           <label className="sr-only" htmlFor="bible-select">Version</label>
-          <select
-            id="bible-select"
-            value={bibleId}
-            onChange={(e) => setBibleId(e.target.value)}
-            className="h-12 rounded-lg px-3 bg-[var(--theme-textbox)] text-[var(--theme-placeholder)] border border-[var(--theme-border)] focus:outline-none"
-          >
-            <option value="">{versionPlaceholder}</option>
-            {options.map((o) => (
-              <option key={o.id} value={o.id}>{o.label}</option>
-            ))}
-          </select>
+          <div className="relative">
+            <select
+              id="bible-select"
+              value={bibleId}
+              onChange={(e) => setBibleId(e.target.value)}
+              // hide native arrow + leave space for our icon
+              className="h-12 w-full rounded-lg pr-10 pl-3 bg-[var(--theme-textbox)] text-[var(--theme-placeholder)] border border-[var(--theme-border)] focus:outline-none appearance-none"
+            >
+              <option value="">{versionPlaceholder}</option>
+              {options.map((o) => (
+                <option key={o.id} value={o.id}>{o.label}</option>
+              ))}
+            </select>
 
+            {/* lucide chevron (overlayed, click-through) */}
+            <ChevronDown
+              className="pointer-events-none absolute right-3 top-1/2 -translate-y-1/2 h-5 w-5 text-[var(--theme-placeholder)] opacity-80"
+              aria-hidden="true"
+            />
+          </div>
+
+
+          {/* Book */}
           <label className="sr-only" htmlFor="book-select">Book</label>
-          <select
-            id="book-select"
-            value={bookId}
-            onChange={(e) => setBookId(e.target.value)}
-            disabled={!bibleId || !books.length || !!reference.trim()}
-            className="h-12 rounded-lg px-3 bg-[var(--theme-textbox)] text-[var(--theme-placeholder)] border border-[var(--theme-border)] focus:outline-none disabled:opacity-60"
-          >
-            <option value="">{bookPlaceholder}</option>
-            {books.map((b) => {
-              const label = b.abbreviation && b.name ? `${b.abbreviation} – ${b.name}` : (b.abbreviation ?? b.name ?? b.id);
-              return <option key={b.id} value={b.id}>{label}</option>;
-            })}
-          </select>
+          <div className="relative">
+            <select
+              id="book-select"
+              value={bookId}
+              onChange={(e) => setBookId(e.target.value)}
+              disabled={!bibleId || !books.length || !!reference.trim()}
+              className="h-12 w-full rounded-lg pr-10 pl-3 bg-[var(--theme-textbox)] text-[var(--theme-placeholder)] border border-[var(--theme-border)] focus:outline-none disabled:opacity-60 appearance-none"
+            >
+              <option value="">{bookPlaceholder}</option>
+              {books.map((b) => {
+                const label = b.abbreviation && b.name
+                  ? `${b.abbreviation} – ${b.name}`
+                  : (b.abbreviation ?? b.name ?? b.id);
+                return <option key={b.id} value={b.id}>{label}</option>;
+              })}
+            </select>
+
+            <ChevronDown
+              className="pointer-events-none absolute right-3 top-1/2 -translate-y-1/2 h-5 w-5 text-[var(--theme-placeholder)] opacity-80"
+              aria-hidden="true"
+            />
+          </div>
+
 
           <div className="flex gap-2">
             <label className="sr-only" htmlFor="reference-input">Reference</label>
