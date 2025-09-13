@@ -236,7 +236,7 @@ export default function EventsPage(): React.ReactElement {
         </div>
       )}
 
-      <div className="rounded-xl border border-[var(--theme-border)] bg-[var(--theme-surface)]">
+      <div className="rounded-xl border border-[var(--theme-border)] bg-[var(--theme-bg)]">
         <ul className="divide-y divide-[var(--theme-border)]">
           {loading && <li className="p-3">Loading…</li>}
           {!loading && items.length === 0 && <li className="p-3">No events yet.</li>}
