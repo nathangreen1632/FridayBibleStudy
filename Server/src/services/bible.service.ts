@@ -137,28 +137,50 @@ type ChapterOk = {
   nextId?: string;
 };
 
-async function fetchJsonSafe(res: Response): Promise<any | null> {
-  try { return await res.json(); } catch { return null; }
+// put near the top of bible.service.ts
+type JsonObj = Record<string, unknown>;
+
+
+// safer JSON helper (no `any`)
+async function fetchJsonSafe(res: Response): Promise<JsonObj | null> {
+  try {
+    return (await res.json()) as JsonObj;
+  } catch {
+    return null;
+  }
 }
 
-async function listBooksRaw(bibleId: string): Promise<{ ok: boolean; status: number; body: any | null }> {
+// raw fetchers — return { body: JsonObj | null } instead of `any | null`
+async function listBooksRaw(
+  bibleId: string
+): Promise<{ ok: boolean; status: number; body: JsonObj | null }> {
   const r = await apiFetch(`/bibles/${encodeURIComponent(bibleId)}/books`);
   const body = await fetchJsonSafe(r);
   return { ok: r.ok, status: r.status, body };
 }
 
-async function listChaptersRaw(bibleId: string, bookId: string): Promise<{ ok: boolean; status: number; body: any | null }> {
-  const r = await apiFetch(`/bibles/${encodeURIComponent(bibleId)}/books/${encodeURIComponent(bookId)}/chapters`);
+async function listChaptersRaw(
+  bibleId: string,
+  bookId: string
+): Promise<{ ok: boolean; status: number; body: JsonObj | null }> {
+  const r = await apiFetch(
+    `/bibles/${encodeURIComponent(bibleId)}/books/${encodeURIComponent(bookId)}/chapters`
+  );
   const body = await fetchJsonSafe(r);
   return { ok: r.ok, status: r.status, body };
 }
 
-async function getChapterRaw(bibleId: string, chapterId: string): Promise<{ ok: boolean; status: number; body: any | null }> {
-  // No extra query params (provider is strict); default returns HTML content
-  const r = await apiFetch(`/bibles/${encodeURIComponent(bibleId)}/chapters/${encodeURIComponent(chapterId)}`);
+async function getChapterRaw(
+  bibleId: string,
+  chapterId: string
+): Promise<{ ok: boolean; status: number; body: JsonObj | null }> {
+  const r = await apiFetch(
+    `/bibles/${encodeURIComponent(bibleId)}/chapters/${encodeURIComponent(chapterId)}`
+  );
   const body = await fetchJsonSafe(r);
   return { ok: r.ok, status: r.status, body };
 }
+
 
 /** First chapter id in canonical order (first book -> first chapter). */
 async function resolveFirstChapterId(bibleId: string): Promise<ServiceResult<{ chapterId: string }>> {
@@ -179,74 +201,129 @@ async function resolveFirstChapterId(bibleId: string): Promise<ServiceResult<{ c
   return { ok: true, status: 200, data: { chapterId: firstChapterId } };
 }
 
-/** Chapter content + neighbor ids within canon order. */
-export async function getChapterById(bibleId: string, chapterId: string): Promise<ServiceResult<ChapterOk>> {
+// --- helpers ---------------------------------------------------------------
+
+function badUpstream<T = never>(status: number, body: any, msg = 'Failed to fetch chapter'): ServiceResult<T> {
+  if (process.env.NODE_ENV !== 'production') {
+    // eslint-disable-next-line no-console
+    console.warn('[CHAPTER] upstream error:', status, body ?? '<no body>');
+  }
+  const errorText: string | undefined = body?.error ?? body?.message;
+  return { ok: false, status, error: errorText ?? msg };
+}
+
+function pickChapterItem(body: any): { content?: string; reference?: string } {
+  const item = Array.isArray(body?.data) ? body.data[0] : body?.data;
+  return {
+    content: item?.content,
+    reference: item?.reference,
+  };
+}
+
+function sameBookNeighbors(chapterIds: Array<{ id: string }>, chapterId: string) {
+  const idx = chapterIds.findIndex((c) => c.id === chapterId);
+  if (idx < 0) return { prev: undefined, next: undefined };
+
+  const prev = idx > 0 ? chapterIds[idx - 1]?.id : undefined;
+  const next = idx < chapterIds.length - 1 ? chapterIds[idx + 1]?.id : undefined;
+  return { prev, next };
+}
+
+// add these tiny helpers near the other helpers in bible.service.ts
+function asFiniteNumber(v: unknown): number | undefined {
+  if (typeof v === 'number' && Number.isFinite(v)) return v;
+  if (v === null || v === undefined) return undefined;
+  const n = Number(v as any);
+  return Number.isFinite(n) ? n : undefined;
+}
+
+function asString(v: unknown): string | undefined {
+  return typeof v === 'string' ? v : undefined;
+}
+
+
+async function crossBookNeighbors(
+  bibleId: string,
+  bookId: string,
+  wantPrev: boolean,
+  wantNext: boolean
+): Promise<{ prev?: string; next?: string }> {
+  if (!wantPrev && !wantNext) return {};
+
+  const books = await listBooksRaw(bibleId);
+  if (!books.ok || !Array.isArray(books.body?.data)) return {};
+
+  const list: Array<{ id: string }> = books.body.data;
+  const i = list.findIndex((b) => b.id === bookId);
+  if (i < 0) return {};
+
+  let prev: string | undefined;
+  let next: string | undefined;
+
+  if (wantPrev && i > 0) {
+    const prevBookId = list[i - 1]?.id;
+    const prevCh = await listChaptersRaw(bibleId, prevBookId);
+    if (prevCh.ok && Array.isArray(prevCh.body?.data) && prevCh.body.data.length > 0) {
+      prev = prevCh.body.data[prevCh.body.data.length - 1]?.id;
+    }
+  }
+
+  if (wantNext && i < list.length - 1) {
+    const nextBookId = list[i + 1]?.id;
+    const nextCh = await listChaptersRaw(bibleId, nextBookId);
+    if (nextCh.ok && Array.isArray(nextCh.body?.data) && nextCh.body.data.length > 0) {
+      next = nextCh.body.data[0]?.id;
+    }
+  }
+
+  return { prev, next };
+}
+
+async function computeNeighbors(
+  bibleId: string,
+  chapterId: string
+): Promise<{ prevId?: string; nextId?: string }> {
+  const bookId = String(chapterId).split('.')[0];
+
+  const chapters = await listChaptersRaw(bibleId, bookId);
+  if (!chapters.ok || !Array.isArray(chapters.body?.data)) {
+    return {};
+  }
+
+  const { prev, next } = sameBookNeighbors(chapters.body.data, chapterId);
+  if (prev && next) return { prevId: prev, nextId: next };
+
+  // fill across book boundaries only for the missing side(s)
+  const cross = await crossBookNeighbors(bibleId, bookId, !prev, !next);
+  return { prevId: prev ?? cross.prev, nextId: next ?? cross.next };
+}
+
+// --- refactor --------------------------------------------------------------
+
+export async function getChapterById(
+  bibleId: string,
+  chapterId: string
+): Promise<ServiceResult<ChapterOk>> {
   const id = bibleId?.trim() || (env.BIBLE_DEFAULT_BIBLE_ID ?? '').trim();
   if (!id) return { ok: false, status: 400, error: 'Missing bibleId and no default configured' };
   if (!chapterId?.trim()) return { ok: false, status: 400, error: 'Missing chapterId' };
 
-  // Fetch chapter HTML/content
+  // 1) fetch chap content
   const chapter = await getChapterRaw(id, chapterId);
   if (!chapter.ok) {
-    let errorText: string | undefined;
-    if (process.env.NODE_ENV !== 'production') {
-      // eslint-disable-next-line no-console
-      console.warn('[CHAPTER] upstream error:', chapter.status, chapter.body ?? '<no body>', { id, chapterId });
-    }
-    errorText = chapter.body?.error ?? chapter.body?.message;
-    return { ok: false, status: chapter.status, error: errorText ?? 'Failed to fetch chapter' };
+    return badUpstream(chapter.status, chapter.body);
   }
 
-  // Derive current book id from chapter id (e.g., GEN.1 → GEN)
-  const bookId = String(chapterId).split('.')[0];
+  // 2) neighbors (same book, then cross-book if needed)
+  const { prevId, nextId } = await computeNeighbors(id, chapterId);
 
-  // Build prev/next by consulting chapter list for the current book
-  const chapters = await listChaptersRaw(id, bookId);
-  let prevId: string | undefined;
-  let nextId: string | undefined;
-
-  if (chapters.ok && Array.isArray(chapters.body?.data)) {
-    const arr: { id: string }[] = chapters.body.data;
-    const idx = arr.findIndex((c) => c.id === chapterId);
-    if (idx >= 0) {
-      if (idx > 0) prevId = arr[idx - 1]?.id;
-      if (idx < arr.length - 1) nextId = arr[idx + 1]?.id;
-      // If at book boundary, compute across books
-      if (!prevId || !nextId) {
-        const books = await listBooksRaw(id);
-        if (books.ok && Array.isArray(books.body?.data)) {
-          const bookIdx = books.body.data.findIndex((b: any) => b.id === bookId);
-          if (!prevId && bookIdx > 0) {
-            const prevBookId = books.body.data[bookIdx - 1]?.id;
-            const prevBookCh = await listChaptersRaw(id, prevBookId);
-            if (prevBookCh.ok && Array.isArray(prevBookCh.body?.data) && prevBookCh.body.data.length > 0) {
-              prevId = prevBookCh.body.data[prevBookCh.body.data.length - 1]?.id;
-            }
-          }
-          if (!nextId && bookIdx >= 0 && bookIdx < books.body.data.length - 1) {
-            const nextBookId = books.body.data[bookIdx + 1]?.id;
-            const nextBookCh = await listChaptersRaw(id, nextBookId);
-            if (nextBookCh.ok && Array.isArray(nextBookCh.body?.data) && nextBookCh.body.data.length > 0) {
-              nextId = nextBookCh.body.data[0]?.id;
-            }
-          }
-        }
-      }
-    }
-  }
-
-  const item = Array.isArray(chapter.body?.data) ? chapter.body.data[0] : chapter.body?.data;
-  const content: string = item?.content ?? '';
-  const reference: string = item?.reference ?? '';
-
+  // 3) normalize payload
+  const { content, reference } = pickChapterItem(chapter.body);
   if (!content) return { ok: false, status: 502, error: 'Bad chapter response from provider' };
 
-  return {
-    ok: true,
-    status: 200,
-    data: { content, reference, chapterId, prevId, nextId },
-  };
+  return { ok: true, status: 200, data: { content, reference: reference ?? '', chapterId, prevId, nextId } };
 }
+
 
 /** First chapter HTML for a bible (content + neighbors). */
 export async function getFirstChapter(bibleId: string): Promise<ServiceResult<ChapterOk>> {
@@ -278,9 +355,13 @@ export async function listBooksForBible(bibleId?: string): Promise<ServiceResult
 }
 
 // --- PUBLIC: list chapters for a book (minimal payload) ---
-export async function listChaptersForBook(bibleId: string | undefined, bookId: string | undefined): Promise<ServiceResult<Array<{ id: string; number?: number; reference?: string }>>> {
+export async function listChaptersForBook(
+  bibleId: string | undefined,
+  bookId: string | undefined
+): Promise<ServiceResult<Array<{ id: string; number?: number; reference?: string }>>> {
   const id = bibleId?.trim() || (env.BIBLE_DEFAULT_BIBLE_ID ?? '').trim();
   if (!id) return { ok: false, status: 400, error: 'Missing bibleId and no default configured' };
+
   const bk = bookId?.trim();
   if (!bk) return { ok: false, status: 400, error: 'Missing bookId' };
 
@@ -288,11 +369,24 @@ export async function listChaptersForBook(bibleId: string | undefined, bookId: s
   if (!r.ok || !Array.isArray(r.body?.data)) {
     return { ok: false, status: r.status, error: 'Unable to list chapters' };
   }
-  const items = r.body.data.map((c: any) => ({
-    id: String(c?.id ?? ''),
-    number: typeof c?.number === 'number' ? c.number : (c?.number ? Number(c.number) : undefined),
-    reference: typeof c?.reference === 'string' ? c.reference : undefined,
-  })).filter((c: any) => c.id);
+
+  const items =
+    (r.body?.data as unknown[] | undefined)
+      ?.map((c: any) => {
+        const idStr = c?.id != null ? String(c.id) : '';
+
+        const item: { id: string; number?: number; reference?: string } = { id: idStr };
+
+        const num = asFiniteNumber(c?.number);
+        if (num !== undefined) item.number = num;
+
+        const ref = asString(c?.reference);
+        if (ref !== undefined) item.reference = ref;
+
+        return item;
+      })
+      ?.filter((c: any) => Boolean(c.id)) ?? [];
 
   return { ok: true, status: 200, data: items };
 }
+

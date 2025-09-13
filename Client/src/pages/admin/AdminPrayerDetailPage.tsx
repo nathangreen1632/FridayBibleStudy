@@ -6,6 +6,7 @@ import { useAdminUiStore } from '../../stores/admin/useAdminUiStore';
 import AdminPrayerSummaryCard from '../../components/admin/AdminPrayerSummaryCard';
 import ConfirmBar from '../../common/ConfirmBar';
 import {pressBtn} from "../../../ui/press.ts";
+import {toast} from "react-hot-toast";
 
 type AdminStatus = 'active' | 'praise' | 'archived';
 
@@ -30,10 +31,18 @@ export default function AdminPrayerDetailPage(): React.ReactElement {
   const updateTextareaId = 'admin-detail-update';
 
   useEffect(() => {
-    if (prayerId) {
-      void loadThread(prayerId);
-    }
+    if (!prayerId) return;
+
+    (async () => {
+      try {
+        await loadThread(prayerId);
+      } catch {
+        console.error('Failed to load prayer thread');
+        toast.error('Failed to load prayer thread');
+      }
+    })();
   }, [prayerId, loadThread]);
+
 
   // Keep the Status dropdown in sync when the prayer loads/changes
   useEffect(() => {

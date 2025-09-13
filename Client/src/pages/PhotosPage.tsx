@@ -17,7 +17,13 @@ export default function PhotosPage(): React.ReactElement {
   const [lightboxNote, setLightboxNote] = useState<string>(''); // NEW
 
   useEffect(() => {
-    void load(1, pageSize);
+    let cancelled = false;
+
+    load(1, pageSize).catch(() => {
+      if (!cancelled) toast.error('Failed to load photos');
+    });
+
+    return () => { cancelled = true; };
   }, [load, pageSize]);
 
   function onPick() {
@@ -120,7 +126,7 @@ export default function PhotosPage(): React.ReactElement {
             onChange={(e) => setNoteText(e.target.value)}
             placeholder="Optional note under the photo"
             aria-label="Photo note to display under image"
-            className="w-full sm:w-72 px-3 py-2 rounded-lg bg-[var(--theme-textbox)] text-[var(--theme-text)] placeholder-[var(--theme-placeholder)] border border-[var(--theme-border)]"
+            className="w-full sm:w-72 px-3 py-2 rounded-lg bg-[var(--theme-textbox)] text-[var(--theme-placeholder)] placeholder-[var(--theme-placeholder)] border border-[var(--theme-border)]"
           />
 
           {/* Buttons: full-width on mobile, inline on desktop */}

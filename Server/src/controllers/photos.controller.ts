@@ -86,7 +86,80 @@ router.delete('/:id', requireAuth, async (req, res) => {
   }
 });
 
-/** POST /api/photos (multipart: files[]; optional note, prayerId, groupId) */
+// --- helpers ---------------------------------------------------------------
+
+function getExplicitPrayerId(req: any): number | undefined {
+  const explicit = Number(req.body?.prayerId ?? req.query?.prayerId);
+  return Number.isFinite(explicit) && explicit > 0 ? Math.floor(explicit) : undefined;
+}
+
+async function ensureBinForGroup(groupId: number, userId: number): Promise<number | undefined> {
+  const bin = await ensureMediaBinPrayer(groupId, userId);
+  return bin?.ok && bin.prayerId ? bin.prayerId : undefined;
+}
+
+async function resolveAdminBinTarget(req: any, auth: NarrowAuth): Promise<number | undefined> {
+  // 1) ENV single-group fallback (simple single-group setups)
+  const envId = Number(process.env.GROUP_ID ?? '');
+  if (Number.isFinite(envId) && envId > 0) {
+    const fromEnv = await ensureBinForGroup(Math.floor(envId), auth.id);
+    if (fromEnv) return fromEnv;
+  }
+
+  // 2) Body/query groupId (else auth.groupId); if missing, try DB-backed resolver
+  const payloadGroup = Number(req.body?.groupId ?? req.query?.groupId ?? auth.groupId);
+  let groupId: number | undefined =
+    Number.isFinite(payloadGroup) && payloadGroup > 0 ? Math.floor(payloadGroup) : undefined;
+
+  if (!groupId) {
+    const resolved = await resolveAdminUploadGroupId(req, auth.id);
+    if (typeof resolved === 'number' && resolved > 0) groupId = resolved;
+  }
+
+  if (groupId) {
+    const fromPayload = await ensureBinForGroup(groupId, auth.id);
+    if (fromPayload) return fromPayload;
+  }
+
+  // 3) Last defensive fallback → system group 1
+  return ensureBinForGroup(1, auth.id);
+}
+
+// Keep return type as number | undefined by normalizing nulls
+async function resolveUploadTarget(
+  req: any,
+  auth: NarrowAuth
+): Promise<number | undefined> {
+  // Highest priority: explicit prayerId
+  const explicit = getExplicitPrayerId(req);
+  if (explicit) return explicit;
+
+  // Admin bin resolution (env/payload/db/system)
+  if (isAdminRole(auth.role)) {
+    const adminTarget = await resolveAdminBinTarget(req, auth);
+    if (adminTarget) return adminTarget;
+  }
+
+  // Non-admin (or still unresolved): user fallback
+  const fallback = await resolveTargetPrayerId(undefined, auth); // number | null
+  return (typeof fallback === 'number' && fallback > 0) ? fallback : undefined;
+}
+
+function validateFiles(
+  req: any
+): { ok: true; files: Express.Multer.File[] } | { ok: false; error: string } {
+  const files = (req.files as Express.Multer.File[]) || [];
+  const check = validateUploadBatch(files);
+  if (check.ok) {
+    return { ok: true, files };
+  }
+  // ensure a definite string
+  const message = check.error ?? 'Invalid file selection';
+  return { ok: false, error: message };
+}
+
+// --- POST /api/photos ------------------------------------------------------
+
 router.post(
   '/',
   requireAuth,
@@ -96,81 +169,17 @@ router.post(
     if (!auth) return;
 
     try {
-      const files = (req.files as Express.Multer.File[]) || [];
-      const check = validateUploadBatch(files);
-      if (!check.ok) {
-        res.status(400).json({ error: check.error });
+      // 1) Validate files
+      const result = validateFiles(req);
+      if (!result.ok) {
+        res.status(400).json({ error: result.error });
         return;
       }
+      const { files } = result;
 
-      const note = sanitizeNote(req.body?.note);
-
-      // ----- Resolve explicit prayer target (highest priority) -----
-      const explicitRaw = req.body?.prayerId ?? req.query?.prayerId;
-      const explicit = Number(explicitRaw);
-      let targetPrayerId: number | undefined;
-
-      if (Number.isFinite(explicit) && explicit > 0) {
-        targetPrayerId = Math.floor(explicit);
-      }
-
-      // ----- Admin: resolve group target (env fallback first for single-group setup) -----
-      if (!targetPrayerId && isAdminRole(auth.role)) {
-        // 1) ENV single-group fallback (recommended for your current setup)
-        const fallbackGroupIdRaw = process.env.GROUP_ID ?? '';
-        const fallbackGroupIdNum = Number(fallbackGroupIdRaw);
-        const hasEnvGroup =
-          Number.isFinite(fallbackGroupIdNum) &&
-          fallbackGroupIdNum > 0;
-
-        if (hasEnvGroup) {
-          const bin = await ensureMediaBinPrayer(Math.floor(fallbackGroupIdNum), auth.id);
-          if (bin.ok && bin.prayerId) {
-            targetPrayerId = bin.prayerId;
-          }
-        }
-
-        // 2) If still not set, accept body/query groupId; else use auth.groupId
-        if (!targetPrayerId) {
-          const maybeGroupRaw = req.body?.groupId ?? req.query?.groupId ?? auth.groupId;
-          const fromPayload = Number(maybeGroupRaw);
-          let resolvedGroupId: number | undefined;
-
-          if (Number.isFinite(fromPayload) && fromPayload > 0) {
-            resolvedGroupId = Math.floor(fromPayload);
-          } else {
-            // Optional DB-backed resolution; harmless if it returns undefined
-            const resolved = await resolveAdminUploadGroupId(req, auth.id);
-            if (typeof resolved === 'number' && resolved > 0) {
-              resolvedGroupId = resolved;
-            }
-          }
-
-          if (typeof resolvedGroupId === 'number' && resolvedGroupId > 0) {
-            const bin = await ensureMediaBinPrayer(resolvedGroupId, auth.id);
-            if (bin.ok && bin.prayerId) {
-              targetPrayerId = bin.prayerId;
-            }
-          }
-        }
-
-        // 3) Last defensive fallback if bin still not resolved (system group 1)
-        if (!targetPrayerId) {
-          const bin2 = await ensureMediaBinPrayer(1, auth.id);
-          if (bin2.ok && bin2.prayerId) {
-            targetPrayerId = bin2.prayerId;
-          }
-        }
-      }
-
-      // ----- Non-admin or still unresolved → existing user fallback -----
+      // 2) Resolve target prayer
+      const targetPrayerId = await resolveUploadTarget(req, auth);
       if (!targetPrayerId) {
-        const fallback = await resolveTargetPrayerId(undefined, auth);
-        if (fallback) targetPrayerId = fallback;
-      }
-
-      if (!targetPrayerId) {
-        // Helpful breadcrumb in logs
         console.warn('[photos.controller] no targetPrayerId', {
           userId: auth.id,
           role: auth.role,
@@ -179,7 +188,6 @@ router.post(
           queryGroupId: req.query?.groupId ?? null,
           envGroupId: process.env.GROUP_ID ?? null,
         });
-
         res.status(400).json({
           error:
             'No target post found to attach photos. Provide prayerId, or set GROUP_ID for admin Media Bin uploads.',
@@ -187,7 +195,8 @@ router.post(
         return;
       }
 
-      // Create DB rows & return URLs the client can render immediately
+      // 3) Persist + respond
+      const note = sanitizeNote(req.body?.note);
       const createdIds = await saveUploadedPhotos(files, targetPrayerId, note);
 
       const items = files.map((f, idx) => ({
@@ -207,6 +216,7 @@ router.post(
     }
   }
 );
+
 
 
 
