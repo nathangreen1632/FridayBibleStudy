@@ -17,7 +17,13 @@ export default function PhotosPage(): React.ReactElement {
   const [lightboxNote, setLightboxNote] = useState<string>(''); // NEW
 
   useEffect(() => {
-    void load(1, pageSize);
+    let cancelled = false;
+
+    load(1, pageSize).catch(() => {
+      if (!cancelled) toast.error('Failed to load photos');
+    });
+
+    return () => { cancelled = true; };
   }, [load, pageSize]);
 
   function onPick() {
