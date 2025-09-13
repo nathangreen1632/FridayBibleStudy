@@ -3,7 +3,8 @@ import React, { useEffect, useRef, useState } from 'react';
 import AdminRosterTable from '../../components/admin/AdminRosterTable';
 import AdminRosterPager from '../../components/admin/AdminRosterPager';
 import { useAdminStore } from '../../stores/admin/useAdminStore';
-import type { RosterSortField } from '../../stores/admin/useAdminStore'; // ✅ import the union
+import type { RosterSortField } from '../../stores/admin/useAdminStore';
+import {toast} from "react-hot-toast"; // ✅ import the union
 
 export default function AdminRosterPage(): React.ReactElement {
   const { roster, loadRoster } = useAdminStore();
@@ -18,7 +19,14 @@ export default function AdminRosterPage(): React.ReactElement {
 
   // initial load
   useEffect(() => {
-    void loadRoster({ page: 1 });
+    (async () => {
+      try {
+        await loadRoster({ page: 1 });
+      } catch {
+        console.error('Failed to load roster');
+        toast.error('Failed to load roster');
+      }
+    })();
   }, [loadRoster]);
 
   // Small helper type for clarity (matches store signature)
@@ -40,14 +48,20 @@ export default function AdminRosterPage(): React.ReactElement {
     }
 
     debounceRef.current = window.setTimeout(() => {
-      // reset to page 1 whenever the query changes
-      const args: LoadArgs = { q: next, page: 1 };
-      if (sortBy) {
-        args.sortBy = sortBy;
-        args.sortDir = sortDir;
-      }
-      void loadRoster(args);
-    }, 300); // adjust to taste: 200–400ms
+      (async () => {
+        const args: LoadArgs = { q: next, page: 1 };
+        if (sortBy) {
+          args.sortBy = sortBy;
+          args.sortDir = sortDir;
+        }
+        try {
+          await loadRoster(args);
+        } catch {
+          console.error('Failed to load roster');
+          toast.error('Failed to load roster');
+        }
+      })();
+    }, 300);
 
     return () => {
       if (debounceRef.current) {
@@ -60,19 +74,30 @@ export default function AdminRosterPage(): React.ReactElement {
   // When sort changes, reload with current query
   useEffect(() => {
     if (!sortBy) return;
-    const args: LoadArgs = { q: qInput.trim(), page: 1, sortBy, sortDir };
-    void loadRoster(args);
+    (async () => {
+      try {
+        const args: LoadArgs = { q: qInput.trim(), page: 1, sortBy, sortDir };
+        await loadRoster(args);
+      } catch {
+        console.error('Failed to load roster');
+        toast.error('Failed to load roster');
+      }
+    })();
   }, [sortBy, sortDir, qInput, loadRoster]);
 
-  function clearSearch() {
+  async function clearSearch() {
     setQInput('');
-    // immediate fetch for snappier UX; reset to first page
     const args: LoadArgs = { q: '', page: 1 };
     if (sortBy) {
       args.sortBy = sortBy;
       args.sortDir = sortDir;
     }
-    void loadRoster(args);
+    try {
+      await loadRoster(args);
+    } catch {
+      console.error('Failed to load roster');
+      toast.error('Failed to load roster');
+    }
   }
 
   return (
@@ -107,7 +132,7 @@ export default function AdminRosterPage(): React.ReactElement {
         rows={roster}
         sortBy={sortBy}
         sortDir={sortDir}
-        onSort={(field: RosterSortField) => { // ✅ type callback param
+        onSort={(field: RosterSortField) => {
           if (sortBy === field) {
             setSortDir((prev) => (prev === 'asc' ? 'desc' : 'asc'));
           } else {
