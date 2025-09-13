@@ -1,3 +1,4 @@
+// Client/src/services/admin/roster.service.ts
 import { Op } from 'sequelize';
 import { User } from '../../models/index.js';
 
@@ -42,7 +43,8 @@ export async function listRoster(opts: {
       // (intentionally not adding emailPaused to sort keys yet)
     };
 
-    const sortCol = opts.sortBy && SORTABLE[opts.sortBy] ? SORTABLE[opts.sortBy] : 'name';
+    const sortCol =
+      opts.sortBy && Object.hasOwn(SORTABLE, opts.sortBy) ? SORTABLE[opts.sortBy] : 'name';
     const sortDir = opts.sortDir === 'desc' ? 'DESC' : 'ASC';
 
     const where: Record<string, unknown> = {};
@@ -111,7 +113,7 @@ type RosterUpdate = Partial<
     | 'addressState'
     | 'addressZip'
     | 'spouseName'
-    | 'emailPaused'   // NEW
+    | 'emailPaused' // NEW
   >
 >;
 
@@ -133,17 +135,28 @@ export async function updateRosterUser(
 
     const next: Record<string, unknown> = {};
 
-    if (Object.prototype.hasOwnProperty.call(payload, 'name') && payload.name !== undefined) next.name = norm(payload.name);
-    if (Object.prototype.hasOwnProperty.call(payload, 'email') && payload.email !== undefined) next.email = norm(payload.email);
-    if (Object.prototype.hasOwnProperty.call(payload, 'phone') && payload.phone !== undefined) next.phone = norm(payload.phone);
-    if (Object.prototype.hasOwnProperty.call(payload, 'addressStreet') && payload.addressStreet !== undefined) next.addressStreet = norm(payload.addressStreet);
-    if (Object.prototype.hasOwnProperty.call(payload, 'addressCity') && payload.addressCity !== undefined) next.addressCity = norm(payload.addressCity);
-    if (Object.prototype.hasOwnProperty.call(payload, 'addressState') && payload.addressState !== undefined) next.addressState = norm(payload.addressState);
-    if (Object.prototype.hasOwnProperty.call(payload, 'addressZip') && payload.addressZip !== undefined) next.addressZip = norm(payload.addressZip);
-    if (Object.prototype.hasOwnProperty.call(payload, 'spouseName') && payload.spouseName !== undefined) next.spouseName = norm(payload.spouseName);
+    // String-ish fields handled uniformly
+    const textKeys: Array<
+      'name' | 'email' | 'phone' | 'addressStreet' | 'addressCity' | 'addressState' | 'addressZip' | 'spouseName'
+    > = [
+      'name',
+      'email',
+      'phone',
+      'addressStreet',
+      'addressCity',
+      'addressState',
+      'addressZip',
+      'spouseName',
+    ];
+
+    for (const key of textKeys) {
+      if (Object.hasOwn(payload, key) && payload[key] !== undefined) {
+        (next as any)[key] = norm(payload[key] as unknown);
+      }
+    }
 
     // NEW: boolean handled directly, but only when present
-    if (Object.prototype.hasOwnProperty.call(payload, 'emailPaused') && typeof payload.emailPaused === 'boolean') {
+    if (Object.hasOwn(payload, 'emailPaused') && typeof payload.emailPaused === 'boolean') {
       next.emailPaused = payload.emailPaused;
     }
 
@@ -175,7 +188,6 @@ export async function updateRosterUser(
     return { ok: false, error: 'Update failed.' };
   }
 }
-
 
 /** DELETE user (admin). If FK constraints prevent it, return a friendly error. */
 export async function deleteRosterUser(userId: number): Promise<{ ok: boolean; error?: string }> {
