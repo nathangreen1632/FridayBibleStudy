@@ -10,7 +10,7 @@ import {
   deleteEvent,
   type EventRow,
 } from '../helpers/api/eventsApi';
-import EventModal from '../modals/EventModal'; // ✅ NEW
+import EventModal from '../modals/EventModal'; // ✅
 
 export default function EventsPage(): React.ReactElement {
   const { user } = useAuthStore();
@@ -42,7 +42,7 @@ export default function EventsPage(): React.ReactElement {
   const [eEndsAt, setEEndsAt] = useState('');
   const [eLocation, setELocation] = useState('');
 
-  // Disable Save unless something actually changed (uses `editing`)
+  // Disable Save unless something changed
   const hasChanges = useMemo(() => {
     if (!editing) return false;
     const sAt = editing.startsAt ? toLocalInputValue(editing.startsAt) : '';
@@ -54,7 +54,7 @@ export default function EventsPage(): React.ReactElement {
     return eEndsAt !== eAt;
   }, [editing, eTitle, eContent, eLocation, eStartsAt, eEndsAt]);
 
-  // ✅ Modal state
+  // Modal state
   const [modalOpen, setModalOpen] = useState(false);
   const [modalEvent, setModalEvent] = useState<EventRow | null>(null);
 
@@ -112,17 +112,13 @@ export default function EventsPage(): React.ReactElement {
     setEndsAt('');
     setLocation('');
 
-    // append without refetch
     if (res.data) {
       setItems((prev) => [res.data as EventRow, ...prev]);
     } else {
-      // fallback refetch
       const list = await fetchEvents();
       setItems(list);
     }
     toast.success('Event created');
-
-    // optionally close the form after save
     setIsCreateOpen(false);
   }
 
@@ -165,7 +161,6 @@ export default function EventsPage(): React.ReactElement {
     if (res.data) {
       setItems((prev) => prev.map((x) => (x.id === id ? (res.data as EventRow) : x)));
     } else {
-      // fallback refetch
       const list = await fetchEvents();
       setItems(list);
     }
@@ -335,79 +330,85 @@ export default function EventsPage(): React.ReactElement {
                 );
               }
 
-              // VIEW card (no body content here; body is shown in the modal)
+              // VIEW card: semantic container + full-width button content
               const showDate = Boolean(ev.startsAt);
               const startD = showDate ? new Date(ev.startsAt as string) : null;
               const endD = ev.endsAt ? new Date(ev.endsAt) : null;
 
               return (
-                <section
+                <article
                   key={ev.id}
-                  role="button"
-                  aria-haspopup="dialog"
-                  onClick={() => openModal(ev)} // ✅ open modal on card click
-                  className="cursor-pointer rounded-2xl border border-[var(--theme-border)] bg-[var(--theme-surface)] hover:text-[var(--theme-text)] p-4 shadow-sm transition-colors"
+                  className="rounded-2xl border border-[var(--theme-border)] bg-[var(--theme-surface)] p-4 shadow-sm"
                 >
-                  <div className="flex items-start justify-between gap-3">
-                    <div className="min-w-0">
-                      <div className="font-semibold text-xl text-[var(--theme-text)]">
-                        {ev.title || 'Untitled Event'}
+                  {/* The button spans the whole card content area */}
+                  <button
+                    type="button"
+                    aria-haspopup="dialog"
+                    aria-label={`View details for event: ${ev.title || 'Untitled Event'}`}
+                    onClick={() => openModal(ev)}
+                    className="group block w-full text-left"
+                  >
+                    <div className="flex items-start justify-between gap-3">
+                      <div className="min-w-0">
+                        <div className="font-semibold text-xl text-[var(--theme-text)] group-hover:underline underline-offset-4">
+                          {ev.title || 'Untitled Event'}
+                        </div>
+
+                        {showDate && startD && (
+                          <div className="text-sm opacity-80 text-[var(--theme-text)]">
+                            <span className="font-semibold">Date:</span>{' '}
+                            {startD.toLocaleDateString()}
+                            {endD && ` – ${endD.toLocaleDateString()}`}
+                          </div>
+                        )}
+
+                        {showDate && startD && (
+                          <div className="text-sm opacity-80 text-[var(--theme-text)]">
+                            <span className="font-semibold">Time:</span>{' '}
+                            {startD.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                            {endD &&
+                              ` – ${endD.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}`}
+                          </div>
+                        )}
+
+                        {ev.location && (
+                          <div className="text-sm opacity-80 text-[var(--theme-text)]">
+                            <span className="font-semibold">Location:</span> {ev.location}
+                          </div>
+                        )}
                       </div>
-
-                      {showDate && startD && (
-                        <div className="text-sm opacity-80 text-[var(--theme-text)]">
-                          <span className="font-semibold">Date:</span>{' '}
-                          {startD.toLocaleDateString()}
-                          {endD && ` – ${endD.toLocaleDateString()}`}
-                        </div>
-                      )}
-
-                      {showDate && startD && (
-                        <div className="text-sm opacity-80 text-[var(--theme-text)]">
-                          <span className="font-semibold">Time:</span>{' '}
-                          {startD.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
-                          {endD &&
-                            ` – ${endD.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}`}
-                        </div>
-                      )}
-
-                      {ev.location && (
-                        <div className="text-sm opacity-80 text-[var(--theme-text)]">
-                          <span className="font-semibold">Location:</span> {ev.location}
-                        </div>
-                      )}
                     </div>
 
-                    {isAdmin && (
-                      <div className="flex shrink-0 gap-2">
-                        <button
-                          type="button"
-                          onClick={(e) => { e.stopPropagation(); beginEdit(ev.id); }} // ✅ stop modal
-                          className="rounded-lg border border-[var(--theme-border)] px-3 py-1 text-sm bg-[var(--theme-button)] text-[var(--theme-text-white)] hover:bg-[var(--theme-button-hover)] hover:text-[var(--theme-textbox)]"
-                        >
-                          Edit
-                        </button>
-                        <button
-                          type="button"
-                          onClick={(e) => { e.stopPropagation(); removeRow(ev.id); }} // ✅ stop modal
-                          className="rounded-lg bg-[var(--theme-error)] px-3 py-1 text-sm text-white hover:opacity-90"
-                        >
-                          Delete
-                        </button>
-                      </div>
-                    )}
-                  </div>
+                    <div className="mt-3 text-sm opacity-70">Click to view details</div>
+                  </button>
 
-                  {/* Body content intentionally omitted on cards; shown in modal only */}
-                  <div className="mt-3 text-sm opacity-70">Click to view details</div>
-                </section>
+                  {/* Admin actions live OUTSIDE the content button (no nesting) */}
+                  {isAdmin && (
+                    <div className="mt-3 flex shrink-0 gap-2">
+                      <button
+                        type="button"
+                        onClick={() => beginEdit(ev.id)}
+                        className="rounded-lg border border-[var(--theme-border)] px-3 py-1 text-sm bg-[var(--theme-button)] text-[var(--theme-text-white)] hover:bg-[var(--theme-button-hover)] hover:text-[var(--theme-textbox)]"
+                      >
+                        Edit
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => removeRow(ev.id)}
+                        className="rounded-lg bg-[var(--theme-error)] px-3 py-1 text-sm text-white hover:opacity-90"
+                      >
+                        Delete
+                      </button>
+                    </div>
+                  )}
+                </article>
               );
             })}
           </div>
         )}
       </div>
 
-      {/* ✅ Single modal instance on the page, like your photo lightbox */}
+      {/* Single modal instance */}
       <EventModal open={modalOpen} event={modalEvent} onClose={closeModal} />
     </div>
   );
