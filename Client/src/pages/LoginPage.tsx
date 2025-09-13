@@ -1,12 +1,17 @@
 // Client/src/pages/auth/Login.auth.tsx
-import React, {useEffect, useMemo, useState} from 'react';
-import {Link, useLocation, useNavigate} from 'react-router-dom';
-import {toast} from 'react-hot-toast';
-import {useAuthStore} from '../stores/useAuthStore.ts';
-import {getRecaptchaToken, loadRecaptchaEnterprise} from '../lib/recaptcha.lib.ts';
-import {pressBtn} from "../../ui/press.ts";
+import React, { useEffect, useMemo, useState } from 'react';
+import { Link, useLocation, useNavigate } from 'react-router-dom';
+import { toast } from 'react-hot-toast';
+import { useAuthStore } from '../stores/useAuthStore.ts';
+import { getRecaptchaToken, loadRecaptchaEnterprise } from '../lib/recaptcha.lib.ts';
+import { pressBtn } from '../../ui/press.ts';
 
 const SITE_KEY = import.meta.env.VITE_RECAPTCHA_SITE_KEY as string | undefined;
+
+type FromState =
+  | { from?: string | { pathname?: string | null } | null }
+  | null
+  | undefined;
 
 // ↓ Helper to centralize landing decision
 function landingPathForRole(role?: string): string {
@@ -28,7 +33,10 @@ export default function Login(): React.ReactElement {
   useEffect(() => {
     let mounted = true;
     (async () => {
-      if (!SITE_KEY) { setReady(true); return; }
+      if (!SITE_KEY) {
+        setReady(true);
+        return;
+      }
       try {
         await loadRecaptchaEnterprise(SITE_KEY);
         if (mounted) setReady(true);
@@ -39,7 +47,9 @@ export default function Login(): React.ReactElement {
         }
       }
     })();
-    return () => { mounted = false; };
+    return () => {
+      mounted = false;
+    };
   }, []);
 
   const disabled = useMemo(() => loading || !email || !password, [loading, email, password]);
@@ -48,7 +58,8 @@ export default function Login(): React.ReactElement {
     if (!SITE_KEY) return null;
     try {
       const token = await getRecaptchaToken(SITE_KEY, 'login');
-      return token || null;
+      if (token.length > 0) return token;
+      return null;
     } catch {
       return null;
     }
@@ -64,6 +75,7 @@ export default function Login(): React.ReactElement {
     }
 
     const { success, message } = await login(email, password /* , recaptchaToken */);
+
     if (success) {
       toast.success('Welcome back!');
 
@@ -71,30 +83,46 @@ export default function Login(): React.ReactElement {
       const role = useAuthStore.getState().user?.role;
       const defaultDest = landingPathForRole(role);
 
-      // Safely read a possible redirect
-      const from = (loc.state as { from?: string } | null | undefined)?.from;
+      // ------- Safely read and normalize "from" to a plain string path -------
+      const state = loc.state as FromState;
+      const rawFrom = state?.from;
+      let fromPath = '/';
 
-      // Only honor "from" if it's not a neutral page and role is allowed
+      if (typeof rawFrom === 'string') {
+        fromPath = rawFrom;
+      } else if (rawFrom && typeof rawFrom === 'object' && typeof rawFrom.pathname === 'string' && rawFrom.pathname) {
+        fromPath = rawFrom.pathname;
+      }
+
+      // Guard against odd values that aren't absolute paths
+      if (fromPath.length === 0 || !fromPath.startsWith('/')) {
+        fromPath = '/';
+      }
+
+      // Neutral pages we never redirect back to
       const isNeutral =
-        !from ||
-        from === '/' ||
-        from.startsWith('/login') ||
-        from.startsWith('/register');
+        fromPath === '/' ||
+        fromPath.startsWith('/login') ||
+        fromPath.startsWith('/register');
 
-      const isAdminOnly = !!from && from.startsWith('/admin');
+      // If path is admin-only, only honor it for admins
+      const isAdminOnly = fromPath.startsWith('/admin');
       const roleAllowsFrom = role === 'admin' || !isAdminOnly;
 
-      // ✅ Always a string
-      const target: string =
-        !isNeutral && roleAllowsFrom ? from : defaultDest;
+      // Decide final navigation target (no nested ternaries)
+      let target = defaultDest;
+      if (!isNeutral && roleAllowsFrom) {
+        target = fromPath;
+      }
 
       nav(target, { replace: true });
-    } else {
-      const msg = message ?? 'Login failed';
-      setErr(msg);
-      toast.error(msg);
+      return;
     }
 
+    // error path
+    const msg = message ?? 'Login failed';
+    setErr(msg);
+    toast.error(msg);
   }
 
   return (
@@ -162,7 +190,9 @@ export default function Login(): React.ReactElement {
         <button
           type="submit"
           disabled={disabled}
-          className={pressBtn("w-full rounded-xl bg-[var(--theme-button)] px-4 py-2.5 sm:py-3 text-[var(--theme-text-white)] text-sm sm:text-base font-semibold) hover:bg-[var(--theme-button-hover)] hover:text-[var(--theme-textbox)] disabled:opacity-60 disabled:cursor-not-allowed")}
+          className={pressBtn(
+            'w-full rounded-xl bg-[var(--theme-button)] px-4 py-2.5 sm:py-3 text-[var(--theme-text-white)] text-sm sm:text-base font-semibold hover:bg-[var(--theme-button-hover)] hover:text-[var(--theme-textbox)] disabled:opacity-60 disabled:cursor-not-allowed'
+          )}
         >
           {loading ? '…' : 'Sign in'}
         </button>
@@ -173,13 +203,12 @@ export default function Login(): React.ReactElement {
               Forgot password?
             </Link>
           </p>
-          <p className="">
+          <p>
             <Link to="/register" className="hover:underline">
               Create Account
             </Link>
           </p>
         </div>
-
       </form>
     </div>
   );

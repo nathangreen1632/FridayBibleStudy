@@ -33,6 +33,7 @@
     --theme-textbox: var(--c-f);
     --theme-placeholder: var(--c-e);
     --theme-pencil: var(--c-e);
+    --theme-superscript: var(--c-e);
 
     /* buttons */
     --theme-button: var(--c-e);
@@ -103,6 +104,7 @@
     --theme-textbox: var(--c-f);
     --theme-placeholder: var(--c-e);
     --theme-pencil: var(--c-f);
+    --theme-superscript: var(--c-f);
 
     /* buttons */
     --theme-button: var(--c-a);

@@ -3,6 +3,8 @@ import { createRoot } from 'react-dom/client';
 import { BrowserRouter } from 'react-router-dom';
 import App from './App';
 import './index.css';
+import './styles/scripture-styles.css';
+import './styles/scripture-overrides.css';
 import { loadRecaptchaEnterprise } from './lib/recaptcha.lib';
 
 const SITE_KEY = import.meta.env.VITE_RECAPTCHA_SITE_KEY as string | undefined;

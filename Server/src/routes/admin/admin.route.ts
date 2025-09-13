@@ -14,7 +14,7 @@ import {
   getPrayerDetail,
 } from '../../controllers/admin/admin.controller.js';
 import { previewDigest, sendAutoDigest, sendManualDigest } from '../../controllers/admin/digest.controller.js';
-
+import { patchAdminEvent, deleteAdminEvent } from '../../controllers/events.controller.js';
 
 // NEW: bring in deletePrayer from your prayer.controller
 import { deletePrayer } from '../../controllers/prayer.controller.js';
@@ -39,11 +39,12 @@ router.get('/roster', requireAuth, requireAdmin, getAdminRoster);
 // NEW: update prayer status (admin only)
 router.patch('/prayers/:prayerId/status', requireAdmin, recaptchaMiddleware, setPrayerStatus);
 router.patch('/roster/:id', requireAuth, requireAdmin, patchAdminRosterUser);
-
+router.patch('/events/:id', requireAuth, requireAdmin, patchAdminEvent);
 
 // NEW: hard delete prayer (admin only)
 router.delete('/prayers/:id', requireAdmin, recaptchaMiddleware, deletePrayer);
 router.delete('/roster/:id', requireAuth, requireAdmin, deleteAdminRosterUser);
+router.delete('/events/:id', requireAuth, requireAdmin, deleteAdminEvent);
 
 export default router;
 

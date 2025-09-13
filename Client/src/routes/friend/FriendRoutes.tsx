@@ -1,13 +1,13 @@
 import type { RouteObject } from 'react-router-dom';
 import { FriendGuard } from '../../common/friend/FriendAuthGuard';
 import FriendLayout from '../../pages/friend/FriendLayout';
-
-// pages
 import PrayersPortalPage from '../../pages/PortalPage';
 import PraisesBoardPage from '../../pages/board/PraisesBoardPage';
 import ArchiveBoardPage from '../../pages/board/ArchiveBoardPage';
 import ProfilePage from '../../pages/AccountPage';
-import PhotosPage from '../../pages/PhotosPage'; // ✅ import
+import PhotosPage from '../../pages/PhotosPage';
+import BiblePage from "../../pages/BiblePage.tsx";
+import EventsPage from '../../pages/EventsPage.tsx';
 
 const friendRoutes: RouteObject[] = [
   {
@@ -23,7 +23,9 @@ const friendRoutes: RouteObject[] = [
       { path: 'board/praises', element: <PraisesBoardPage /> },
       { path: 'board/archive', element: <ArchiveBoardPage /> },
       { path: 'profile', element: <ProfilePage /> },
-      { path: 'photos', element: <PhotosPage /> }, // ✅ new
+      { path: 'photos', element: <PhotosPage /> },
+      { path: 'bible', element: <BiblePage /> },
+      { path: 'events', element: <EventsPage /> },
     ],
   },
 ];

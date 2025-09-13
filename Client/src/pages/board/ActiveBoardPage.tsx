@@ -11,6 +11,7 @@ import {
   usePrayerCardRenderer,
   useOnMove,
 } from '../../helpers/boardPage.helper';
+import VerseOfDayPanel from '../../components/VerseOfDayPanel';
 
 // Only the two board columns are valid for in-column moves
 type BoardColumnKey = 'active' | 'archived';
@@ -45,12 +46,20 @@ export default function ActiveBoard(): React.ReactElement {
 
   return (
     <main
-      className="min-h-[70vh] px-3 sm:px-4 md:px-0 space-y-4 overflow-x-hidden"
+      className={[
+        // match PraisesBoardPage container:
+        'min-h-[70vh] px-3 sm:px-4 md:px-0 overflow-x-hidden',
+        // add left padding at ultra-wide so the fixed left rail never overlaps content
+        'min-[1440px]:pl-[17rem]',
+      ].join(' ')}
       data-active-count={activeIds.length}
       data-loading={loading || undefined}
     >
-      {loading && <div className="text-sm opacity-70">Loading…</div>}
-      {error && <div className="text-sm text-[var(--theme-error)]">{error}</div>}
+      {/* Left rail (fixed at ≥1440px); does not affect layout width */}
+      <VerseOfDayPanel />
+
+      {loading && <div className="text-sm opacity-70 mb-3">Loading…</div>}
+      {error && <div className="text-sm text-[var(--theme-error)] mb-3">{error}</div>}
 
       <SingleBoard
         title="Prayers"
@@ -64,9 +73,7 @@ export default function ActiveBoard(): React.ReactElement {
             // ignore or log
           }
         }}
-
         onDockDrop={async (dock, id) => {
-          // Stay on the same page (no navigation)
           try {
             if (dock === 'dock-archive') {
               await onMove(id, 'archived', 0);
@@ -79,7 +86,7 @@ export default function ActiveBoard(): React.ReactElement {
           }
         }}
       />
-      {/* Dock removed here; it's rendered inside SingleBoard's DndContext */}
+      {/* Dock remains rendered inside SingleBoard's DndContext (same as Praises) */}
     </main>
   );
 }

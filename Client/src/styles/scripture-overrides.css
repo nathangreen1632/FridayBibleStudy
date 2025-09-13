@@ -1,0 +1,33 @@
+/* Override base text color */
+.scripture-styles {
+    color: var(--theme-text); /* matches your index.css palette */
+}
+
+/* Optional: fine-tune special cases */
+.scripture-styles .wj {
+    color: var(--theme-warning); /* words of Jesus → your warm sand/tan */
+}
+
+.scripture-styles .nd {
+    color: var(--theme-accent); /* small-caps LORD → your accent */
+}
+
+/* Client/src/styles/scripture-overrides.css */
+
+/* Verse number superscripts */
+.scripture-styles .v,
+.scripture-styles .vp,
+.scripture-styles sup[class^="v"] {
+    color: var(--theme-superscript);  /* pick your token */
+    font-size: 0.75em;               /* optional */
+    vertical-align: super;           /* optional */
+    opacity: 0.85;                   /* optional */
+}
+
+/* (Optional) footnote markers */
+.scripture-styles .fv,
+.scripture-styles .notelink,
+.scripture-styles .notelink sup {
+    color: var(--theme-info);
+}
+

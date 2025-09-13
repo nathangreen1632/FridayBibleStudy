@@ -35,6 +35,9 @@ export interface Env {
   MAX_FILE_MB: number;
   PUBLIC_URL: string;
 
+  BIBLE_API_KEY: string;
+  BIBLE_DEFAULT_BIBLE_ID: string;
+
   /** Comma-separated list of emails to auto-elevate to admin on login */
   ADMIN_EMAILS: string;
 }
@@ -68,6 +71,9 @@ export const env: Env = {
   UPLOAD_DIR: opt('UPLOAD_DIR', './uploads'),
   MAX_FILE_MB: int('MAX_FILE_MB', 10),
   PUBLIC_URL: opt('PUBLIC_URL', 'http://localhost:3001'),
+
+  BIBLE_API_KEY: opt('BIBLE_API_KEY', ''),
+  BIBLE_DEFAULT_BIBLE_ID: opt('BIBLE_DEFAULT_BIBLE_ID', ''),
 
   // NEW: list of bootstrap admin emails
   ADMIN_EMAILS: process.env.ADMIN_EMAILS ?? '',

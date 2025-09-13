@@ -25,6 +25,7 @@ type User = {
   addressState?: string | null;
   addressZip?: string | null;
   spouseName?: string | null;
+  preferredBibleId?: string | null;
 };
 
 type RegisterPayload = {

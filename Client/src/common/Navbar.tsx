@@ -15,10 +15,12 @@ import {
   Sparkles,
   ShieldCheck,
   Users,
-  Image as ImageIcon, // ✅ NEW
+  Image as ImageIcon, // ✅
+  BookOpen,            // ✅ NEW (Bible)
+  CalendarDays,        // ✅ NEW (Events)
 } from 'lucide-react';
 import { useScrollLock } from '../hooks/useScrollLock.ts';
-import {pressBtn} from "../../ui/press.ts";
+import { pressBtn } from '../../ui/press.ts';
 
 function linkClass(isActive: boolean): string {
   const base =
@@ -143,6 +145,12 @@ export default function Navbar(): React.ReactElement {
                     Photos
                   </NavLink>
 
+                  {/* ✅ NEW: Bible & Events visible to admins */}
+                  <NavLink to="/admin/events" className={({ isActive }) => linkClass(isActive)}>
+                    <CalendarDays className="w-4 h-4" />
+                    Events
+                  </NavLink>
+
                   <button
                     onClick={onLogout}
                     className="ml-2 flex items-center gap-1 px-3 py-2 rounded-lg text-sm font-medium bg-[var(--theme-surface)] border border-[var(--theme-border)] hover:bg-[var(--theme-card-hover)]"
@@ -157,6 +165,11 @@ export default function Navbar(): React.ReactElement {
               {/* Classic: original links */}
               {user.role !== 'admin' && (
                 <>
+                  <NavLink to="/bible" className={({ isActive }) => linkClass(isActive)}>
+                    <BookOpen className="w-4 h-4" />
+                    Bible
+                  </NavLink>
+
                   <NavLink to="/portal" className={({ isActive }) => linkClass(isActive)}>
                     <HelpingHand className="w-4 h-4" />
                     Prayers
@@ -166,6 +179,7 @@ export default function Navbar(): React.ReactElement {
                     <Sparkles className="w-4 h-4" />
                     Praises
                   </NavLink>
+
                   <NavLink to="/board/archive" className={({ isActive }) => linkClass(isActive)}>
                     <Archive className="w-4 h-4" />
                     Archived
@@ -175,6 +189,13 @@ export default function Navbar(): React.ReactElement {
                   <NavLink to="/photos" className={({ isActive }) => linkClass(isActive)}>
                     <ImageIcon className="w-4 h-4" />
                     Photos
+                  </NavLink>
+
+                  {/* ✅ NEW: Bible & Events visible to members */}
+
+                  <NavLink to="/events" className={({ isActive }) => linkClass(isActive)}>
+                    <CalendarDays className="w-4 h-4" />
+                    Events
                   </NavLink>
 
                   <NavLink to="/profile" className={({ isActive }) => linkClass(isActive)}>
@@ -264,6 +285,17 @@ export default function Navbar(): React.ReactElement {
                         <ImageIcon className="w-4 h-4" />
                         Photos
                       </NavLink>
+
+                      {/* ✅ NEW: Bible & Events (mobile, admin) */}
+                      <NavLink to="/bible" className={({ isActive }) => linkClass(isActive)} onClick={closeMenu}>
+                        <BookOpen className="w-4 h-4" />
+                        Bible
+                      </NavLink>
+                      <NavLink to="/events" className={({ isActive }) => linkClass(isActive)} onClick={closeMenu}>
+                        <CalendarDays className="w-4 h-4" />
+                        Events
+                      </NavLink>
+
                       <button
                         onClick={() => { closeMenu(); void onLogout(); }}
                         className="flex items-center gap-1 px-3 py-2 rounded-lg text-sm font-medium bg-[var(--theme-surface)] border border-[var(--theme-border)] hover:bg-[var(--theme-card-hover)]"
@@ -287,6 +319,17 @@ export default function Navbar(): React.ReactElement {
                         <Sparkles className="w-4 h-4" />
                         Praises
                       </NavLink>
+
+                      {/* ✅ NEW: Bible & Events (mobile, classic) */}
+                      <NavLink to="/bible" className={({ isActive }) => linkClass(isActive)} onClick={closeMenu}>
+                        <BookOpen className="w-4 h-4" />
+                        Bible
+                      </NavLink>
+                      <NavLink to="/events" className={({ isActive }) => linkClass(isActive)} onClick={closeMenu}>
+                        <CalendarDays className="w-4 h-4" />
+                        Events
+                      </NavLink>
+
                       <NavLink to="/board/archive" className={({ isActive }) => linkClass(isActive)} onClick={closeMenu}>
                         <Archive className="w-4 h-4" />
                         Archived

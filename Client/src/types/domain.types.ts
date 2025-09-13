@@ -11,6 +11,7 @@ export interface User {
   emailVerified: boolean;
   createdAt: string;
   updatedAt: string;
+  preferredBibleId?: string | null;
 }
 
 export interface Attachment {
