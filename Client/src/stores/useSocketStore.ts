@@ -10,7 +10,7 @@ import type { Comment } from '../types/comment.types';
 // Keep Praises in sync with socket events
 import { usePraisesStore, praisesOnSocketUpsert, praisesOnSocketRemove } from './usePraisesStore.ts';
 
-// ✅ NEW: keep "My Prayers" (profile column) in sync too
+// ✅ Keep "My Prayers" (profile column) in sync too
 import { myPrayersOnSocketUpsert, myPrayersOnSocketRemove } from './useMyPrayersStore.ts';
 
 // ✅ Typed event constants + value type
@@ -19,11 +19,45 @@ import type { EventValue } from '../types/socket.types';
 
 type PrayerDTO = Prayer;
 
+// ---- PRAYER payloads ----
 type PrayerCreatedPayload = { prayer: PrayerDTO };
 type PrayerUpdatedPayload = { prayer: PrayerDTO };
 type PrayerMovedPayload   = { prayer: PrayerDTO; from: Status; to: Status };
 type PrayerDeletedPayload = { id: number };
+
+// Legacy—server may not emit this anymore; safe to keep as a no-op listener.
 type UpdateCreatedPayload = { id: number; prayerId: number };
+
+// ---- COMMENT (updates) payloads — must match the server exactly ----
+type CommentCreatedPayload = {
+  prayerId: number;
+  comment: Comment;
+  newCount: number;
+  lastCommentAt: string | null;
+};
+
+type CommentUpdatedPayload = {
+  prayerId: number;
+  comment: Comment;
+};
+
+type CommentDeletedPayload = {
+  prayerId: number;
+  commentId: number;
+  newCount: number;
+  lastCommentAt: string | null;
+};
+
+type CommentCountPayload = {
+  prayerId: number;
+  newCount: number;
+  lastCommentAt: string | null;
+};
+
+type CommentsClosedPayload = {
+  prayerId: number;
+  isCommentsClosed: boolean;
+};
 
 type Patch =
   | { type: 'upsert'; p: Prayer }
@@ -100,7 +134,6 @@ export const useSocketStore = create<SocketState>((set, get) => {
   // 🔒 Typed wrapper: only allows valid EventValue names
   const onE = <P,>(event: EventValue, handler: (payload: P) => void) => {
     try {
-      // cast only the handler, event is strictly typed by EventValue
       s?.on(event, handler as unknown as (...args: unknown[]) => void);
     } catch {
       // never crash wiring
@@ -138,47 +171,40 @@ export const useSocketStore = create<SocketState>((set, get) => {
       });
 
       onE<PrayerDeletedPayload>(Events.PrayerDeleted, (d) => {
-        // ✅ NEW: remove from the board immediately
+        // remove from the board immediately
         try { useBoardStore.getState().removePrayer(d.id); } catch {}
-
-        // existing behaviors (keep them)
+        // keep mirrored lists in sync
         try { praisesOnSocketRemove(d.id); } catch {}
         try { myPrayersOnSocketRemove(d.id); } catch {}
       });
 
-      // When an update is added to a prayer, bump it visually right away.
-      // Server also emits PrayerUpdated which will sync position soon after.
+      // Legacy "update created" → bump card visually; server also emits PrayerUpdated which will sync
       onE<UpdateCreatedPayload>(Events.UpdateCreated, (p) => {
         try { useBoardStore.getState().bumpToTop(p.prayerId); } catch {}
         try { usePraisesStore.getState().bumpToTop(p.prayerId); } catch {}
-        // Profile column will re-sort on the subsequent PrayerUpdated event.
       });
 
-      // ---- COMMENT events ----
-      onE<{ prayerId: number; comment: Comment; newCount: number; lastCommentAt: string | null }>(
-        Events.CommentCreated,
-        (p) => { try { useCommentsStore.getState().onCreated(p); } catch {} }
-      );
+      // ---- COMMENT (updates) events ----
+      onE<CommentCreatedPayload>(Events.CommentCreated, (p) => {
+        try { useCommentsStore.getState().onCreated(p); } catch {}
+      });
 
-      onE<{ prayerId: number; comment: Comment }>(
-        Events.CommentUpdated,
-        (p) => { try { useCommentsStore.getState().onUpdated(p); } catch {} }
-      );
+      onE<CommentUpdatedPayload>(Events.CommentUpdated, (p) => {
+        try { useCommentsStore.getState().onUpdated(p); } catch {}
+      });
 
-      onE<{ prayerId: number; commentId: number; newCount: number; lastCommentAt: string | null }>(
-        Events.CommentDeleted,
-        (p) => { try { useCommentsStore.getState().onDeleted(p); } catch {} }
-      );
+      onE<CommentDeletedPayload>(Events.CommentDeleted, (p) => {
+        try { useCommentsStore.getState().onDeleted(p); } catch {}
+      });
 
-      onE<{ prayerId: number; isCommentsClosed: boolean }>(
-        Events.CommentsClosed,
-        (p) => { try { useCommentsStore.getState().onClosedChanged(p); } catch {} }
-      );
+      onE<CommentsClosedPayload>(Events.CommentsClosed, (p) => {
+        try { useCommentsStore.getState().onClosedChanged(p); } catch {}
+      });
 
-      onE<{ prayerId: number; newCount: number; lastCommentAt: string | null }>(
-        Events.CommentCount,
-        (p) => { try { useCommentsStore.getState().onCountChanged(p); } catch {} }
-      );
+      onE<CommentCountPayload>(Events.CommentCount, (p) => {
+        // This updates newCount + lastCommentAt → drives the red bell state
+        try { useCommentsStore.getState().onCountChanged(p); } catch {}
+      });
 
     } catch {
       // Listener wiring should never crash the app
