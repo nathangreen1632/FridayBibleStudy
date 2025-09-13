@@ -14,6 +14,7 @@ import {
 import type { AdminListResponse, AdminPrayerRow } from '../../types/admin.types';
 import type { Prayer } from '../../types/domain.types';
 import type { Comment } from '../../types/comment.types';
+import {toast} from "react-hot-toast";
 
 /** Roster row shape (admin roster table) */
 type RosterRow = {
@@ -128,85 +129,118 @@ function safeIso(input: unknown): string | null {
   }
 }
 
-/** Accepts common server shapes and normalizes to { prayer, comments } */
-function normalizeThreadPayload(raw: unknown): { prayer?: Prayer; comments: Comment[] } {
-  const out: { prayer?: Prayer; comments: Comment[] } = { prayer: undefined, comments: [] };
-  if (!raw || typeof raw !== 'object') return out;
+// --- helpers used by normalizeThreadPayload ---
+function asRecord(v: unknown): Record<string, unknown> | null {
+  return v && typeof v === 'object' ? (v as Record<string, unknown>) : null;
+}
 
-  const top: Record<string, unknown> = raw as Record<string, unknown>;
-  const data = (top.data as Record<string, unknown>) ?? top;
+function pickPrayerFrom(obj: Record<string, unknown> | null): Prayer | undefined {
+  if (!obj) return undefined;
+  const directKeys = ['prayer', 'root', 'item'] as const;
 
-  const maybePrayer =
-    (data.prayer as Prayer | undefined) ||
-    (data.root as Prayer | undefined) ||
-    (data.item as Prayer | undefined) ||
-    (data.thread && typeof data.thread === 'object'
-      ? ((data.thread as Record<string, unknown>).prayer as Prayer | undefined) ||
-      ((data.thread as Record<string, unknown>).root as Prayer | undefined)
-      : undefined);
-
-  if (maybePrayer && typeof maybePrayer === 'object') {
-    out.prayer = maybePrayer;
+  // direct keys on the object
+  for (const k of directKeys) {
+    const cand = obj[k] as Prayer | undefined;
+    if (cand && typeof cand === 'object') return cand;
   }
 
-  const candidates: unknown[] = [];
-  if (Array.isArray((data as any).comments)) candidates.push(...((data as any).comments as unknown[]));
-  if (Array.isArray((data as any).replies)) candidates.push(...((data as any).replies as unknown[]));
-  if (Array.isArray((data as any).items)) candidates.push(...((data as any).items as unknown[]));
-  if (Array.isArray((data as any).rows)) candidates.push(...((data as any).rows as unknown[]));
-
-  const thread = (data as any).thread;
-  if (thread && typeof thread === 'object') {
-    if (Array.isArray(thread.comments)) candidates.push(...(thread.comments as unknown[]));
-    if (Array.isArray(thread.replies)) candidates.push(...(thread.replies as unknown[]));
-    if (Array.isArray(thread.items)) candidates.push(...(thread.items as unknown[]));
-    if (Array.isArray(thread.rows)) candidates.push(...(thread.rows as unknown[]));
-
-    const threadComments = thread.comments;
-    if (threadComments && typeof threadComments === 'object') {
-      if (Array.isArray(threadComments.items)) candidates.push(...(threadComments.items as unknown[]));
-      if (Array.isArray(threadComments.rows)) candidates.push(...(threadComments.rows as unknown[]));
+  // nested thread.{prayer|root}
+  const thread = asRecord(obj.thread);
+  if (thread) {
+    for (const k of ['prayer', 'root'] as const) {
+      const cand = thread[k] as Prayer | undefined;
+      if (cand && typeof cand === 'object') return cand;
     }
   }
+  return undefined;
+}
 
-  const mapped: Comment[] = [];
+// helpers (keep near the other helpers like asRecord)
+function pushArraysFrom(
+  source: Record<string, unknown> | null,
+  keys: ReadonlyArray<'comments' | 'replies' | 'items' | 'rows'>,
+  out: unknown[],
+): void {
+  if (!source) return;
+  for (const k of keys) {
+    const v = (source as any)[k];
+    if (Array.isArray(v)) out.push(...v);
+  }
+}
+
+function collectCommentCandidates(obj: Record<string, unknown> | null): unknown[] {
+  if (!obj) return [];
+
+  const out: unknown[] = [];
+  // top-level
+  pushArraysFrom(obj, ['comments', 'replies', 'items', 'rows'], out);
+
+  // thread level
+  const thread = asRecord((obj as any).thread);
+  pushArraysFrom(thread, ['comments', 'replies', 'items', 'rows'], out);
+
+  // thread.comments level
+  const threadComments = asRecord(thread?.comments);
+  pushArraysFrom(threadComments, ['items', 'rows'], out);
+
+  return out;
+}
+
+// ----------------------------------------------
+
+/** Accepts common server shapes and normalizes to { prayer, comments } */
+function normalizeThreadPayload(raw: unknown): { prayer?: Prayer; comments: Comment[] } {
+  const empty: { prayer?: Prayer; comments: Comment[] } = { prayer: undefined, comments: [] };
+  const top = asRecord(raw);
+  if (!top) return empty;
+
+  // Some endpoints wrap the data; others return it top-level.
+  const data = asRecord(top.data) ?? top;
+
+  // 1) Prayer (if present)
+  const prayer = pickPrayerFrom(data);
+
+  // 2) Comment candidates (flatten known containers)
+  const candidates = collectCommentCandidates(data);
+
+  // 3) Normalize each comment
+  const comments: Comment[] = [];
   for (const anyC of candidates) {
-    if (!anyC || typeof anyC !== 'object') continue;
-    const c = anyC as Record<string, unknown>;
+    const rec = asRecord(anyC);
+    if (!rec) continue;
 
-    const idVal = c.id;
+    // id
+    const idVal = rec.id;
     const id = typeof idVal === 'number' ? idVal : Number(idVal);
     if (!Number.isFinite(id)) continue;
 
-    const createdAtRaw =
-      (c.createdAt as string | undefined) ??
-      (c.created_at as string | undefined) ??
-      (c.updatedAt as string | undefined) ??
-      (c.updated_at as string | undefined);
+    // createdAt (prefer created*, then updated*)
+    const createdRaw =
+      (rec.createdAt as string | undefined) ??
+      (rec.created_at as string | undefined) ??
+      (rec.updatedAt as string | undefined) ??
+      (rec.updated_at as string | undefined);
 
-    let createdAt: string | null = null;
-    if (createdAtRaw) {
-      const d = new Date(createdAtRaw);
-      if (!Number.isNaN(d.getTime())) createdAt = d.toISOString();
-    }
+    const createdAt = safeIso(createdRaw) ?? new Date().toISOString();
 
-    const contentRaw =
-      (c.content as string | undefined) ??
-      (c.message as string | undefined) ??
-      (c.body as string | undefined) ??
+    // content/message/body
+    const content =
+      (rec.content as string | undefined) ??
+      (rec.message as string | undefined) ??
+      (rec.body as string | undefined) ??
       '';
 
-    mapped.push({
+    comments.push({
       id,
-      content: String(contentRaw ?? ''),
-      createdAt: createdAt ?? new Date().toISOString(),
-      ...(c as object),
+      content: String(content ?? ''),
+      createdAt,
+      ...(rec as object),
     } as Comment);
   }
 
-  out.comments = mapped;
-  return out;
+  return { prayer, comments };
 }
+
 
 function seedRowsFromList(items: AdminPrayerRow[]): Record<number, AdminPrayerRow> {
   const seeded: Record<number, AdminPrayerRow> = {};
@@ -280,6 +314,76 @@ function mergeDetailRow(
   };
 }
 
+// --- helpers (place above export const useAdminStore) ---
+async function getThreadPayload(
+  prayerId: number
+): Promise<{ ok: boolean; message?: string; prayer?: Prayer; comments: Comment[] }> {
+  try {
+    const res = await fetchPrayerThread(prayerId);
+    if (!res.ok) {
+      return { ok: false, message: 'Failed to load thread.', comments: [] };
+    }
+
+    const parsed = await res.json();
+    const { prayer, comments } = normalizeThreadPayload(parsed);
+    return { ok: true, prayer, comments };
+  } catch {
+    // network/parse failure
+    return { ok: false, message: 'Failed to load thread.', comments: [] };
+  }
+}
+
+
+async function hydratePrayerIfNeeded(
+  prayerId: number,
+  current?: Prayer
+): Promise<Prayer | undefined> {
+  if (current?.content) return current;
+
+  try {
+    const pRes = await fetchPrayerDetail(prayerId);
+    if (!pRes.ok) return current;
+
+    const top: any = await pRes.json();
+    const data = top?.data ?? top;
+
+    let possible: unknown = data;
+    if (data && typeof data === 'object') {
+      const obj = data as Record<string, unknown>;
+      possible = obj.prayer ?? obj.item ?? data;
+    }
+
+    return possible && typeof possible === 'object'
+      ? ({ ...(current as object), ...(possible) } as Prayer)
+      : current;
+  } catch {
+    console.warn('Unable to load prayer detail for thread.');
+    toast.error('Unable to load prayer detail for thread.');
+    return current;
+  }
+}
+
+function applyThreadToState(
+  prayerId: number,
+  prayer: Prayer | undefined,
+  comments: Comment[],
+  set: any,
+  get: any
+): void {
+  set((s: State) => ({
+    detailPrayers: { ...s.detailPrayers, [prayerId]: prayer },
+    detailComments: { ...s.detailComments, [prayerId]: Array.isArray(comments) ? comments : [] },
+  }));
+
+  const baseRow = get().detailRows[prayerId] ?? get().list.find((r: AdminPrayerRow) => r.id === prayerId);
+  const merged = mergeDetailRow(baseRow, prayer, comments);
+  if (merged) {
+    set((s: State) => ({ detailRows: { ...s.detailRows, [prayerId]: merged } }));
+  }
+}
+// --- end helpers ---
+
+
 export const useAdminStore = create<State>((set, get) => ({
   list: [],
   total: 0,
@@ -346,55 +450,20 @@ export const useAdminStore = create<State>((set, get) => ({
     if (!prayerId || Number.isNaN(prayerId)) {
       return { ok: false, message: 'Invalid prayer id.' };
     }
+
     try {
-      const res = await fetchPrayerThread(prayerId);
-      if (!res.ok) {
-        return { ok: false, message: 'Failed to load thread.' };
-      }
-      const parsed = await res.json();
-      const { prayer: threadPrayer, comments } = normalizeThreadPayload(parsed);
+      const result = await getThreadPayload(prayerId);
+      if (!result.ok) return { ok: false, message: result.message };
 
-      let prayer: Prayer | undefined = threadPrayer;
-
-      if (!prayer?.content) {
-        try {
-          const pRes = await fetchPrayerDetail(prayerId);
-          if (pRes.ok) {
-            const pTop: any = await pRes.json();
-            const pData = pTop?.data ?? pTop;
-
-            let possible: unknown = undefined;
-            if (pData && typeof pData === 'object') {
-              const obj = pData as Record<string, unknown>;
-              possible = obj.prayer ?? obj.item ?? pData;
-            }
-
-            if (possible && typeof possible === 'object') {
-              prayer = { ...(prayer as object), ...(possible) } as Prayer;
-            }
-          }
-        } catch {
-          // best-effort
-        }
-      }
-
-      set((s) => ({
-        detailPrayers: { ...s.detailPrayers, [prayerId]: prayer },
-        detailComments: { ...s.detailComments, [prayerId]: Array.isArray(comments) ? comments : [] },
-      }));
-
-      const baseRow =
-        get().detailRows[prayerId] ?? get().list.find((r) => r.id === prayerId);
-      const merged = mergeDetailRow(baseRow, prayer, comments);
-      if (merged) {
-        set((s) => ({ detailRows: { ...s.detailRows, [prayerId]: merged } }));
-      }
+      const hydrated = await hydratePrayerIfNeeded(prayerId, result.prayer);
+      applyThreadToState(prayerId, hydrated, result.comments ?? [], set, get);
 
       return { ok: true };
     } catch {
       return { ok: false, message: 'Unable to load prayer thread.' };
     }
   },
+
 
   addComment: async (prayerId, content) => {
     if (!prayerId || !content?.trim()) {
