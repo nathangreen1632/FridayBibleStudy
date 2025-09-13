@@ -1,5 +1,5 @@
 // Client/src/pages/BiblePage.tsx
-import React, { useEffect, useMemo, useRef, useState } from 'react';
+import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import toast from 'react-hot-toast';
 import {
   fetchBibleList,
@@ -10,7 +10,6 @@ import {
   fetchChapters,
 } from '../helpers/api/bibleApi';
 import { ChevronDown } from 'lucide-react';
-
 
 type BibleMeta = { id: string; name: string; abbreviationLocal?: string; language?: { name?: string } };
 type PassageItem = { content?: string; reference?: string };
@@ -118,61 +117,111 @@ export default function BiblePage(): React.ReactElement {
     setNextId(undefined);
   }, [bibleId]);
 
+  /* ================== useCallback: loadChapter ================== */
+  const loadChapter = useCallback(
+    async (targetId?: string) => {
+      if (!targetId || !bibleId) return;
+      setLoading(true);
+      try {
+        const res = await fetchChapterById(targetId, bibleId);
+        const body = await res.json();
+        const d = body?.data as { content?: string; reference?: string; chapterId?: string; prevId?: string; nextId?: string };
+        const c = d?.content ?? '';
+        if (!c) { toast.error('No content for that chapter'); return; }
+        setHtml(c);
+        setRefText(d?.reference ?? '');
+        setChapterId(d?.chapterId ?? targetId);
+        setPrevId(d?.prevId);
+        setNextId(d?.nextId);
+        if (reference) setReference('');
+      } catch { toast.error('Failed to load chapter'); }
+      finally { setLoading(false); }
+    },
+    [bibleId, reference]
+  );
+
+  /* ================== Helpers that depend on loadChapter ================== */
+  const applyChapterPayload = useCallback(
+    (
+      item: { content?: string; reference?: string; chapterId?: string; prevId?: string; nextId?: string } | null,
+      isActive: () => boolean
+    ) => {
+      if (!isActive()) return;
+
+      const c = item?.content ?? '';
+      if (!c) {
+        setHtml('');
+        setRefText('');
+        setChapterId('');
+        setPrevId(undefined);
+        setNextId(undefined);
+        return;
+      }
+
+      setHtml(c);
+      setRefText(item?.reference ?? '');
+      setChapterId(item?.chapterId ?? '');
+      setPrevId(item?.prevId);
+      setNextId(item?.nextId);
+    },
+    []
+  );
+
+  const loadVersionFirstChapter = useCallback(
+    async (bId: string, isActive: () => boolean) => {
+      const res = await fetchFirstChapter(bId);
+      const body = await res.json();
+      const item = body?.data as {
+        content?: string; reference?: string; chapterId?: string; prevId?: string; nextId?: string
+      } | null;
+      applyChapterPayload(item, isActive);
+    },
+    [applyChapterPayload]
+  );
+
+  const jumpToFirstChapterOfBook = useCallback(
+    async (bkId: string, bId: string, isActive: () => boolean) => {
+      const r = await fetchChapters(bkId, bId);
+      const body = await r.json();
+      const chapters: ChapterLite[] = Array.isArray(body?.data) ? body.data : [];
+      const first = chapters[0]?.id;
+
+      if (!first) {
+        if (isActive()) toast.error('No chapters in selected book');
+        return;
+      }
+      // loadChapter manages loading state for direct chapter loads
+      await loadChapter(first);
+    },
+    [loadChapter]
+  );
+
   // When the book selection changes:
   // - if a book is chosen -> jump to its first chapter
   // - if cleared (Choose a book…) -> show the version's first chapter
   useEffect(() => {
-    let cancelled = false;
+    if (!bibleId || reference.trim()) return;
 
-    async function handleBookChange() {
-      if (!bibleId) return;                 // need a version
-      if (reference.trim()) return;         // passage mode — do nothing
-      setLoading(true);
+    let active = true;
+    const isActive = () => active;
 
+    setLoading(true);
+    (async () => {
       try {
         if (!bookId) {
-          // Book cleared -> load first chapter for the version
-          const res = await fetchFirstChapter(bibleId);
-          const body = await res.json();
-          const item = body?.data as {
-            content?: string; reference?: string; chapterId?: string; prevId?: string; nextId?: string
-          };
-          const c = item?.content ?? '';
-          if (!cancelled) {
-            if (!c) {
-              setHtml(''); setRefText(''); setChapterId(''); setPrevId(undefined); setNextId(undefined);
-            } else {
-              setHtml(c);
-              setRefText(item?.reference ?? '');
-              setChapterId(item?.chapterId ?? '');
-              setPrevId(item?.prevId);
-              setNextId(item?.nextId);
-            }
-          }
+          await loadVersionFirstChapter(bibleId, isActive);
           return;
         }
-
-        // Book chosen -> jump to its first chapter
-        const r = await fetchChapters(bookId, bibleId);
-        const body = await r.json();
-        const chapters: ChapterLite[] = Array.isArray(body?.data) ? body.data : [];
-        const first = chapters[0]?.id;
-        if (!first) {
-          if (!cancelled) toast.error('No chapters in selected book');
-          return;
-        }
-        if (!cancelled) await loadChapter(first);
+        await jumpToFirstChapterOfBook(bookId, bibleId, isActive);
       } catch {
-        if (!cancelled) toast.error('Failed to load chapters');
+        if (isActive()) toast.error('Failed to load chapters');
       } finally {
-        if (!cancelled) setLoading(false);
+        if (isActive()) setLoading(false);
       }
-    }
+    })();
 
-    (async () => { await handleBookChange(); })(); // silence "promise ignored"
-    return () => { cancelled = true; };
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [bookId, bibleId, reference]);
+    return () => { active = false; };
+  }, [bookId, bibleId, reference, loadVersionFirstChapter, jumpToFirstChapterOfBook]);
 
   // Load books for the selected version (don’t clear bookId here)
   useEffect(() => {
@@ -209,30 +258,8 @@ export default function BiblePage(): React.ReactElement {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [bibleId, reference]);
 
-  // When a book is chosen, jump to its first chapter (and persist)
-  useEffect(() => {
-    let cancelled = false;
-    async function jumpToFirstChapter() {
-      if (!bibleId || !bookId) return;
-      if (reference.trim()) return;
-      setLoading(true);
-      try {
-        const r = await fetchChapters(bookId, bibleId);
-        const body = await r.json();
-        const chapters: ChapterLite[] = Array.isArray(body?.data) ? body.data : [];
-        const first = chapters[0]?.id;
-        if (!first) {
-          if (!cancelled) toast.error('No chapters in selected book');
-          return;
-        }
-        if (!cancelled) await loadChapter(first);
-      } catch { if (!cancelled) toast.error('Failed to load chapters'); }
-      finally { if (!cancelled) setLoading(false); }
-    }
-    (async () => { await jumpToFirstChapter(); })();
-    return () => { cancelled = true; };
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [bookId]);
+  // (Note: you still have a second effect later that jumps to first chapter on book change.
+  // If you keep the refactored effect above, consider removing the later duplicate to avoid double-fetching.)
 
   async function onSearch(e: React.FormEvent) {
     e.preventDefault();
@@ -266,25 +293,6 @@ export default function BiblePage(): React.ReactElement {
     [bibles]
   );
 
-  async function loadChapter(targetId?: string) {
-    if (!targetId || !bibleId) return;
-    setLoading(true);
-    try {
-      const res = await fetchChapterById(targetId, bibleId);
-      const body = await res.json();
-      const d = body?.data as { content?: string; reference?: string; chapterId?: string; prevId?: string; nextId?: string };
-      const c = d?.content ?? '';
-      if (!c) { toast.error('No content for that chapter'); return; }
-      setHtml(c);
-      setRefText(d?.reference ?? '');
-      setChapterId(d?.chapterId ?? targetId);
-      setPrevId(d?.prevId);
-      setNextId(d?.nextId);
-      if (reference) setReference('');
-    } catch { toast.error('Failed to load chapter'); }
-    finally { setLoading(false); }
-  }
-
   // ---- placeholders (no ternaries) ----
   let versionPlaceholder = 'Loading versions…';
   if (bibles.length > 0) versionPlaceholder = 'Choose a version…';
@@ -305,7 +313,6 @@ export default function BiblePage(): React.ReactElement {
               id="bible-select"
               value={bibleId}
               onChange={(e) => setBibleId(e.target.value)}
-              // hide native arrow + leave space for our icon
               className="h-12 w-full rounded-lg pr-10 pl-3 bg-[var(--theme-textbox)] text-[var(--theme-placeholder)] border border-[var(--theme-border)] focus:outline-none appearance-none"
             >
               <option value="">{versionPlaceholder}</option>
@@ -314,13 +321,11 @@ export default function BiblePage(): React.ReactElement {
               ))}
             </select>
 
-            {/* lucide chevron (overlayed, click-through) */}
             <ChevronDown
               className="pointer-events-none absolute right-3 top-1/2 -translate-y-1/2 h-5 w-5 text-[var(--theme-placeholder)] opacity-80"
               aria-hidden="true"
             />
           </div>
-
 
           {/* Book */}
           <label className="sr-only" htmlFor="book-select">Book</label>
@@ -346,7 +351,6 @@ export default function BiblePage(): React.ReactElement {
               aria-hidden="true"
             />
           </div>
-
 
           <div className="flex gap-2">
             <label className="sr-only" htmlFor="reference-input">Reference</label>
@@ -378,7 +382,6 @@ export default function BiblePage(): React.ReactElement {
             Choose a version to start reading, optionally select a book, or type a reference and tap Read.
           </div>
         )}
-
 
         {chapterId && (
           <>
