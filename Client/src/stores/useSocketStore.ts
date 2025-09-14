@@ -205,8 +205,8 @@ export const useSocketStore = create<SocketState>((set, get) => {
 
       // Legacy "update created" → bump card visually; server also emits PrayerUpdated which will sync
       onE<UpdateCreatedPayload>(Events.UpdateCreated, (p) => {
-        try { useBoardStore.getState().bumpToTop(p.prayerId); } catch {}
         try { usePraisesStore.getState().bumpToTop(p.prayerId); } catch {}
+        try { useBoardStore.getState().bumpToTop(p.prayerId); } catch {}
       });
 
       // ---- COMMENT (updates) events ----
@@ -218,8 +218,25 @@ export const useSocketStore = create<SocketState>((set, get) => {
         try { useCommentsStore.getState().onUpdated(p); } catch {}
       });
 
-      onE<CommentDeletedPayload>(Events.CommentDeleted, (p) => {
-        try { useCommentsStore.getState().onDeleted(p); } catch {}
+      // ✅ Robust delete handler: prefer store.onDeleted (updates counts + lastAt), else fallback
+      onE<CommentDeletedPayload>(Events.CommentDeleted, (payload) => {
+        try {
+          const pid = Number((payload as any)?.prayerId || 0);
+          const cid = Number((payload as any)?.commentId ?? (payload as any)?.id ?? 0);
+
+          const cs = useCommentsStore.getState();
+
+          if (typeof cs.onDeleted === 'function') {
+            cs.onDeleted(payload as any);
+            return;
+          }
+
+          if (pid && cid && typeof cs.removeComment === 'function') {
+            cs.removeComment(pid, cid);
+          }
+        } catch {
+          // swallow
+        }
       });
 
       onE<CommentsClosedPayload>(Events.CommentsClosed, (p) => {
@@ -230,6 +247,32 @@ export const useSocketStore = create<SocketState>((set, get) => {
         // This updates newCount + lastCommentAt → drives the red bell state
         try { useCommentsStore.getState().onCountChanged(p); } catch {}
       });
+
+      // ✅ Legacy back-compat: if anything still emits raw 'update:deleted'
+      try {
+        s.on('update:deleted', (payload: any) => {
+          try {
+            const pid = Number(payload?.prayerId || 0);
+            const cid = Number(payload?.commentId || payload?.id || 0);
+            if (!pid || !cid) return;
+
+            const cs = useCommentsStore.getState();
+
+            if (typeof cs.onDeleted === 'function') {
+              cs.onDeleted({ prayerId: pid, commentId: cid });
+              return;
+            }
+
+            if (typeof cs.removeComment === 'function') {
+              cs.removeComment(pid, cid);
+            }
+          } catch {
+            // swallow
+          }
+        });
+      } catch {
+        // no-op
+      }
 
     } catch {
       // Listener wiring should never crash the app
