@@ -14,16 +14,40 @@ function toStringOrNull(v: unknown): string | null {
   return t;
 }
 
-function toDateOrNull(v: unknown): Date | null {
-  try {
-    if (v == null) return null;
-    const d = new Date(String(v));
-    if (Number.isNaN(d.getTime())) return null;
-    return d;
-  } catch {
-    return null;
-  }
+// Put these top-level (optional but tidy)
+const DIGITS_ONLY = /^\d+$/;
+const EPOCH_MS_CUTOFF = 1e12; // < 1e12 => seconds, else milliseconds
+
+function epochToDate(n: number): Date {
+  const ms = n < EPOCH_MS_CUTOFF ? n * 1000 : n;
+  return new Date(ms);
 }
+
+// Replace your current function with this:
+function toDateOrNull(v: unknown): Date | null {
+  if (v == null) return null;
+
+  if (v instanceof Date) {
+    return Number.isFinite(v.getTime()) ? v : null;
+  }
+
+  if (typeof v === 'number' && Number.isFinite(v)) {
+    const d = epochToDate(v);
+    return Number.isFinite(d.getTime()) ? d : null;
+  }
+
+  if (typeof v === 'string') {
+    const s = v.trim();
+    if (!s) return null;
+
+    const d = DIGITS_ONLY.test(s) ? epochToDate(Number(s)) : new Date(s);
+    return Number.isFinite(d.getTime()) ? d : null;
+  }
+
+  // Do not stringify objects; avoid "[object Object]"
+  return null;
+}
+
 
 export async function adminCreateEvent(req: Request, res: Response): Promise<void> {
   const user = req.user;
