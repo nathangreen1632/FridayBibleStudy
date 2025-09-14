@@ -290,13 +290,21 @@ export function renderDigestEmailHtml(opts: {
     </div>
   `;
 
-  const preheader =
-    updates.length > 0
-      ? `${updates.length} update${updates.length === 1 ? '' : 's'} in the recent period.`
-      : 'No updates in the recent period.';
+  // --- Preheader (no nested ternary) ---
+  let preheader: string;
+  if (updates.length > 0) {
+    const plural = updates.length === 1 ? '' : 's';
+    preheader = `${updates.length} update${plural} in the recent period.`;
+  } else {
+    preheader = 'No updates in the recent period.';
+  }
+
+  // --- Title (no nested template literal) ---
+  const titleSuffix = periodLabel ? ` (${periodLabel})` : '';
+  const emailTitle = `${groupName} • Prayer Digest${titleSuffix}`;
 
   return renderBase({
-    title: `${groupName} • Prayer Digest${periodLabel ? ` (${periodLabel})` : ''}`,
+    title: emailTitle,
     preheader,
     bodyHtml: tableHtml,
     actionText: actionUrl ? 'Open in Friday Bible Study' : undefined,
