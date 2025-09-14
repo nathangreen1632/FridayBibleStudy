@@ -3,7 +3,6 @@ import React, { useState, useEffect, useRef } from 'react';
 import { NavLink, useNavigate, useLocation } from 'react-router-dom';
 import { useAuthStore } from '../stores/useAuthStore.ts';
 import {
-  // Home,
   Mail,
   LogIn,
   UserPlus,
@@ -15,16 +14,17 @@ import {
   Sparkles,
   ShieldCheck,
   Users,
-  Image as ImageIcon, // ✅
-  BookOpen,            // ✅ NEW (Bible)
-  CalendarDays,        // ✅ NEW (Events)
+  Image as ImageIcon,
+  BookOpen,
+  CalendarDays,
 } from 'lucide-react';
 import { useScrollLock } from '../hooks/useScrollLock.ts';
 import { pressBtn } from '../../ui/press.ts';
 
 function linkClass(isActive: boolean): string {
   const base =
-    'flex items-center gap-1 px-3 py-2 rounded-lg text-sm font-medium transition-colors';
+    // tighten paddings and ensure no-wrap pills
+    'flex items-center gap-1 px-2.5 py-2 rounded-lg text-sm font-medium transition-colors whitespace-nowrap';
   const state = isActive
     ? 'bg-[var(--theme-button)] text-[var(--theme-text-white)]'
     : 'text-[var(--theme-text)] hover:text-[var(--theme-textbox)] hover:bg-[var(--theme-button-hover)]';
@@ -87,23 +87,20 @@ export default function Navbar(): React.ReactElement {
 
   return (
     <header className="sticky top-0 z-40 bg-[var(--theme-bg)]/80 backdrop-blur border-b border-[var(--theme-border)]">
-      <div className="max-w-6xl mx-auto px-4 py-3 flex items-center justify-between">
+      {/* widen container a bit and keep height comfy */}
+      <div className="max-w-7xl mx-auto px-5 py-3 flex items-center justify-between">
         {/* Brand */}
         <NavLink
           to={brandPath(user)}
-          className="text-2xl font-bold text-[var(--theme-accent)]"
+          className="text-2xl font-bold text-[var(--theme-accent)] whitespace-nowrap"
         >
           Friday Bible Study
         </NavLink>
 
         {/* Desktop nav (≥ 1280px) */}
-        <nav className="hidden xl:flex items-center gap-2">
+        {/* keep everything on one line, allow horizontal scroll if viewport is just shy */}
+        <nav className="hidden xl:flex items-center gap-2 flex-nowrap overflow-x-auto no-scrollbar">
           {/* Public */}
-          {/*<NavLink to="/" className={({ isActive }) => linkClass(isActive)} end>*/}
-          {/*  <Home className="w-4 h-4" />*/}
-          {/*  Home*/}
-          {/*</NavLink>*/}
-
           <NavLink to="/contact" className={({ isActive }) => linkClass(isActive)}>
             <Mail className="w-4 h-4" />
             Contact
@@ -124,7 +121,7 @@ export default function Navbar(): React.ReactElement {
 
           {user && (
             <>
-              {/* Admin: ONLY Admin + Sign out */}
+              {/* ── Admin routes ── */}
               {user.role === 'admin' && (
                 <>
                   <NavLink to="/admin" end className={({ isActive }) => linkClass(isActive)}>
@@ -139,13 +136,10 @@ export default function Navbar(): React.ReactElement {
                     <Users className="w-4 h-4" />
                     Roster
                   </NavLink>
-                  {/* ✅ Admin Photos */}
                   <NavLink to="/admin/photos" className={({ isActive }) => linkClass(isActive)}>
                     <ImageIcon className="w-4 h-4" />
                     Photos
                   </NavLink>
-
-                  {/* ✅ NEW: Bible & Events visible to admins */}
                   <NavLink to="/admin/events" className={({ isActive }) => linkClass(isActive)}>
                     <CalendarDays className="w-4 h-4" />
                     Events
@@ -153,7 +147,7 @@ export default function Navbar(): React.ReactElement {
 
                   <button
                     onClick={onLogout}
-                    className="ml-2 flex items-center gap-1 px-3 py-2 rounded-lg text-sm font-medium bg-[var(--theme-surface)] border border-[var(--theme-border)] hover:bg-[var(--theme-card-hover)]"
+                    className="ml-2 flex items-center gap-1 px-3 py-2 rounded-lg text-sm font-medium bg-[var(--theme-surface)] border border-[var(--theme-border)] hover:bg-[var(--theme-card-hover)] whitespace-nowrap"
                     aria-label="Sign out"
                   >
                     <LogOut className="w-4 h-4" />
@@ -162,9 +156,11 @@ export default function Navbar(): React.ReactElement {
                 </>
               )}
 
-              {/* Classic: original links */}
+              {/* ── Friend routes ── */}
               {user.role !== 'admin' && (
                 <>
+                  {/* Contact already shown publicly to the left, avoid duplicate here */}
+
                   <NavLink to="/bible" className={({ isActive }) => linkClass(isActive)}>
                     <BookOpen className="w-4 h-4" />
                     Bible
@@ -185,17 +181,9 @@ export default function Navbar(): React.ReactElement {
                     Archived
                   </NavLink>
 
-                  {/* ✅ Friend Photos */}
                   <NavLink to="/photos" className={({ isActive }) => linkClass(isActive)}>
                     <ImageIcon className="w-4 h-4" />
                     Photos
-                  </NavLink>
-
-                  {/* ✅ NEW: Bible & Events visible to members */}
-
-                  <NavLink to="/events" className={({ isActive }) => linkClass(isActive)}>
-                    <CalendarDays className="w-4 h-4" />
-                    Events
                   </NavLink>
 
                   <NavLink to="/profile" className={({ isActive }) => linkClass(isActive)}>
@@ -203,9 +191,19 @@ export default function Navbar(): React.ReactElement {
                     Profile
                   </NavLink>
 
+                  <NavLink to="/events" className={({ isActive }) => linkClass(isActive)}>
+                    <CalendarDays className="w-4 h-4" />
+                    Events
+                  </NavLink>
+
+                  <NavLink to="/roster" className={({ isActive }) => linkClass(isActive)}>
+                    <Users className="w-4 h-4" />
+                    Roster
+                  </NavLink>
+
                   <button
                     onClick={onLogout}
-                    className="ml-2 flex items-center gap-1 px-3 py-2 rounded-lg text-sm font-medium bg-[var(--theme-surface)] border border-[var(--theme-border)] hover:bg-[var(--theme-card-hover)]"
+                    className="ml-2 flex items-center gap-1 px-3 py-2 rounded-lg text-sm font-medium bg-[var(--theme-surface)] border border-[var(--theme-border)] hover:bg-[var(--theme-card-hover)] whitespace-nowrap"
                     aria-label="Sign out"
                   >
                     <LogOut className="w-4 h-4" />
@@ -242,11 +240,6 @@ export default function Navbar(): React.ReactElement {
                  bg-[var(--theme-surface)] rounded-xl shadow-md
                  px-3 py-3 space-y-2"
             >
-              {/*<NavLink to="/" className={({ isActive }) => linkClass(isActive)} end onClick={closeMenu}>*/}
-              {/*  <Home className="w-4 h-4" />*/}
-              {/*  Home*/}
-              {/*</NavLink>*/}
-
               <NavLink to="/contact" className={({ isActive }) => linkClass(isActive)} onClick={closeMenu}>
                 <Mail className="w-4 h-4" />
                 Contact
@@ -265,7 +258,7 @@ export default function Navbar(): React.ReactElement {
                 </>
               ) : (
                 <>
-                  {/* Admin: ONLY Admin + Sign out */}
+                  {/* ── Admin (mobile) ── */}
                   {user.role === 'admin' && (
                     <>
                       <NavLink to="/admin" end className={({ isActive }) => linkClass(isActive)} onClick={closeMenu}>
@@ -280,18 +273,11 @@ export default function Navbar(): React.ReactElement {
                         <Users className="w-4 h-4" />
                         Roster
                       </NavLink>
-                      {/* ✅ Admin Photos (mobile) */}
                       <NavLink to="/admin/photos" className={({ isActive }) => linkClass(isActive)} onClick={closeMenu}>
                         <ImageIcon className="w-4 h-4" />
                         Photos
                       </NavLink>
-
-                      {/* ✅ NEW: Bible & Events (mobile, admin) */}
-                      <NavLink to="/bible" className={({ isActive }) => linkClass(isActive)} onClick={closeMenu}>
-                        <BookOpen className="w-4 h-4" />
-                        Bible
-                      </NavLink>
-                      <NavLink to="/events" className={({ isActive }) => linkClass(isActive)} onClick={closeMenu}>
+                      <NavLink to="/admin/events" className={({ isActive }) => linkClass(isActive)} onClick={closeMenu}>
                         <CalendarDays className="w-4 h-4" />
                         Events
                       </NavLink>
@@ -307,9 +293,14 @@ export default function Navbar(): React.ReactElement {
                     </>
                   )}
 
-                  {/* Classic: original links */}
+                  {/* ── Friend (mobile) ── */}
                   {user.role !== 'admin' && (
                     <>
+                      <NavLink to="/bible" className={({ isActive }) => linkClass(isActive)} onClick={closeMenu}>
+                        <BookOpen className="w-4 h-4" />
+                        Bible
+                      </NavLink>
+
                       <NavLink to="/portal" className={({ isActive }) => linkClass(isActive)} onClick={closeMenu}>
                         <HelpingHand className="w-4 h-4" />
                         Prayers
@@ -320,22 +311,11 @@ export default function Navbar(): React.ReactElement {
                         Praises
                       </NavLink>
 
-                      {/* ✅ NEW: Bible & Events (mobile, classic) */}
-                      <NavLink to="/bible" className={({ isActive }) => linkClass(isActive)} onClick={closeMenu}>
-                        <BookOpen className="w-4 h-4" />
-                        Bible
-                      </NavLink>
-                      <NavLink to="/events" className={({ isActive }) => linkClass(isActive)} onClick={closeMenu}>
-                        <CalendarDays className="w-4 h-4" />
-                        Events
-                      </NavLink>
-
                       <NavLink to="/board/archive" className={({ isActive }) => linkClass(isActive)} onClick={closeMenu}>
                         <Archive className="w-4 h-4" />
                         Archived
                       </NavLink>
 
-                      {/* ✅ Friend Photos (mobile) */}
                       <NavLink to="/photos" className={({ isActive }) => linkClass(isActive)} onClick={closeMenu}>
                         <ImageIcon className="w-4 h-4" />
                         Photos
@@ -344,6 +324,16 @@ export default function Navbar(): React.ReactElement {
                       <NavLink to="/profile" className={({ isActive }) => linkClass(isActive)} onClick={closeMenu}>
                         <User className="w-4 h-4" />
                         Profile
+                      </NavLink>
+
+                      <NavLink to="/events" className={({ isActive }) => linkClass(isActive)} onClick={closeMenu}>
+                        <CalendarDays className="w-4 h-4" />
+                        Events
+                      </NavLink>
+
+                      <NavLink to="/roster" className={({ isActive }) => linkClass(isActive)} onClick={closeMenu}>
+                        <Users className="w-4 h-4" />
+                        Roster
                       </NavLink>
 
                       <button
