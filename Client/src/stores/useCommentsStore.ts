@@ -93,6 +93,27 @@ function makeCid(): string {
   return `cid_${Date.now().toString(36)}`;
 }
 
+// Small numeric guard
+function toPosInt(v: unknown): number {
+  const n = Number(v);
+  return Number.isFinite(n) && n > 0 ? n : 0;
+}
+
+// Normalize deletion payload shapes into ids
+function getDeleteIds(p: unknown): { prayerId: number; commentId: number } {
+  const obj = p as Record<string, unknown> | null | undefined;
+
+  const prayerId = toPosInt(obj?.prayerId);
+  const fromCommentId = toPosInt(obj?.commentId);
+  const fromId = toPosInt(obj?.id);
+  const fromNested = toPosInt((obj?.comment as Record<string, unknown> | null | undefined)?.id);
+
+  const commentId = fromCommentId || fromId || fromNested;
+
+  return { prayerId, commentId };
+}
+
+
 export const useCommentsStore = create<CommentsState>((set, get) => ({
   counts: new Map(),
   lastCommentAt: new Map(),
@@ -404,39 +425,25 @@ export const useCommentsStore = create<CommentsState>((set, get) => ({
   // ✅ UPDATED: tolerate {commentId}, {id}, or {comment:{id}}
   onDeleted: (p) => {
     try {
-      const prayerId = Number((p as any)?.prayerId || 0);
-      if (!prayerId) return;
-
-      let commentId = 0;
-      const a = Number((p as any)?.commentId);
-      if (!Number.isNaN(a) && a > 0) commentId = a;
-
-      if (!commentId) {
-        const b = Number((p as any)?.id);
-        if (!Number.isNaN(b) && b > 0) commentId = b;
-      }
-
-      if (!commentId && p && typeof p === 'object' && (p as any).comment && typeof (p as any).comment === 'object') {
-        const c = Number(((p as any).comment).id);
-        if (!Number.isNaN(c) && c > 0) commentId = c;
-      }
-
-      if (!commentId) return;
+      const { prayerId, commentId } = getDeleteIds(p);
+      if (!prayerId || !commentId) return;
 
       const threads = new Map(get().threadsByPrayer);
       const t = ensureThread(threads, prayerId);
 
-      if (t.byId.has(commentId)) {
-        t.byId.delete(commentId);
+      if (t.byId.delete(commentId)) {
         t.rootOrder = t.rootOrder.filter((x) => x !== commentId);
       }
 
       const counts = new Map(get().counts);
-      if (typeof (p as any)?.newCount === 'number') counts.set(prayerId, (p as any).newCount);
+      if (typeof (p as any)?.newCount === 'number') {
+        counts.set(prayerId, (p as any).newCount);
+      }
 
       const lastCA = new Map(get().lastCommentAt);
-      if (typeof (p as any)?.lastCommentAt === 'string' && (p as any).lastCommentAt) {
-        lastCA.set(prayerId, (p as any).lastCommentAt as string);
+      const lastAt = (p as any)?.lastCommentAt;
+      if (typeof lastAt === 'string' && lastAt) {
+        lastCA.set(prayerId, lastAt);
       }
 
       set({ threadsByPrayer: threads, counts, lastCommentAt: lastCA });
@@ -444,6 +451,7 @@ export const useCommentsStore = create<CommentsState>((set, get) => ({
       // swallow
     }
   },
+
 
   onClosedChanged: (p) => {
     try {
