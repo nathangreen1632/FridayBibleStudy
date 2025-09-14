@@ -41,12 +41,25 @@ type CommentsState = {
   update: (commentId: number, content: string) => Promise<void>;
   remove: (commentId: number) => Promise<void>;
 
+  // ✅ NEW: pure local reducer to drop a comment from a thread
+  removeComment: (prayerId: number, commentId: number) => void;
+
   markSeen: (prayerId: number) => Promise<void>;
   setClosedLocal: (prayerId: number, isClosed: boolean) => void;
 
   onCreated: (payload: { prayerId: number; comment: Comment; newCount: number; lastCommentAt: string | null }) => void;
   onUpdated: (payload: { prayerId: number; comment: Comment }) => void;
-  onDeleted: (payload: { prayerId: number; commentId: number; newCount: number; lastCommentAt: string | null }) => void;
+
+  // ✅ UPDATED: accept multiple payload shapes safely
+  onDeleted: (payload: {
+    prayerId: number;
+    commentId?: number;
+    id?: number;
+    comment?: { id?: number };
+    newCount?: number;
+    lastCommentAt?: string | null;
+  }) => void;
+
   onClosedChanged: (payload: { prayerId: number; isCommentsClosed: boolean }) => void;
   onCountChanged: (payload: { prayerId: number; newCount: number; lastCommentAt: string | null }) => void;
 };
@@ -131,7 +144,7 @@ export const useCommentsStore = create<CommentsState>((set, get) => ({
   // Roots (latest-activity ordered) — replies removed
   // UPDATED: now supports opts.reset to force a clean first page load
   // Roots (latest-activity ordered) — replies removed
-// Backward compatible: (prayerId, 10) or (prayerId, { limit: 10, reset: true })
+  // Backward compatible: (prayerId, 10) or (prayerId, { limit: 10, reset: true })
   // Backward compatible: (prayerId, 10) or (prayerId, { limit: 10, reset: true })
   fetchRootPage: async (prayerId, limitOrOpts, maybeOpts) => {
     try {
@@ -186,8 +199,6 @@ export const useCommentsStore = create<CommentsState>((set, get) => ({
       set({ threadsByPrayer: threads });
     }
   },
-
-
 
   // Create root-only update (no replies)
   create: async (prayerId, content, opts) => {
@@ -306,6 +317,21 @@ export const useCommentsStore = create<CommentsState>((set, get) => ({
     } catch {}
   },
 
+  // ✅ NEW: local reducer for external callers (sockets/admin actions)
+  removeComment: (prayerId, commentId) => {
+    try {
+      const threads = new Map(get().threadsByPrayer);
+      const t = ensureThread(threads, prayerId);
+      if (t.byId.has(commentId)) {
+        t.byId.delete(commentId);
+        t.rootOrder = t.rootOrder.filter((x) => x !== commentId);
+        set({ threadsByPrayer: threads });
+      }
+    } catch {
+      // keep UI resilient
+    }
+  },
+
   markSeen: async (prayerId) => {
     try {
       const at = new Date().toISOString();
@@ -375,25 +401,48 @@ export const useCommentsStore = create<CommentsState>((set, get) => ({
     } catch {}
   },
 
+  // ✅ UPDATED: tolerate {commentId}, {id}, or {comment:{id}}
   onDeleted: (p) => {
     try {
-      const threads = new Map(get().threadsByPrayer);
-      const t = ensureThread(threads, p.prayerId);
+      const prayerId = Number((p as any)?.prayerId || 0);
+      if (!prayerId) return;
 
-      if (t.byId.has(p.commentId)) {
-        // Mirror server deletion across all clients
-        t.byId.delete(p.commentId);
-        t.rootOrder = t.rootOrder.filter((x) => x !== p.commentId);
+      let commentId = 0;
+      const a = Number((p as any)?.commentId);
+      if (!Number.isNaN(a) && a > 0) commentId = a;
+
+      if (!commentId) {
+        const b = Number((p as any)?.id);
+        if (!Number.isNaN(b) && b > 0) commentId = b;
+      }
+
+      if (!commentId && p && typeof p === 'object' && (p as any).comment && typeof (p as any).comment === 'object') {
+        const c = Number(((p as any).comment).id);
+        if (!Number.isNaN(c) && c > 0) commentId = c;
+      }
+
+      if (!commentId) return;
+
+      const threads = new Map(get().threadsByPrayer);
+      const t = ensureThread(threads, prayerId);
+
+      if (t.byId.has(commentId)) {
+        t.byId.delete(commentId);
+        t.rootOrder = t.rootOrder.filter((x) => x !== commentId);
       }
 
       const counts = new Map(get().counts);
-      counts.set(p.prayerId, p.newCount ?? counts.get(p.prayerId) ?? 0);
+      if (typeof (p as any)?.newCount === 'number') counts.set(prayerId, (p as any).newCount);
 
       const lastCA = new Map(get().lastCommentAt);
-      if (p.lastCommentAt) lastCA.set(p.prayerId, p.lastCommentAt);
+      if (typeof (p as any)?.lastCommentAt === 'string' && (p as any).lastCommentAt) {
+        lastCA.set(prayerId, (p as any).lastCommentAt as string);
+      }
 
       set({ threadsByPrayer: threads, counts, lastCommentAt: lastCA });
-    } catch {}
+    } catch {
+      // swallow
+    }
   },
 
   onClosedChanged: (p) => {
