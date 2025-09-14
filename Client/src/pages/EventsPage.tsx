@@ -204,7 +204,7 @@ export default function EventsPage(): React.ReactElement {
           {isCreateOpen && (
             <form
               onSubmit={onCreate}
-              className="flex flex-col gap-2 border-t border-[var(--theme-border)] p-3 bg-[var(--theme-surface)]"
+              className="flex flex-col rounded-b-xl gap-2 border-t border-[var(--theme-border)] p-3 bg-[var(--theme-surface)]"
             >
               <input
                 value={title}
