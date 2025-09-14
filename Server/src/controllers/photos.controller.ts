@@ -21,11 +21,23 @@ function toInt(v: unknown, fallback: number): number {
 
 function sanitizeNote(input: unknown): string | null {
   try {
-    const raw = String(input ?? '').trim();
+    if (input == null) return null;
+
+    let raw: string | null = null;
+
+    if (typeof input === 'string') {
+      raw = input.trim();
+    } else if (typeof input === 'number' || typeof input === 'boolean') {
+      raw = String(input);
+    } else {
+      // do not stringify objects/arrays to avoid "[object Object]"
+      return null;
+    }
+
     if (!raw) return null;
+
     const MAX = 512;
-    if (raw.length > MAX) return raw.slice(0, MAX);
-    return raw;
+    return raw.length > MAX ? raw.slice(0, MAX) : raw;
   } catch {
     return null;
   }
@@ -216,8 +228,5 @@ router.post(
     }
   }
 );
-
-
-
 
 export default router;
