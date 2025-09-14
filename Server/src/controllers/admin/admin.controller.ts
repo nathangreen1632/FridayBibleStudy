@@ -1,15 +1,22 @@
 // Server/src/controllers/admin.controller.ts
 import type { Request, Response } from 'express';
-import { User, Prayer,  } from '../../models/index.js';
-import { findPrayersForAdmin, getPrayerComments, insertAdminComment, updatePrayerStatus, findPrayerByIdForAdmin } from '../../services/admin/admin.service.js';
+import { User, Prayer, Comment } from '../../models/index.js';
+import {
+  findPrayersForAdmin,
+  getPrayerComments,
+  insertAdminComment,
+  updatePrayerStatus,
+  findPrayerByIdForAdmin,
+} from '../../services/admin/admin.service.js';
 import type { Status } from '../../models/prayer.model.js';
 
-// NEW imports for Prayer Status:
+// NEW imports for Prayer Status / sockets:
 import { emitToGroup } from '../../config/socket.config.js';
 import { toPrayerDTO } from '../dto/prayer.dto.js';
 import { Events } from '../../types/socket.types.js';
 
-
+// Optional helpers used elsewhere in your codebase for counts/timestamps
+import { updatePrayerCounts } from '../../helpers/commentsController.helper.js';
 
 export async function promoteUser(req: Request, res: Response): Promise<void> {
   const { userId } = req.body as { userId: number };
@@ -145,5 +152,82 @@ export async function getPrayerDetail(req: Request, res: Response): Promise<void
     res.json({ prayer });
   } catch {
     res.status(500).json({ error: 'Failed to load prayer detail' });
+  }
+}
+
+/** -----------------------------------------------------------------------
+ *  NEW: Admin-only delete of a specific update (comment) on a prayer thread
+ *  Route: DELETE /api/admin/prayers/:prayerId/comments/:updateId
+ *  Middleware: requireAdmin (enforced in routes)
+ * ------------------------------------------------------------------------*/
+export async function deleteAdminUpdate(req: Request, res: Response): Promise<void> {
+  const { prayerId, updateId } = req.params;
+  const pid = Number(prayerId || 0);
+  const cid = Number(updateId || 0);
+
+  if (!pid || !cid) {
+    res.status(400).json({ error: 'Invalid IDs' });
+    return;
+  }
+
+  try {
+    // Ensure the comment belongs to the specified prayer
+    const comment = await Comment.findOne({ where: { id: cid, prayerId: pid } });
+    if (!comment) {
+      res.status(404).json({ error: 'Update not found' });
+      return;
+    }
+
+    // Delete the comment
+    await comment.destroy();
+
+    // Recompute counts & latest timestamp
+    const newCount = await Comment.count({ where: { prayerId: pid } });
+    const latest = await Comment.findOne({
+      where: { prayerId: pid },
+      order: [['createdAt', 'DESC']],
+      attributes: ['createdAt'],
+    });
+    const lastAt = latest?.get('createdAt');
+    const lastAtIso = lastAt ? new Date(lastAt).toISOString() : null;
+
+    // Best effort update of Prayer counters
+    try {
+      await updatePrayerCounts(pid, lastAt ?? new Date(0), newCount);
+    } catch {
+      // non-fatal
+    }
+
+    // Load prayer to emit a fresh DTO + compute group
+    const p = await Prayer.findByPk(pid, { attributes: ['id', 'groupId'] });
+    const groupId = (p as any)?.groupId ?? null;
+
+    // Emit legacy "update:deleted" for older clients (you already do this for creation)
+    try { if (groupId) emitToGroup(groupId, 'update:deleted', { prayerId: pid, id: cid }); } catch {}
+
+    // Emit structured events your client already supports
+    try {
+      if (groupId) {
+        // CommentDeleted keeps per-thread UIs in sync
+        emitToGroup(groupId, Events.CommentDeleted, {
+          prayerId: pid,
+          commentId: cid,
+          newCount,
+          lastCommentAt: lastAtIso,
+        });
+
+        // Also refresh the prayer card (counts/sort)
+        const full = await findPrayerByIdForAdmin(pid);
+        if (full) {
+          emitToGroup(groupId, Events.PrayerUpdated, { prayer: toPrayerDTO(full) });
+        }
+      }
+    } catch {
+      // non-fatal
+    }
+
+    res.json({ ok: true, newCount, lastCommentAt: lastAtIso });
+  } catch {
+    res.status(500).json({ error: 'Unable to delete update' });
   }
 }
