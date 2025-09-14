@@ -64,11 +64,11 @@ function SortableHeader(props: Readonly<{
 }
 
 /* -------------------- Small helpers -------------------- */
-function toNullish(v: unknown): string | null {
-  if (v === undefined || v === null) return null;
-  const s = String(v).trim();
-  if (s === '') return null;
-  return s;
+// Only accept string-ish inputs from our form; never stringify objects.
+function toNullish(v: string | null | undefined): string | null {
+  if (v == null) return null;
+  const s = v.trim();
+  return s === '' ? null : s;
 }
 
 const EDIT_KEYS = [
