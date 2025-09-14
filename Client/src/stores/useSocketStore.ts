@@ -88,24 +88,49 @@ export const useSocketStore = create<SocketState>((set, get) => {
     s = undefined; // rely on guards below; app keeps running without realtime
   }
 
+  // --- replace your queue/flush section in useSocketStore.ts with this ---
+
   // Local in-memory queue for socket-driven patches
   let queue: Patch[] = [];
+
+  // Drag-stall guards
+  let dragDeferrals = 0;
+  const MAX_DEFERRALS = 8;       // ~8 * 120ms ≈ 1s
+  const MAX_DEFER_MS = 1500;     // hard stop after 1.5s
+  let firstDeferAt: number | null = null;
 
   const flush = () => {
     if (!queue.length) return;
 
-    // Don't mutate board order mid-drag; retry shortly
+    let dragging: boolean;
     try {
       const { isDragging } = useBoardStore.getState();
-      if (isDragging) {
+      dragging = isDragging;
+    } catch {
+      dragging = false; // if store unavailable, don't block
+    }
+
+    if (dragging) {
+      // initialize the defer timer once
+      firstDeferAt ??= Date.now();
+
+      const elapsed = Date.now() - firstDeferAt;
+      const canKeepDeferring = dragDeferrals < MAX_DEFERRALS && elapsed < MAX_DEFER_MS;
+
+      if (canKeepDeferring) {
+        dragDeferrals += 1;
         setTimeout(() => {
           try { flush(); } catch {}
         }, 120);
         return;
       }
-    } catch {
-      // if store is unavailable, fall through and try to apply (don’t crash)
+
+      // fall through after too many/too long deferrals
     }
+
+    // reset drag guard on actual apply
+    dragDeferrals = 0;
+    firstDeferAt = null;
 
     const batch = queue;
     queue = [];
