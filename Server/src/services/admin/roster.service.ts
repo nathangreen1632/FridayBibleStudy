@@ -21,16 +21,13 @@ export async function listRoster(opts: {
   q?: string;
   page?: number;
   pageSize?: number;
-  /** NEW: requested sort column (raw from controller) */
   sortBy?: string;
-  /** NEW: 'asc' | 'desc' (normalized in controller, but we guard anyway) */
   sortDir?: 'asc' | 'desc';
 }): Promise<{ ok: boolean; rows: RosterRow[]; total: number; page: number; pageSize: number; message?: string }> {
   try {
     const page = typeof opts.page === 'number' && opts.page > 0 ? opts.page : 1;
     const pageSize = typeof opts.pageSize === 'number' && opts.pageSize > 0 ? opts.pageSize : 25;
 
-    // ✅ strict whitelist to prevent ORDER BY injection
     const SORTABLE: Record<string, string> = {
       name: 'name',
       email: 'email',
@@ -40,11 +37,9 @@ export async function listRoster(opts: {
       addressState: 'addressState',
       addressZip: 'addressZip',
       spouseName: 'spouseName',
-      // (intentionally not adding emailPaused to sort keys yet)
     };
 
-    const sortCol =
-      opts.sortBy && Object.hasOwn(SORTABLE, opts.sortBy) ? SORTABLE[opts.sortBy] : 'name';
+    const sortCol = opts.sortBy && Object.hasOwn(SORTABLE, opts.sortBy) ? SORTABLE[opts.sortBy] : 'name';
     const sortDir = opts.sortDir === 'desc' ? 'DESC' : 'ASC';
 
     const where: Record<string, unknown> = {};
@@ -92,8 +87,8 @@ export async function listRoster(opts: {
       addressState: r.addressState ?? null,
       addressZip: r.addressZip ?? null,
       spouseName: r.spouseName ?? null,
-      /** NEW */
-      emailPaused: Boolean((r as any).emailPaused),
+      /** NEW: read via Sequelize getter; no assertion needed */
+      emailPaused: Boolean(r.get('emailPaused')),
     }));
 
     return { ok: true, rows: mapped, total: count, page, pageSize };
@@ -113,7 +108,7 @@ type RosterUpdate = Partial<
     | 'addressState'
     | 'addressZip'
     | 'spouseName'
-    | 'emailPaused' // NEW
+    | 'emailPaused'
   >
 >;
 
@@ -126,28 +121,22 @@ export async function updateRosterUser(
     const user = await User.findByPk(userId);
     if (!user) return { ok: false, error: 'User not found.' };
 
+    // safer normalizer: no object stringification
     function norm(v: unknown): string | null {
-      if (v === null || v === undefined) return null;
-      const s = String(v).trim();
-      if (s === '') return null;
-      return s;
+      if (v == null) return null;
+      if (typeof v === 'string') {
+        const s = v.trim();
+        return s === '' ? null : s;
+      }
+      if (typeof v === 'number' && Number.isFinite(v)) return String(v);
+      return null; // don't stringify objects/booleans
     }
 
     const next: Record<string, unknown> = {};
 
-    // String-ish fields handled uniformly
     const textKeys: Array<
       'name' | 'email' | 'phone' | 'addressStreet' | 'addressCity' | 'addressState' | 'addressZip' | 'spouseName'
-    > = [
-      'name',
-      'email',
-      'phone',
-      'addressStreet',
-      'addressCity',
-      'addressState',
-      'addressZip',
-      'spouseName',
-    ];
+    > = ['name', 'email', 'phone', 'addressStreet', 'addressCity', 'addressState', 'addressZip', 'spouseName'];
 
     for (const key of textKeys) {
       if (Object.hasOwn(payload, key) && payload[key] !== undefined) {
@@ -155,12 +144,10 @@ export async function updateRosterUser(
       }
     }
 
-    // NEW: boolean handled directly, but only when present
     if (Object.hasOwn(payload, 'emailPaused') && typeof payload.emailPaused === 'boolean') {
       next.emailPaused = payload.emailPaused;
     }
 
-    // Email uniqueness (only when actually updating email)
     if (typeof next.email === 'string' && next.email.includes('@')) {
       const dupe = await User.findOne({
         where: { email: next.email, id: { [Op.ne]: userId } },
@@ -181,7 +168,8 @@ export async function updateRosterUser(
       addressState: user.addressState ?? null,
       addressZip: user.addressZip ?? null,
       spouseName: user.spouseName ?? null,
-      emailPaused: Boolean((user as any).emailPaused),
+      // use getter here too
+      emailPaused: Boolean(user.get('emailPaused')),
     };
     return { ok: true, row };
   } catch {
