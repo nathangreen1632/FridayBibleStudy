@@ -1,8 +1,15 @@
 // Server/src/controllers/admin.controller.ts
 import type { Request, Response } from 'express';
-import { User } from '../../models/index.js';
+import { User, Prayer,  } from '../../models/index.js';
 import { findPrayersForAdmin, getPrayerComments, insertAdminComment, updatePrayerStatus, findPrayerByIdForAdmin } from '../../services/admin/admin.service.js';
 import type { Status } from '../../models/prayer.model.js';
+
+// NEW imports for Prayer Status:
+import { emitToGroup } from '../../config/socket.config.js';
+import { toPrayerDTO } from '../dto/prayer.dto.js';
+import { Events } from '../../types/socket.types.js';
+
+
 
 export async function promoteUser(req: Request, res: Response): Promise<void> {
   const { userId } = req.body as { userId: number };
@@ -66,13 +73,39 @@ export async function addAdminComment(req: Request, res: Response): Promise<void
 export async function setPrayerStatus(req: Request, res: Response): Promise<void> {
   const { prayerId } = req.params;
   const { status } = req.body as { status: Status };
-  if (!status) { res.status(400).json({ error: 'Status required.' }); return; }
+  const pid = Number(prayerId);
 
-  const result = await updatePrayerStatus(Number(prayerId), status);
-  if (!('ok' in result) || !result.ok) {
-    res.status(404).json({ error: 'Prayer not found.' }); return;
+  if (!status) { res.status(400).json({ error: 'Status required.' }); return; }
+  if (!pid || Number.isNaN(pid)) { res.status(400).json({ error: 'Invalid prayer id.' }); return; }
+
+  try {
+    // Grab current status & group so we can emit a proper "moved" payload
+    const before = await Prayer.findByPk(pid, { attributes: ['id', 'groupId', 'status'] });
+    if (!before) { res.status(404).json({ error: 'Prayer not found.' }); return; }
+    const from = before.status;
+
+    // No-op move (already in that status)
+    if (from === status) { res.json({ ok: true }); return; }
+
+    const result = await updatePrayerStatus(pid, status);
+    if (!('ok' in result) || !result.ok) {
+      res.status(500).json({ error: 'Unable to update status.' }); return;
+    }
+
+    // Reload with includes for a complete DTO
+    const after = await findPrayerByIdForAdmin(pid);
+    if (after) {
+      const dto = toPrayerDTO(after);
+      // Keep board lists in sync (resort / counts / etc.)
+      try { emitToGroup(after.groupId, Events.PrayerUpdated, { prayer: dto }); } catch {}
+      // Trigger immediate move animation/reflow on clients
+      try { emitToGroup(after.groupId, Events.PrayerMoved, { prayer: dto, from, to: status }); } catch {}
+    }
+
+    res.json({ ok: true });
+  } catch {
+    res.status(500).json({ error: 'Unable to update status.' });
   }
-  res.json({ ok: true });
 }
 
 export async function demoteUser(req: Request, res: Response): Promise<void> {
