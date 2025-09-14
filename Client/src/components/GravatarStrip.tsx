@@ -39,7 +39,7 @@ export default function GravatarStrip(): React.ReactElement | null {
           <button
             type="button"
             onClick={() => { try { setOpen(true); } catch {} }}
-            className="inline-flex items-center justify-center rounded-full p-1 hover:opacity-80 focus:outline-none"
+            className="inline-flex items-center justify-center rounded-full p-1 hover:opacity-80 focus:outline-none cursor-pointer"
             aria-label="Update avatar via Gravatar"
             title="Update avatar"
           >
