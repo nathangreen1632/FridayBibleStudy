@@ -1,22 +1,66 @@
 // Client/src/components/admin/AdminFilters.tsx
 import React, { useEffect, useRef, useState } from 'react';
 import { useAdminUiStore } from '../../stores/admin/useAdminUiStore';
+import { useSocketStore } from '../../stores/useSocketStore';
+
+const CATEGORY_OPTIONS = ['birth', 'long-term', 'praise', 'prayer', 'pregnancy', 'salvation'] as const;
+type Category = typeof CATEGORY_OPTIONS[number];
+
+const STATUS_OPTIONS = ['active', 'praise', 'archived'] as const;
+type Status = typeof STATUS_OPTIONS[number];
+
+function isCategory(v: string): v is Category {
+  return (CATEGORY_OPTIONS as readonly string[]).includes(v);
+}
+function isStatus(v: string): v is Status {
+  return (STATUS_OPTIONS as readonly string[]).includes(v);
+}
+
+const FALLBACK_EVT = 'admin:filters:patch';
+function emitFallback(
+  patch: Partial<{ q: string; category: Category | undefined; status: Status | undefined; page: number }>
+) {
+  try {
+    window.dispatchEvent(new CustomEvent(FALLBACK_EVT, { detail: patch }));
+  } catch {}
+}
 
 export default function AdminFilters(): React.ReactElement {
   const ui = useAdminUiStore();
+  const { socket, joinGroup, leaveGroup } = useSocketStore();
 
-  // local input mirrors the store, but we debounce writes to the store
+  // ✅ Join once per groupId only (DON'T depend on joinGroup/leaveGroup function identities)
+  useEffect(() => {
+    const gid = typeof ui.groupId === 'number' ? ui.groupId : 1;
+    try { joinGroup(gid); } catch {}
+    return () => {
+      try { leaveGroup(gid); } catch {}
+    };
+    // ⚠️ Only run when the numeric group id changes
+  }, [ui.groupId]);
+
+  // Also re-join after socket reconnects (belt & suspenders; harmless if already in)
+  useEffect(() => {
+    if (!socket) return;
+    const onConnect = () => {
+      const gid = typeof ui.groupId === 'number' ? ui.groupId : 1;
+      try { joinGroup(gid); } catch {}
+    };
+    try { socket.on('connect', onConnect); } catch {}
+    return () => {
+      try { socket.off?.('connect', onConnect); } catch {}
+    };
+  }, [socket, ui.groupId, joinGroup]);
+
   const [qInput, setQInput] = useState(ui.q ?? '');
   const debounceRef = useRef<number | null>(null);
 
-  // keep local box in sync if something else updates ui.q (e.g., "Clear filters")
   useEffect(() => {
     setQInput(ui.q ?? '');
   }, [ui.q]);
 
-  // LIVE SEARCH: debounce pushing q to the store
+  // Debounce search → don't include socket in deps (keeps timer stable)
   useEffect(() => {
-    // trim but allow empty string (clears filter)
     const next = qInput.trim();
 
     if (debounceRef.current) {
@@ -25,11 +69,17 @@ export default function AdminFilters(): React.ReactElement {
     }
 
     debounceRef.current = window.setTimeout(() => {
-      // avoid useless store writes
       if (ui.q !== next) {
-        ui.set({ q: next, page: 1 });
+        const patch = { q: next, page: 1 };
+        ui.set(patch);
+        try {
+          if (socket?.emit) socket.emit('admin:filters:patch', patch);
+          else emitFallback(patch);
+        } catch {
+          emitFallback(patch);
+        }
       }
-    }, 300); // adjust to taste (200–400ms feels good)
+    }, 300);
 
     return () => {
       if (debounceRef.current) {
@@ -37,12 +87,64 @@ export default function AdminFilters(): React.ReactElement {
         debounceRef.current = null;
       }
     };
-  }, [qInput, ui]);
+  }, [qInput, ui /* ← no socket here */]);
 
   function clearSearch() {
     setQInput('');
-    // immediate clear for good UX
-    ui.set({ q: '', page: 1 });
+    const patch = { q: '', page: 1 };
+    ui.set(patch);
+    try {
+      if (socket?.emit) socket.emit('admin:filters:patch', patch);
+      else emitFallback(patch);
+    } catch {
+      emitFallback(patch);
+    }
+  }
+
+  function handleCategoryChange(e: React.ChangeEvent<HTMLSelectElement>) {
+    const raw = e.target.value;
+    let next: Category | undefined;
+
+    if (raw === '') {
+      next = undefined;
+    } else if (isCategory(raw)) {
+      next = raw;
+    } else {
+      next = undefined;
+    }
+
+    const patch = { category: next, page: 1 };
+    ui.set(patch);
+
+    try {
+      if (socket?.emit) socket.emit('admin:filters:patch', patch);
+      else emitFallback(patch);
+    } catch {
+      emitFallback(patch);
+    }
+  }
+
+  function handleStatusChange(e: React.ChangeEvent<HTMLSelectElement>) {
+    const raw = e.target.value;
+    let next: Status | undefined;
+
+    if (raw === '') {
+      next = undefined;
+    } else if (isStatus(raw)) {
+      next = raw;
+    } else {
+      next = undefined;
+    }
+
+    const patch = { status: next, page: 1 };
+    ui.set(patch);
+
+    try {
+      if (socket?.emit) socket.emit('admin:filters:patch', patch);
+      else emitFallback(patch);
+    } catch {
+      emitFallback(patch);
+    }
   }
 
   return (
@@ -77,15 +179,12 @@ export default function AdminFilters(): React.ReactElement {
           id="filters-category"
           className="rounded-lg border border-[var(--theme-border)] bg-[var(--theme-textbox)] px-3 py-2 text-[var(--theme-placeholder)]"
           value={ui.category ?? ''}
-          onChange={(e) => ui.set({ category: e.target.value ? (e.target.value as any) : undefined, page: 1 })}
+          onChange={handleCategoryChange}
         >
           <option value="">Any</option>
-          <option value="birth">Birth</option>
-          <option value="long-term">Long-term</option>
-          <option value="praise">Praise</option>
-          <option value="prayer">Prayer</option>
-          <option value="pregnancy">Pregnancy</option>
-          <option value="salvation">Salvation</option>
+          {CATEGORY_OPTIONS.map((c) => (
+            <option key={c} value={c}>{c[0].toUpperCase() + c.slice(1)}</option>
+          ))}
         </select>
       </div>
 
@@ -95,16 +194,14 @@ export default function AdminFilters(): React.ReactElement {
           id="filters-status"
           className="rounded-lg border border-[var(--theme-border)] bg-[var(--theme-textbox)] px-3 py-2 text-[var(--theme-placeholder)]"
           value={ui.status ?? ''}
-          onChange={(e) => ui.set({ status: e.target.value ? (e.target.value as any) : undefined, page: 1 })}
+          onChange={handleStatusChange}
         >
           <option value="">Any</option>
-          <option value="active">Prayer</option>
-          <option value="praise">Praise</option>
-          <option value="archived">Archived</option>
+          {STATUS_OPTIONS.map((s) => (
+            <option key={s} value={s}>{s[0].toUpperCase() + s.slice(1)}</option>
+          ))}
         </select>
       </div>
-
-
     </div>
   );
 }
