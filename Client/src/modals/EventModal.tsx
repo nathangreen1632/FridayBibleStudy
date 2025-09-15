@@ -46,11 +46,11 @@ export default function EventModal({
       {/* Modal shell (mirrors LightboxModal container) */}
       <div
         ref={shellRef}
-        className="relative max-w-[95vw] max-h-[90vh] p-4 rounded-2xl bg-[var(--theme-surface)] shadow-xl border border-[var(--theme-border)] overflow-auto custom-scrollbar"
+        className="relative max-w-[95vw] max-h-[90vh] p-4 rounded-2xl bg-[var(--theme-accent)] shadow-xl border border-[var(--theme-border)] overflow-auto custom-scrollbar"
       >
         {/* Header */}
         <div className="flex items-start justify-between gap-3 mb-3">
-          <h2 className="text-2xl font-extrabold text-[var(--theme-text)]">
+          <h2 className="text-2xl font-extrabold text-[var(--theme-text-white)]">
             {event?.title || 'Untitled Event'}
           </h2>
 
@@ -64,7 +64,7 @@ export default function EventModal({
 
         {/* Meta */}
         {hasTimes && startD && (
-          <div className="mb-1 text-base opacity-80 text-[var(--theme-text)]">
+          <div className="mb-1 text-base opacity-80 text-[var(--theme-text-white)]">
             <span className="font-semibold">Date:</span>{' '}
             {startD.toLocaleDateString()}
             {endD && ` – ${endD.toLocaleDateString()}`}
@@ -72,7 +72,7 @@ export default function EventModal({
         )}
 
         {hasTimes && startD && (
-          <div className="mb-1 text-base opacity-80 text-[var(--theme-text)]">
+          <div className="mb-1 text-base opacity-80 text-[var(--theme-text-white)]">
             <span className="font-semibold">Time:</span>{' '}
             {startD.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
             {endD &&
@@ -81,14 +81,14 @@ export default function EventModal({
         )}
 
         {event?.location && (
-          <div className="mb-3 text-base opacity-80 text-[var(--theme-text)]">
+          <div className="mb-3 text-base opacity-80 text-[var(--theme-text-white)]">
             <span className="font-semibold">Location:</span> {event.location}
           </div>
         )}
 
         {/* Body */}
         {event?.content && (
-          <div className="whitespace-pre-wrap text-lg leading-relaxed text-[var(--theme-text)]">
+          <div className="whitespace-pre-wrap text-lg leading-relaxed text-[var(--theme-text-white)]">
             {event.content}
           </div>
         )}
