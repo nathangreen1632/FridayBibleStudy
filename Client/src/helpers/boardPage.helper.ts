@@ -64,10 +64,10 @@ export function useMoveToStatus() {
           const msg =
             body && typeof body === 'object' && 'error' in body && typeof (body).error === 'string'
               ? (body).error
-              : 'Failed to update status';
+              : 'You may not move another\'s prayer.';
           toast.error(msg);
         } catch {
-          toast.error('Failed to update status');
+          toast.error('You may not move another\'s prayer.');
         }
       }
       // success: let socket/state reconcile
