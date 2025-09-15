@@ -64,6 +64,9 @@ type CommentsState = {
   onCountChanged: (payload: { prayerId: number; newCount: number; lastCommentAt: string | null }) => void;
 };
 
+type DeletedPayload = Parameters<CommentsState['onDeleted']>[0];
+
+
 function ensureThread(s: Map<number, ThreadState>, prayerId: number): ThreadState {
   const ex = s.get(prayerId);
   if (ex) return ex;
@@ -423,7 +426,7 @@ export const useCommentsStore = create<CommentsState>((set, get) => ({
   },
 
   // ✅ UPDATED: tolerate {commentId}, {id}, or {comment:{id}}
-  onDeleted: (p) => {
+  onDeleted: (p: DeletedPayload) => {
     try {
       const { prayerId, commentId } = getDeleteIds(p);
       if (!prayerId || !commentId) return;
@@ -436,13 +439,13 @@ export const useCommentsStore = create<CommentsState>((set, get) => ({
       }
 
       const counts = new Map(get().counts);
-      if (typeof (p as any)?.newCount === 'number') {
-        counts.set(prayerId, (p as any).newCount);
+      if (typeof p.newCount === 'number') {
+        counts.set(prayerId, p.newCount);
       }
 
       const lastCA = new Map(get().lastCommentAt);
-      const lastAt = (p as any)?.lastCommentAt;
-      if (typeof lastAt === 'string' && lastAt) {
+      const lastAt = p.lastCommentAt ?? undefined; // string | undefined
+      if (lastAt) {
         lastCA.set(prayerId, lastAt);
       }
 
@@ -451,6 +454,7 @@ export const useCommentsStore = create<CommentsState>((set, get) => ({
       // swallow
     }
   },
+
 
 
   onClosedChanged: (p) => {
