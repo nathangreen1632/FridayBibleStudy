@@ -8,6 +8,7 @@ import { useSocketStore } from '../../stores/useSocketStore';
 import { useAuthStore } from '../../stores/useAuthStore';
 import type { Status } from '../../types/domain.types';
 import { useMoveToStatus } from '../../helpers/boardPage.helper';
+import {toast} from "react-hot-toast";
 
 // Small wrapper so we can safely use a hook per-item
 function PraiseCardFromStore({
@@ -28,9 +29,14 @@ function PraiseCardFromStore({
       category={p.category}
       createdAt={p.createdAt}
       groupId={groupId}
-      onMove={(prayerId: number, to: Status) => {
-        // Mobile-only bar calls this; persist and let sockets reconcile.
-        void moveToStatus(prayerId, to);
+      onMove={async (prayerId: number, to: Status) => {
+        try {
+          // persist and let sockets reconcile
+          await moveToStatus(prayerId, to);
+        } catch {
+          console.error('Failed to move prayer to status', to);
+          toast.error('Failed to move prayer to status');
+        }
       }}
     />
   );
