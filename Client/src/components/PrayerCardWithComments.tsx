@@ -31,7 +31,7 @@ function MobileMoveActions(props: Readonly<{
           type="button"
           onClick={() => props.onMove('active')}
           className={pressBtn(
-            'px-2 py-1 rounded bg-[var(--theme-pill-orange)] hover:bg-[var(--theme-pill-orange)] hover:text-[var(--theme-textbox)] cursor-pointer'
+            'px-2 py-1 rounded bg-[var(--theme-pill-orange)] text-[var(--theme-textbox)] hover:bg-[var(--theme-pill-orange)] hover:text-[var(--theme-textbox)] cursor-pointer'
           )}
         >
           Prayers
@@ -41,7 +41,7 @@ function MobileMoveActions(props: Readonly<{
           type="button"
           onClick={() => props.onMove('praise')}
           className={pressBtn(
-            'px-2 py-1 rounded bg-[var(--theme-pill-green)] hover:bg-[var(--theme-pill-green)] hover:text-[var(--theme-textbox)] cursor-pointer'
+            'px-2 py-1 rounded bg-[var(--theme-pill-green)] text-[var(--theme-textbox)] hover:bg-[var(--theme-pill-green)] hover:text-[var(--theme-textbox)] cursor-pointer'
           )}
         >
           Praise
@@ -51,7 +51,7 @@ function MobileMoveActions(props: Readonly<{
           type="button"
           onClick={() => props.onMove('archived')}
           className={pressBtn(
-            'px-2 py-1 rounded bg-[var(--theme-button-hover)] hover:bg-[var(--theme-button-hover)] hover:text-[var(--theme-textbox)] cursor-pointer'
+            'px-2 py-1 rounded bg-[var(--theme-button-hover)] text-[var(--theme-textbox)] hover:bg-[var(--theme-button-hover)] hover:text-[var(--theme-textbox)] cursor-pointer'
           )}
         >
           Archive
