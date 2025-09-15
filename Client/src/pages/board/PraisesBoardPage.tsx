@@ -6,11 +6,19 @@ import type { ColumnKey } from '../../components/SortableCard';
 import { usePraisesStore, usePraisesIds, usePraiseById } from '../../stores/usePraisesStore';
 import { useSocketStore } from '../../stores/useSocketStore';
 import { useAuthStore } from '../../stores/useAuthStore';
+import type { Status } from '../../types/domain.types';
+import { useMoveToStatus } from '../../helpers/boardPage.helper';
 
 // Small wrapper so we can safely use a hook per-item
-function PraiseCardFromStore({ id, groupId }: Readonly<{ id: number; groupId: number | null }>) {
+function PraiseCardFromStore({
+                               id,
+                               groupId,
+                             }: Readonly<{ id: number; groupId: number | null }>) {
   const p = usePraiseById(id);
+  const moveToStatus = useMoveToStatus(); // recaptcha + PATCH + position:0
+
   if (!p) return null;
+
   return (
     <PrayerCardWithComments
       id={p.id}
@@ -20,6 +28,10 @@ function PraiseCardFromStore({ id, groupId }: Readonly<{ id: number; groupId: nu
       category={p.category}
       createdAt={p.createdAt}
       groupId={groupId}
+      onMove={(prayerId: number, to: Status) => {
+        // Mobile-only bar calls this; persist and let sockets reconcile.
+        void moveToStatus(prayerId, to);
+      }}
     />
   );
 }
@@ -56,7 +68,9 @@ export default function PraisesBoard(): React.ReactElement {
   }, [groupId, joinGroup]);
 
   const renderCard = useCallback(
-    (id: number, _column: ColumnKey, _index: number) => <PraiseCardFromStore id={id} groupId={groupId ?? null} />,
+    (id: number, _column: ColumnKey, _index: number) => (
+      <PraiseCardFromStore id={id} groupId={groupId ?? null} />
+    ),
     [groupId]
   );
 
@@ -74,7 +88,6 @@ export default function PraisesBoard(): React.ReactElement {
             // ignore or log
           }
         }}
-
         onDockDrop={async (dock, id) => {
           try {
             if (dock === 'dock-active') {
