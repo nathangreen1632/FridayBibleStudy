@@ -143,16 +143,16 @@ export default function Register(): React.ReactElement {
       <form
         onSubmit={onSubmit}
         aria-label="Register"
-        className="w-full max-w-md bg-[var(--theme-surface)] border border-[var(--theme-border)] rounded-2xl shadow-md md:shadow-[0_4px_14px_0_var(--theme-shadow)] p-4 sm:p-6 md:p-8 space-y-4 sm:space-5"
+        className="w-full max-w-md bg-[var(--theme-accent)] border border-[var(--theme-border)] rounded-2xl shadow-md md:shadow-[0_4px_14px_0_var(--theme-shadow)] p-4 sm:p-6 md:p-8 space-y-4 sm:space-5"
       >
         <header className="space-y-1 text-center">
-          <h1 className="text-2xl sm:text-3xl font-semibold text-[var(--theme-accent)]">Create your account</h1>
-          <p className="text-sm sm:text-md opacity-80">Join the Friday Bible Study community</p>
+          <h1 className="text-2xl sm:text-3xl font-semibold text-[var(--theme-text-white)]">Create your account</h1>
+          <p className="text-[var(--theme-text-white)] text-sm sm:text-md opacity-80">Join the Friday Bible Study community</p>
         </header>
 
         {/* Name */}
         <label className="block text-xs sm:text-sm font-medium">
-          <span className="text-sm sm:text-base mb-1 block">Name</span>
+          <span className="text-[var(--theme-text-white)] text-sm sm:text-base mb-1 block">Name</span>
           <input
             required
             name="name"
@@ -167,7 +167,7 @@ export default function Register(): React.ReactElement {
 
         {/* Phone (strict format) */}
         <label className="block text-xs sm:text-sm font-medium">
-          <span className="text-sm sm:text-base mb-1 block">Phone</span>
+          <span className="text-[var(--theme-text-white)] text-sm sm:text-base mb-1 block">Phone</span>
           <input
             required
             type="tel"
@@ -187,7 +187,7 @@ export default function Register(): React.ReactElement {
 
         {/* Email */}
         <label className="block text-xs sm:text-sm font-medium">
-          <span className="text-sm sm:text-base mb-1 block">Email</span>
+          <span className="text-[var(--theme-text-white)] text-sm sm:text-base mb-1 block">Email</span>
           <input
             required
             type="email"
@@ -203,7 +203,7 @@ export default function Register(): React.ReactElement {
 
         {/* Password */}
         <label className="block text-xs sm:text-sm font-medium">
-          <span className="text-sm sm:text-base mb-1 block">Password</span>
+          <span className="text-[var(--theme-text-white)] text-sm sm:text-base mb-1 block">Password</span>
           <div className="relative">
             <input
               required
@@ -229,7 +229,7 @@ export default function Register(): React.ReactElement {
 
         {/* Confirm Password */}
         <label className="block text-xs sm:text-sm font-medium">
-          <span className="text-sm sm:text-base mb-1 block">Confirm Password</span>
+          <span className="text-[var(--theme-text-white)] text-sm sm:text-base mb-1 block">Confirm Password</span>
           <div className="relative">
             <input
               required
@@ -277,7 +277,7 @@ export default function Register(): React.ReactElement {
 
         <button
           disabled={loading || !ready || !passwordsMatch}
-          className={pressBtn("w-full rounded-2xl bg-[var(--theme-button)] px-4 py-2.5 sm:py-3 text-[var(--theme-text-white)] text-sm sm:text-base font-semibold hover:bg-[var(--theme-button-hover)] hover:text-[var(--theme-textbox)] disabled:opacity-60 disabled:cursor-not-allowed")}
+          className={pressBtn("w-full rounded-2xl bg-[var(--theme-button-dark)] px-4 py-2.5 sm:py-3 text-[var(--theme-text)] text-sm sm:text-base font-semibold hover:bg-[var(--theme-button-hover)] hover:text-[var(--theme-textbox)] disabled:opacity-60 disabled:cursor-not-allowed")}
         >
           {loading ? '…' : 'Create account'}
         </button>
