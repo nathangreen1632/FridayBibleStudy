@@ -52,9 +52,24 @@ function sortIdsByPosition(items: Prayer[]): number[] {
 function mergeIn(by: Map<number, Prayer>, p: Prayer): Map<number, Prayer> {
   const next = new Map(by);
   const prev = next.get(p.id);
-  next.set(p.id, prev ? { ...prev, ...p } : p);
+
+  if (!prev) {
+    next.set(p.id, p);
+    return next;
+  }
+
+  // Preserve nested fields that are sometimes omitted in socket patches
+  const merged: Prayer = {
+    ...prev,
+    ...p,
+    author: p.author ?? prev.author,            // <-- keep existing author if missing
+    attachments: p.attachments ?? prev.attachments, // (optional) same idea for attachments
+  };
+
+  next.set(p.id, merged);
   return next;
 }
+
 
 function isStrictlyIncreasing(positions: number[]): boolean {
   for (let i = 1; i < positions.length; i++) {
