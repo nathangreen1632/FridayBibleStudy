@@ -4,7 +4,13 @@ import { toast } from 'react-hot-toast';
 import { ArrowUpAZ, ArrowDownAZ } from 'lucide-react';
 import { fetchRoster, type RosterRow } from '../helpers/api/rosterApi';
 
-export type RosterSortField = 'name' | 'email' | 'addressCity' | 'addressState' | 'spouseName';
+export type RosterSortField =
+  | 'name'
+  | 'email'
+  | 'addressStreet'
+  | 'addressCity'
+  | 'addressState'
+  | 'spouseName';
 
 type LoadArgs = {
   q?: string;
@@ -72,14 +78,22 @@ export default function RosterPage(): React.ReactElement {
   // Debounced live search (mirror admin)
   useEffect(() => {
     const next = qInput.trim();
-    if (debounceRef.current) { window.clearTimeout(debounceRef.current); debounceRef.current = null; }
+    if (debounceRef.current) {
+      window.clearTimeout(debounceRef.current);
+      debounceRef.current = null;
+    }
     debounceRef.current = window.setTimeout(() => {
       const args: LoadArgs = { q: next, page: 1 };
       if (sortBy) { args.sortBy = sortBy; args.sortDir = sortDir; }
       void load(args);
     }, 300);
-    return () => { if (debounceRef.current) { window.clearTimeout(debounceRef.current); debounceRef.current = null; } };
-  }, [qInput, sortBy, sortDir]);
+    return () => {
+      if (debounceRef.current) {
+        window.clearTimeout(debounceRef.current);
+        debounceRef.current = null;
+      }
+    };
+  }, [qInput, sortBy, sortDir]); // eslint-disable-line react-hooks/exhaustive-deps
 
   // Paging uses current filters
   useEffect(() => {
@@ -102,8 +116,12 @@ export default function RosterPage(): React.ReactElement {
       if (typeof res?.total === 'number') setTotal(res.total);
       if (typeof res?.page === 'number') setPage(res.page);
     } catch {
-      console.error('Failed to load roster'); toast.error('Failed to load roster'); setRows([]);
-    } finally { setLoading(false); }
+      console.error('Failed to load roster');
+      toast.error('Failed to load roster');
+      setRows([]);
+    } finally {
+      setLoading(false);
+    }
   }
 
   async function clearSearch(): Promise<void> {
@@ -118,13 +136,13 @@ export default function RosterPage(): React.ReactElement {
   if (loading) {
     bodyRows = (
       <tr>
-        <td colSpan={6} className="px-3 py-4 opacity-70">Loading…</td>
+        <td colSpan={7} className="px-3 py-4 opacity-70">Loading…</td>
       </tr>
     );
   } else if (!rows || rows.length === 0) {
     bodyRows = (
       <tr>
-        <td colSpan={6} className="px-3 py-4 opacity-70">No members found.</td>
+        <td colSpan={7} className="px-3 py-4 opacity-70">No members found.</td>
       </tr>
     );
   } else {
@@ -140,6 +158,7 @@ export default function RosterPage(): React.ReactElement {
           </a>
         </td>
         <td className="px-3 py-2">{r.phone ?? ''}</td>
+        <td className="px-3 py-2">{r.addressStreet ?? ''}</td>
         <td className="px-3 py-2">{r.addressCity ?? ''}</td>
         <td className="px-3 py-2">{r.addressState ?? ''}</td>
         <td className="px-3 py-2">{r.spouseName ?? ''}</td>
@@ -164,7 +183,7 @@ export default function RosterPage(): React.ReactElement {
 
   return (
     <div className="p-3 space-y-3 mx-auto max-w-full">
-      {/* Search (same block as admin page) */}
+      {/* Search (same block as admin) */}
       <div className="flex gap-2 items-end">
         <div className="flex-1">
           <label htmlFor="roster-search" className="block text-sm mb-1">Search</label>
@@ -173,7 +192,7 @@ export default function RosterPage(): React.ReactElement {
               id="roster-search"
               value={qInput}
               onChange={(e) => setQInput(e.target.value)}
-              placeholder="Search name, email, city..."
+              placeholder="Search name, email, street, city..."
               className="w-full px-3 py-2 pr-20 rounded-lg border border-[var(--theme-border)] bg-[var(--theme-textbox)] text-[var(--theme-placeholder)] placeholder-[var(--theme-placeholder)]"
             />
             {qInput !== '' ? (
@@ -204,9 +223,10 @@ export default function RosterPage(): React.ReactElement {
               <SortTh label="Name" field="name" activeField={sortBy} direction={sortDir} onSort={onSort} />
               <SortTh label="Email" field="email" activeField={sortBy} direction={sortDir} onSort={onSort} />
               <th className="text-left px-3 py-2 border-t-2 border-b-2 border-[var(--theme-border)]">Phone</th>
+              <SortTh label="Street" field="addressStreet" activeField={sortBy} direction={sortDir} onSort={onSort} />
               <SortTh label="City" field="addressCity" activeField={sortBy} direction={sortDir} onSort={onSort} />
               <SortTh label="State" field="addressState" activeField={sortBy} direction={sortDir} onSort={onSort} />
-              <SortTh label="Spouse" field="spouseName"  activeField={sortBy} direction={sortDir} onSort={onSort} />
+              <SortTh label="Spouse" field="spouseName" activeField={sortBy} direction={sortDir} onSort={onSort} />
             </tr>
             </thead>
 
