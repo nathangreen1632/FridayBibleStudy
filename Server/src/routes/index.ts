@@ -11,6 +11,7 @@ import photosRouter from './photos.route.js';
 import bibleRouter from './bible.route.js';
 import eventsRouter from './events.route.js';
 import adminEventsRouter from './admin/events.admin.route.js';
+import rosterRouter from "./roster.route.js";
 
 const router: Router = Router();
 
@@ -26,6 +27,7 @@ router.use('/prayers',  prayersRouter);
 router.use('/comments', commentsRouter);
 router.use('/health',   healthRouter);
 router.use('/photos',   photosRouter);
+router.use('/roster', rosterRouter);
 
 
 export default router;
