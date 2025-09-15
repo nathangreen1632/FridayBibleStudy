@@ -1,14 +1,14 @@
 // Client/src/pages/EventsPage.tsx
 import React, { useEffect, useMemo, useState } from 'react';
 import toast from 'react-hot-toast';
-import { ChevronDown } from 'lucide-react'; // if you use react-lucide, change to: import { ChevronDown } from 'react-lucide';
+import { ChevronDown } from 'lucide-react';
 import { useAuthStore } from '../stores/useAuthStore';
 import {
   fetchEvents,
   createEvent,
   updateEvent,
   deleteEvent,
-  type EventRow,
+  type EventRow, emailEvent,
 } from '../helpers/api/eventsApi';
 import EventModal from '../modals/EventModal'; // ✅
 
@@ -384,18 +384,41 @@ export default function EventsPage(): React.ReactElement {
 
                   {/* Admin actions live OUTSIDE the content button (no nesting) */}
                   {isAdmin && (
-                    <div className="mt-3 flex shrink-0 gap-2">
+                    <div className="mt-3 flex items-center gap-2">
                       <button
                         type="button"
                         onClick={() => beginEdit(ev.id)}
-                        className="rounded-lg border border-[var(--theme-border)] px-3 py-1 text-sm bg-[var(--theme-button)] text-[var(--theme-text-white)] hover:bg-[var(--theme-button-hover)] hover:text-[var(--theme-textbox)]"
+                        className="rounded-lg border border-[var(--theme-border)] px-3 py-1 text-sm bg-[var(--theme-button-dark)] text-[var(--theme-accent)] hover:bg-[var(--theme-button-hover)] hover:text-[var(--theme-textbox)]"
                       >
                         Edit
                       </button>
+
+                      <button
+                        type="button"
+                        onClick={async () => {
+                          // Email this event to roster
+                          try {
+                            const ok = await emailEvent(ev.id);
+                            if (ok) {
+                              toast.success('Event emailed to the group.');
+                            } else {
+                              toast.error('Could not send the email.');
+                            }
+                          } catch {
+                            toast.error('Could not send the email.');
+                          }
+                        }}
+                        className="rounded-lg border border-[var(--theme-border)] px-3 py-1 text-sm bg-[var(--theme-button-dark)] text-[var(--theme-accent)] hover:bg-[var(--theme-button-hover)] hover:text-[var(--theme-textbox)]"
+                        aria-label="Email this event to the group"
+                        title="Email this event to the group"
+                      >
+                        Email Group
+                      </button>
+
                       <button
                         type="button"
                         onClick={() => removeRow(ev.id)}
-                        className="rounded-lg bg-[var(--theme-error)] px-3 py-1 text-sm text-white hover:opacity-90"
+                        className="rounded-lg bg-[var(--theme-error)] hover:bg-[var(--theme-button-error)] px-3 py-1 text-sm text-white hover:opacity-90"
                       >
                         Delete
                       </button>
