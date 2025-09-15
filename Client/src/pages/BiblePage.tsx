@@ -372,7 +372,7 @@ export default function BiblePage(): React.ReactElement {
         </form>
       </div>
 
-      <div className="mt-3 md:mt-4 bg-[var(--theme-surface)] border border-[var(--theme-border)] rounded-xl p-4 md:p-5">
+      <div className="mt-3 md:mt-4 bg-[var(--theme-accent)] border border-[var(--theme-border)] rounded-xl p-4 md:p-5">
         {html ? (
           <div className="scripture-styles prose prose-sm md:prose max-w-none eb-container text-xl custom-scrollbar">
             <div dangerouslySetInnerHTML={{ __html: html }} />
