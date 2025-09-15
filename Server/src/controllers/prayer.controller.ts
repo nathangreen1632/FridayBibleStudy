@@ -285,7 +285,7 @@ export async function updatePrayer(req: Request, res: Response): Promise<void> {
   }
 
   if (!isAuthor && !isAdmin && !isParticipant) {
-    res.status(403).json({ error: 'Forbidden' });
+    res.status(403).json({ error: 'You may not move another\'s prayer' });
     return;
   }
 
