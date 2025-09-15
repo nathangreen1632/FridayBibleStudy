@@ -6,6 +6,22 @@ import type { Prayer, Status } from '../types/domain.types';
 import { apiWithRecaptcha } from './secure-api.helper';
 import { toast } from 'react-hot-toast';
 
+function fireAndForgetAsync<T>(fn: () => Promise<T>): void {
+  const schedule: (cb: () => void) => void =
+    typeof queueMicrotask === 'function' ? queueMicrotask : (cb) => setTimeout(cb, 0);
+
+  schedule(() => {
+    (async () => {
+      try {
+        await fn();
+      } catch {
+        console.error('Error in fireAndForgetAsync');
+      }
+    })();
+  });
+}
+
+
 /**
  * One-time bootstrap data fetch for a board page.
  * Safe: never throws; store handles its own error state.
@@ -111,7 +127,9 @@ export function usePrayerCardRenderer(byId: Map<number, Prayer>, groupId?: numbe
           category: item.category,
           createdAt: item.createdAt,
           groupId: groupId ?? null,
-          onMove: (prayerId: number, to: Status) => { void moveToStatus(prayerId, to); },
+          onMove: (prayerId: number, to: Status): void => {
+            fireAndForgetAsync(() => moveToStatus(prayerId, to));
+          },
         });
       } catch {
         return null;
