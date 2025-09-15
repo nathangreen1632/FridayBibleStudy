@@ -34,6 +34,9 @@
     --theme-placeholder: var(--c-e);
     --theme-pencil: var(--c-e);
     --theme-superscript: var(--c-e);
+    --theme-moveto: var(--c-f);
+    --theme-scripture: var(--c-f);
+    --theme-verse: var(--c-f);
 
     /* buttons */
     --theme-button: var(--c-e);
@@ -105,6 +108,9 @@
     --theme-placeholder: var(--c-e);
     --theme-pencil: var(--c-f);
     --theme-superscript: var(--c-f);
+    --theme-moveto: var(--c-e);
+    --theme-scripture: var(--c-e);
+    --theme-verse: var(--c-e);
 
     /* buttons */
     --theme-button: var(--c-a);
