@@ -8,6 +8,7 @@ import {
   adminDeleteEvent,
   adminListEvents,
   adminUpdateEvent,
+  adminEmailEvent, // ✅ add
 } from '../../controllers/admin/events.admin.controller.js';
 
 const router: Router = Router();
@@ -23,5 +24,8 @@ router.patch('/:id', requireAuth, requireAdmin, recaptchaMiddleware, adminUpdate
 
 // Delete
 router.delete('/:id', requireAuth, requireAdmin, recaptchaMiddleware, adminDeleteEvent);
+
+// Email event to roster (admins only; reCAPTCHA protected)
+router.post('/:id/email', requireAuth, requireAdmin, recaptchaMiddleware, adminEmailEvent); // ✅ NEW
 
 export default router;
