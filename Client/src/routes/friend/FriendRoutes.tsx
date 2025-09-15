@@ -8,6 +8,7 @@ import ProfilePage from '../../pages/AccountPage';
 import PhotosPage from '../../pages/PhotosPage';
 import BiblePage from "../../pages/BiblePage.tsx";
 import EventsPage from '../../pages/EventsPage.tsx';
+import RosterPage from '../../pages/RosterPage.tsx';
 
 const friendRoutes: RouteObject[] = [
   {
@@ -26,6 +27,7 @@ const friendRoutes: RouteObject[] = [
       { path: 'photos', element: <PhotosPage /> },
       { path: 'bible', element: <BiblePage /> },
       { path: 'events', element: <EventsPage /> },
+      { path: 'roster', element: <RosterPage /> },
     ],
   },
 ];

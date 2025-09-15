@@ -88,24 +88,49 @@ export const useSocketStore = create<SocketState>((set, get) => {
     s = undefined; // rely on guards below; app keeps running without realtime
   }
 
+  // --- replace your queue/flush section in useSocketStore.ts with this ---
+
   // Local in-memory queue for socket-driven patches
   let queue: Patch[] = [];
+
+  // Drag-stall guards
+  let dragDeferrals = 0;
+  const MAX_DEFERRALS = 8;       // ~8 * 120ms ≈ 1s
+  const MAX_DEFER_MS = 1500;     // hard stop after 1.5s
+  let firstDeferAt: number | null = null;
 
   const flush = () => {
     if (!queue.length) return;
 
-    // Don't mutate board order mid-drag; retry shortly
+    let dragging: boolean;
     try {
       const { isDragging } = useBoardStore.getState();
-      if (isDragging) {
+      dragging = isDragging;
+    } catch {
+      dragging = false; // if store unavailable, don't block
+    }
+
+    if (dragging) {
+      // initialize the defer timer once
+      firstDeferAt ??= Date.now();
+
+      const elapsed = Date.now() - firstDeferAt;
+      const canKeepDeferring = dragDeferrals < MAX_DEFERRALS && elapsed < MAX_DEFER_MS;
+
+      if (canKeepDeferring) {
+        dragDeferrals += 1;
         setTimeout(() => {
           try { flush(); } catch {}
         }, 120);
         return;
       }
-    } catch {
-      // if store is unavailable, fall through and try to apply (don’t crash)
+
+      // fall through after too many/too long deferrals
     }
+
+    // reset drag guard on actual apply
+    dragDeferrals = 0;
+    firstDeferAt = null;
 
     const batch = queue;
     queue = [];
@@ -180,8 +205,8 @@ export const useSocketStore = create<SocketState>((set, get) => {
 
       // Legacy "update created" → bump card visually; server also emits PrayerUpdated which will sync
       onE<UpdateCreatedPayload>(Events.UpdateCreated, (p) => {
-        try { useBoardStore.getState().bumpToTop(p.prayerId); } catch {}
         try { usePraisesStore.getState().bumpToTop(p.prayerId); } catch {}
+        try { useBoardStore.getState().bumpToTop(p.prayerId); } catch {}
       });
 
       // ---- COMMENT (updates) events ----
@@ -193,8 +218,25 @@ export const useSocketStore = create<SocketState>((set, get) => {
         try { useCommentsStore.getState().onUpdated(p); } catch {}
       });
 
-      onE<CommentDeletedPayload>(Events.CommentDeleted, (p) => {
-        try { useCommentsStore.getState().onDeleted(p); } catch {}
+      // ✅ Robust delete handler: prefer store.onDeleted (updates counts + lastAt), else fallback
+      onE<CommentDeletedPayload>(Events.CommentDeleted, (payload) => {
+        try {
+          const pid = Number((payload as any)?.prayerId || 0);
+          const cid = Number((payload as any)?.commentId ?? (payload as any)?.id ?? 0);
+
+          const cs = useCommentsStore.getState();
+
+          if (typeof cs.onDeleted === 'function') {
+            cs.onDeleted(payload as any);
+            return;
+          }
+
+          if (pid && cid && typeof cs.removeComment === 'function') {
+            cs.removeComment(pid, cid);
+          }
+        } catch {
+          // swallow
+        }
       });
 
       onE<CommentsClosedPayload>(Events.CommentsClosed, (p) => {
@@ -205,6 +247,32 @@ export const useSocketStore = create<SocketState>((set, get) => {
         // This updates newCount + lastCommentAt → drives the red bell state
         try { useCommentsStore.getState().onCountChanged(p); } catch {}
       });
+
+      // ✅ Legacy back-compat: if anything still emits raw 'update:deleted'
+      try {
+        s.on('update:deleted', (payload: any) => {
+          try {
+            const pid = Number(payload?.prayerId || 0);
+            const cid = Number(payload?.commentId || payload?.id || 0);
+            if (!pid || !cid) return;
+
+            const cs = useCommentsStore.getState();
+
+            if (typeof cs.onDeleted === 'function') {
+              cs.onDeleted({ prayerId: pid, commentId: cid });
+              return;
+            }
+
+            if (typeof cs.removeComment === 'function') {
+              cs.removeComment(pid, cid);
+            }
+          } catch {
+            // swallow
+          }
+        });
+      } catch {
+        // no-op
+      }
 
     } catch {
       // Listener wiring should never crash the app

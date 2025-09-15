@@ -131,16 +131,16 @@ export default function Login(): React.ReactElement {
       <form
         onSubmit={onSubmit}
         aria-label="Sign in"
-        className="w-full max-w-md bg-[var(--theme-surface)] border border-[var(--theme-border)] rounded-2xl shadow-md md:shadow-[0_4px_14px_0_var(--theme-shadow)] p-4 sm:p-6 md:p-8 space-y-4 sm:space-y-5"
+        className="w-full max-w-md bg-[var(--theme-accent)] border border-[var(--theme-border)] rounded-2xl shadow-md md:shadow-[0_4px_14px_0_var(--theme-shadow)] p-4 sm:p-6 md:p-8 space-y-4 sm:space-y-5"
       >
         <header className="space-y-1 text-center">
-          <h1 className="text-2xl sm:text-3xl font-semibold text-[var(--theme-accent)]">Sign in</h1>
-          <p className="text-sm sm:text-md opacity-80">Welcome back to Friday Bible Study.</p>
+          <h1 className="text-2xl sm:text-3xl font-semibold text-[var(--theme-text-white)]">Sign in</h1>
+          <p className="text-[var(--theme-text-white)] text-sm sm:text-md opacity-80">Welcome back to Friday Bible Study.</p>
         </header>
 
         {/* Email */}
         <label className="block text-xs sm:text-sm font-medium">
-          <span className="text-sm sm:text-base mb-1 block">Email</span>
+          <span className="text-[var(--theme-text-white)] text-sm sm:text-base mb-1 block">Email</span>
           <input
             required
             type="email"
@@ -155,7 +155,7 @@ export default function Login(): React.ReactElement {
 
         {/* Password */}
         <label className="block text-xs sm:text-sm font-medium">
-          <span className="text-sm sm:text-base mb-1 block">Password</span>
+          <span className="text-[var(--theme-text-white)] text-sm sm:text-base mb-1 block">Password</span>
           <div className="relative">
             <input
               required
@@ -191,7 +191,7 @@ export default function Login(): React.ReactElement {
           type="submit"
           disabled={disabled}
           className={pressBtn(
-            'w-full rounded-xl bg-[var(--theme-button)] px-4 py-2.5 sm:py-3 text-[var(--theme-text-white)] text-sm sm:text-base font-semibold hover:bg-[var(--theme-button-hover)] hover:text-[var(--theme-textbox)] disabled:opacity-60 disabled:cursor-not-allowed'
+            'w-full rounded-xl bg-[var(--theme-button-dark)] px-4 py-2.5 sm:py-3 text-[var(--theme-text)] text-sm sm:text-base font-semibold hover:bg-[var(--theme-button-hover)] hover:text-[var(--theme-textbox)] disabled:opacity-60 disabled:cursor-not-allowed'
           )}
         >
           {loading ? '…' : 'Sign in'}
@@ -199,12 +199,12 @@ export default function Login(): React.ReactElement {
 
         <div className="text-xs sm:text-sm pt-2 sm:pt-3 space-y-2 text-center">
           <p>
-            <Link to="/request-reset" className="hover:underline">
+            <Link to="/request-reset" className="hover:underline text-[var(--theme-text-white)]">
               Forgot password?
             </Link>
           </p>
           <p>
-            <Link to="/register" className="hover:underline">
+            <Link to="/register" className="hover:underline text-[var(--theme-text-white)]">
               Create Account
             </Link>
           </p>

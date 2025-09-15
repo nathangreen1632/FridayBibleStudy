@@ -14,6 +14,22 @@ import {
   bestEffortNotify,
 } from '../../helpers/commentsController.helper.js';
 
+// add near the top of the file, after the imports
+type PlainPrayerRow = {
+  id: number;
+  groupId: number;
+  group?: { name?: string | null } | null;
+  authorUserId: number;
+  author?: { name?: string | null } | null;
+  title?: string | null;
+  category: Category;
+  status: Status;
+  commentCount?: number | null;
+  lastCommentAt?: Date | string | null;
+  updatedAt: Date | string;
+  lastActivity?: Date | string | null;
+};
+
 
 export type ListPrayersParams = {
   q?: string;
@@ -60,7 +76,8 @@ export async function findPrayersForAdmin(params: ListPrayersParams) {
     });
 
     const items = rows.map((p) => {
-      const plain = p.get({ plain: true }) as any;
+      const plain: PlainPrayerRow = p.get({ plain: true });
+
       return {
         id: plain.id,
         groupId: plain.groupId,
@@ -73,7 +90,7 @@ export async function findPrayersForAdmin(params: ListPrayersParams) {
         commentCount: typeof plain.commentCount === 'number' ? plain.commentCount : 0,
         lastCommentAt: plain.lastCommentAt ?? null,
         updatedAt: plain.updatedAt,
-        lastActivity: plain.lastActivity,
+        lastActivity: plain.lastActivity ?? plain.updatedAt,
       };
     });
 

@@ -19,14 +19,14 @@ export default function ContactFormView({
   const canSubmit = !submitting && messageHasText;
 
   return (
-    <div className="w-full mx-auto max-w-lg rounded-2xl border border-[var(--theme-border)] bg-[var(--theme-surface)] shadow-md md:shadow-[0_6px_16px_var(--theme-shadow)] p-4 sm:p-6">
+    <div className="w-full mx-auto max-w-lg rounded-2xl border border-[var(--theme-border)] bg-[var(--theme-accent)] shadow-md md:shadow-[0_6px_16px_var(--theme-shadow)] p-4 sm:p-6">
       <div className="space-y-4">
-        <h2 className="text-xl sm:text-2xl text-center font-semibold mb-2 sm:mb-3">
+        <h2 className="text-xl sm:text-2xl text-[var(--theme-text-white)] text-center font-semibold mb-2 sm:mb-3">
           Contact Us
         </h2>
 
         <label className="block">
-          <span className="block uppercase tracking-wider text-[11px] sm:text-xs mb-1 text-[var(--theme-accent)]/80">Name</span>
+          <span className="block uppercase tracking-wider text-[11px] sm:text-xs mb-1 text-[var(--theme-text-white)]/80">Name</span>
           <input
             className="w-full rounded-xl px-3 py-2 bg-[var(--theme-textbox)] text-[var(--theme-placeholder)] border border-[var(--theme-border)] text-sm sm:text-base shadow-[0_2px_6px_var(--theme-shadow)] focus:outline-none focus:ring-2 focus:ring-[var(--theme-link)] focus:ring-offset-2 focus:ring-offset-[var(--theme-surface)] focus:shadow-[inset_0_0_0_1px_var(--theme-border),_0_4px_12px_var(--theme-shadow)] placeholder:text-[var(--theme-placeholder)]"
             value={form.name}
@@ -37,7 +37,7 @@ export default function ContactFormView({
         </label>
 
         <label className="block">
-          <span className="block uppercase tracking-wider text-[11px] sm:text-xs mb-1 text-[var(--theme-accent)]/80">Email</span>
+          <span className="block uppercase tracking-wider text-[11px] sm:text-xs mb-1 text-[var(--theme-text-white)]/80">Email</span>
           <input
             type="email"
             className="w-full rounded-xl px-3 py-2 bg-[var(--theme-textbox)] text-[var(--theme-placeholder)] border border-[var(--theme-border)] text-sm sm:text-base shadow-[0_2px_6px_var(--theme-shadow)] focus:outline-none focus:ring-2 focus:ring-[var(--theme-link)] focus:ring-offset-2 focus:ring-offset-[var(--theme-surface)] focus:shadow-[inset_0_0_0_1px_var(--theme-border),_0_4px_12px_var(--theme-shadow)] placeholder:text-[var(--theme-placeholder)]"
@@ -49,7 +49,7 @@ export default function ContactFormView({
         </label>
 
         <label className="block">
-          <span className="block uppercase tracking-wider text-[11px] sm:text-xs mb-1 text-[var(--theme-accent)]/80">Message</span>
+          <span className="block uppercase tracking-wider text-[11px] sm:text-xs mb-1 text-[var(--theme-text-white)]/80">Message</span>
           <textarea
             className="w-full min-h-[120px] sm:min-h-[140px] rounded-xl px-3 py-2 bg-[var(--theme-textbox)] text-[var(--theme-placeholder)] border border-[var(--theme-border)] text-sm sm:text-base leading-relaxed shadow-[0_2px_6px_var(--theme-shadow)] focus:outline-none focus:ring-2 focus:ring-[var(--theme-link)] focus:ring-offset-2 focus:ring-offset-[var(--theme-surface)] focus:shadow-[inset_0_0_0_1px_var(--theme-border),_0_4px_12px_var(--theme-shadow)] custom-scrollbar placeholder:text-[var(--theme-placeholder)]/80"
             value={form.message}
@@ -64,7 +64,7 @@ export default function ContactFormView({
           onClick={onSubmit}
           disabled={!canSubmit}
           title={!messageHasText ? 'Please enter a message first' : undefined}
-          className={pressBtn("w-full mt-2 rounded-2xl px-4 py-2.5 sm:py-3 font-semibold text-sm sm:text-base bg-[var(--theme-button)] text-[var(--theme-text-white)] hover:bg-[var(--theme-button-hover)] hover:text-[var(--theme-textbox)] disabled:opacity-60 disabled:cursor-not-allowed")}
+          className={pressBtn("w-full mt-2 rounded-2xl px-4 py-2.5 sm:py-3 font-semibold text-sm sm:text-base bg-[var(--theme-button-dark)] text-[var(--theme-text)] hover:bg-[var(--theme-button-hover)] hover:text-[var(--theme-textbox)] disabled:opacity-80 disabled:cursor-not-allowed")}
           aria-disabled={!canSubmit}
         >
           {submitting ? 'Sending…' : 'Send Message'}

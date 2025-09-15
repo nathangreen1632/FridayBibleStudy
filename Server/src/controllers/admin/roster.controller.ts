@@ -7,9 +7,23 @@ export async function getAdminRoster(req: Request, res: Response): Promise<void>
   const pageSize = typeof req.query.pageSize === 'string' ? Number(req.query.pageSize) : undefined;
 
   // ✅ NEW: parse sort params (leave validation to service)
-  const sortBy = typeof req.query.sortBy === 'string' ? req.query.sortBy : undefined;
-  const rawDir = typeof req.query.sortDir === 'string' ? req.query.sortDir.toLowerCase() : undefined;
-  const sortDir = rawDir === 'desc' ? 'desc' : rawDir === 'asc' ? 'asc' : undefined;
+  let sortBy: string | undefined;
+  if (typeof req.query.sortBy === 'string') {
+    sortBy = req.query.sortBy;
+  }
+
+  let rawDir: string | undefined;
+  if (typeof req.query.sortDir === 'string') {
+    rawDir = req.query.sortDir.toLowerCase();
+  }
+
+  let sortDir: 'asc' | 'desc' | undefined;
+  if (rawDir === 'desc') {
+    sortDir = 'desc';
+  } else if (rawDir === 'asc') {
+    sortDir = 'asc';
+  }
+
 
   const result = await listRoster({ q, page, pageSize, sortBy, sortDir });
   if (!result.ok) {

@@ -17,10 +17,10 @@ async function ensureSystemMediaGroup(): Promise<ResolveGroupResult> {
 
     const payload: Record<string, unknown> = { name };
 
-    if (Object.prototype.hasOwnProperty.call(attrs, 'slug')) {
+    if (Object.hasOwn(attrs, 'slug')) {
       payload.slug = 'system-media-group';
     }
-    if (Object.prototype.hasOwnProperty.call(attrs, 'groupEmail')) {
+    if (Object.hasOwn(attrs, 'groupEmail')) {
       payload.groupEmail = null; // optional; leave empty
     }
 

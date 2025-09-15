@@ -1,8 +1,8 @@
 // Server/src/middleware/auth.middleware.ts
-import type { Request, Response, NextFunction } from 'express';
-import { verifyJwt, type AppJwtPayload } from '../utils/jwt.util.js';
-import { env } from '../config/env.config.js';
-import type { Role, UserJwtPayload } from '../types/auth.types.js';
+import type {NextFunction, Request, Response} from 'express';
+import {type AppJwtPayload, verifyJwt} from '../utils/jwt.util.js';
+import {env} from '../config/env.config.js';
+import type {Role} from '../types/auth.types.js';
 
 /** Coerce any unknown role into the app's Role union. */
 function normalizeRole(role: unknown): Role {
@@ -36,7 +36,7 @@ export function requireAuth(req: Request, res: Response, next: NextFunction): vo
   }
 
   try {
-    const raw = verifyJwt(token) as AppJwtPayload;
+    const raw: AppJwtPayload = verifyJwt(token);
 
     const id = extractNumericId(raw as any);
     const role = normalizeRole((raw as any).role);
@@ -49,14 +49,12 @@ export function requireAuth(req: Request, res: Response, next: NextFunction): vo
         : undefined;
 
     // Build normalized request user using your production shape
-    const user: UserJwtPayload = {
+    req.user = {
       ...(raw as object),
       id,
       role,
       groupId,
     };
-
-    req.user = user;
     next();
   } catch {
     res.status(401).json({ error: 'Invalid token' });

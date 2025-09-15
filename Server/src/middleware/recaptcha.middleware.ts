@@ -69,18 +69,20 @@ function devWarnOnce(key: string, msg: string, detail?: unknown) {
  */
 function makeRouteKey(req: Request): string {
   const method = (req.method || 'GET').toUpperCase();
-  // Prefer the registered route pattern when available
   const routePath = (req.route?.path as string | undefined) ?? req.path ?? '';
   const raw = `${req.baseUrl || ''}${routePath || ''}`;
 
-  const normalized = raw
-    .replace(/\/\d+(\b|(?=\/))/g, '/:id')   // numbers -> :id
-    .replace(/:([a-zA-Z]+)Id\b/g, ':id')    // :somethingId -> :id
-    .replace(/:prayerId\b/g, ':id')         // explicit safety
-    .replace(/\/{2,}/g, '/');               // no double slashes
+  const normalized = stripTrailingSlash(
+    raw
+      .replace(/\/\d+(\b|(?=\/))/g, '/:id')   // numbers -> :id
+      .replace(/:([a-zA-Z]+)Id\b/g, ':id')    // :somethingId -> :id
+      .replace(/:prayerId\b/g, ':id')         // explicit safety
+      .replace(/\/{2,}/g, '/')                // collapse //
+  );
 
   return `${method} ${normalized}`;
 }
+
 
 /** ----------------------------------------------------------------------------
  * Path-alias patterns (header-driven) for comments actions
@@ -91,6 +93,9 @@ const ACTION_PATTERNS: Record<string, Array<{ method: string; paths: string[] }>
   comment_create: [{ method: 'POST', paths: ['/api/comments/create', '/comments/create', '/create'] }],
   comment_update: [{ method: 'PATCH', paths: ['/api/comments/:commentId', '/comments/:commentId'] }],
   comment_delete: [{ method: 'DELETE', paths: ['/api/comments/:commentId', '/comments/:commentId'] }],
+  admin_event_create: [{ method: 'POST',   paths: ['/api/admin/events', '/admin/events'] }],
+  admin_event_update: [{ method: 'PATCH',  paths: ['/api/admin/events/:id', '/admin/events/:id'] }],
+  admin_event_delete: [{ method: 'DELETE', paths: ['/api/admin/events/:id', '/admin/events/:id'] }],
 };
 
 /** ----------------------------------------------------------------------------
@@ -141,7 +146,10 @@ const NORMALIZED_ROUTE_ACTIONS: Record<string, string> = {
   // Admin comments (typed emits expect this)
   'POST /api/admin/prayers/:id/comments': 'admin_post_comment',
   'POST /admin/prayers/:id/comments': 'admin_post_comment', // legacy/non-api fallback
-  'POST /prayers/:id/comments': 'admin_post_comment',       // extra safety
+  'POST /prayers/:id/comments': 'admin_post_comment',
+  'POST /api/admin/events':        'admin_event_create',
+  'PATCH /api/admin/events/:id':   'admin_event_update',
+  'DELETE /api/admin/events/:id':  'admin_event_delete',// extra safety
 
   // Admin delete & status (canonical)
   'DELETE /api/admin/prayers/:id': 'admin_prayer_delete',
@@ -152,31 +160,36 @@ const NORMALIZED_ROUTE_ACTIONS: Record<string, string> = {
 function routeKeyCandidates(req: Request): string[] {
   const method = (req.method || 'GET').toUpperCase();
 
-  const base = req.baseUrl || ''; // e.g. "/auth"
-  const routePath = (req.route && (req.route.path as string)) || ''; // e.g. "/login" or "/:id/updates"
-  const path = req.path || ''; // e.g. "/auth/login"
+  const base = req.baseUrl || '';
+  const routePath = (req.route && (req.route.path as string)) || '';
+  const path = req.path || '';
   const original = req.originalUrl || '';
   const qIndex = original.indexOf('?');
   const origNoQuery = qIndex === -1 ? original : original.slice(0, qIndex);
-  const origNoApi = origNoQuery.replace(/^\/api\b/, ''); // "/auth/login"
+  const origNoApi = origNoQuery.replace(/^\/api\b/, '');
 
-  // Normalize numeric IDs to ":id" so "/prayers/123" matches "/prayers/:id"
-  const normalize = (p: string) => p.replace(/\/\d+(?=\/|$)/g, '/:id');
+  const normalizeIds = (p: string) => stripTrailingSlash(p.replace(/\/\d+(?=\/|$)/g, '/:id'));
 
   const set = new Set<string>([
     `${method} ${base}${routePath}`,
     `${method} ${path}`,
     `${method} ${origNoQuery}`,
     `${method} ${origNoApi}`,
-    `${method} ${normalize(base + routePath)}`,
-    `${method} ${normalize(path)}`,
-    `${method} ${normalize(origNoQuery)}`,
-    `${method} ${normalize(origNoApi)}`,
+    `${method} ${normalizeIds(base + routePath)}`,
+    `${method} ${normalizeIds(path)}`,
+    `${method} ${normalizeIds(origNoQuery)}`,
+    `${method} ${normalizeIds(origNoApi)}`,
   ]);
 
-  // Drop keys with empty paths
+  // add trailing-slashless variants for all of the above
+  for (const k of Array.from(set)) {
+    const [m, p] = k.split(' ');
+    if (p) set.add(`${m} ${stripTrailingSlash(p)}`);
+  }
+
   return Array.from(set).filter((k) => k.split(' ')[1]);
 }
+
 
 function resolveExpectedActionFromRoute(req: Request): string | null {
   // 1) Try strict normalized key first (covers admin comments/delete/status robustly)

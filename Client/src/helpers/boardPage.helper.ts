@@ -1,10 +1,26 @@
 // Client/src/helpers/boardPage.helper.tsx
-import React,{ useCallback, useEffect } from 'react';
+import React, { useCallback, useEffect } from 'react';
 import type { ColumnKey } from '../components/SortableCard';
 import PrayerCardWithComments from '../components/PrayerCardWithComments';
-import type { Prayer } from '../types/domain.types';
+import type { Prayer, Status } from '../types/domain.types';
 import { apiWithRecaptcha } from './secure-api.helper';
 import { toast } from 'react-hot-toast';
+
+function fireAndForgetAsync<T>(fn: () => Promise<T>): void {
+  const schedule: (cb: () => void) => void =
+    typeof queueMicrotask === 'function' ? queueMicrotask : (cb) => setTimeout(cb, 0);
+
+  schedule(() => {
+    (async () => {
+      try {
+        await fn();
+      } catch {
+        console.error('Error in fireAndForgetAsync');
+      }
+    })();
+  });
+}
+
 
 /**
  * One-time bootstrap data fetch for a board page.
@@ -42,31 +58,35 @@ export function useJoinGroup(
 }
 
 /**
- * Server-persisted move to 'praise' status.
+ * Server-persisted move to any status ('active' | 'praise' | 'archived').
+ * Uses your existing Enterprise reCAPTCHA flow.
  * Safe: graceful failures; no throws.
  */
-export function useMoveToPraise() {
-  return useCallback(async (id: number) => {
+export function useMoveToStatus() {
+  return useCallback(async (id: number, to: Status) => {
     try {
-      const r = await apiWithRecaptcha(`/api/prayers/${id}`, 'prayer_update', {
-        method: 'PATCH',
-        body: JSON.stringify({ status: 'praise', position: 0 }),
-      });
+      const res = await apiWithRecaptcha(
+        `/api/prayers/${id}`,
+        'prayer_update',
+        {
+          method: 'PATCH',
+          body: JSON.stringify({ status: to, position: 0 }),
+        }
+      );
 
-      if (!r.ok) {
-        // Optional: toast on explicit failure; keeping quiet is fine since socket may reconcile.
+      if (!res.ok) {
         try {
-          const body = await r.json().catch(() => ({}));
+          const body = await res.json().catch(() => ({}));
           const msg =
-            (body && typeof body === 'object' && 'error' in body && typeof (body).error === 'string')
+            body && typeof body === 'object' && 'error' in body && typeof (body).error === 'string'
               ? (body).error
-              : 'Failed to move to Praise';
+              : 'You may not move another\'s prayer.';
           toast.error(msg);
         } catch {
-          toast.error('Failed to move to Praise');
+          toast.error('You may not move another\'s prayer.');
         }
       }
-      // If ok: let socket/state reconcile; no toast needed
+      // success: let socket/state reconcile
     } catch {
       // swallow per project guidance
     }
@@ -74,18 +94,31 @@ export function useMoveToPraise() {
 }
 
 /**
+ * Back-compat shim for old callers that only moved to 'praise'.
+ * Prefer useMoveToStatus().
+ */
+export function useMoveToPraise() {
+  const moveToStatus = useMoveToStatus();
+  return useCallback(async (id: number) => {
+    await moveToStatus(id, 'praise');
+  }, [moveToStatus]);
+}
+
+/**
  * Stable renderer for a PrayerCard *with comments*, given a byId map from the store.
  * Accepts an optional groupId so the Comments panel can join the right socket room.
+ * Passes onMove for the mobile “Move To →” bar.
  * Safe: returns null on any issue.
  */
 export function usePrayerCardRenderer(byId: Map<number, Prayer>, groupId?: number | null) {
+  const moveToStatus = useMoveToStatus();
+
   return useCallback(
     (id: number, _column: ColumnKey, _index: number) => {
       try {
         const item = byId.get(id);
         if (!item) return null;
 
-        // inside usePrayerCardRenderer (only change in the file)
         return React.createElement(PrayerCardWithComments, {
           id: item.id,
           title: item.title,
@@ -94,17 +127,20 @@ export function usePrayerCardRenderer(byId: Map<number, Prayer>, groupId?: numbe
           category: item.category,
           createdAt: item.createdAt,
           groupId: groupId ?? null,
+          onMove: (prayerId: number, to: Status): void => {
+            fireAndForgetAsync(() => moveToStatus(prayerId, to));
+          },
         });
       } catch {
         return null;
       }
     },
-    [byId, groupId]
+    [byId, groupId, moveToStatus]
   );
 }
 
 /**
- * Wrapper for store.move handler that surfaces a toast on failure.
+ * Wrapper for store.move handler that surfaces a toast on failure (drag & drop).
  * Safe: no throws; returns void.
  */
 export function useOnMove(

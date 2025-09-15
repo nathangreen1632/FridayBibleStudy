@@ -6,7 +6,10 @@ export const Events = {
   PrayerUpdated: 'prayer:updated',
   PrayerMoved: 'prayer:moved',
   PrayerDeleted: 'prayer:deleted',
+
   UpdateCreated: 'update:created',
+  UpdateDeleted: 'update:deleted',   // ✅ NEW
+
   CommentCreated: 'comment:created',
   CommentUpdated: 'comment:updated',
   CommentDeleted: 'comment:deleted',

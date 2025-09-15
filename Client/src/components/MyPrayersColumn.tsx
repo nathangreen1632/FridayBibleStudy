@@ -53,7 +53,7 @@ function RowActions(props: Readonly<{
     <div className="flex flex-wrap items-center gap-2 mt-2">
       {/* Move row (full width, above buttons) */}
       <div className="flex items-center gap-1 basis-full pb-1">
-        <span className="text-lg">Move To →</span>
+        <span className="text-lg text-[var(--theme-text-white)]">Move To →</span>
         <button
           type="button"
           onClick={() => props.onMove('active')}
@@ -247,12 +247,12 @@ export default function MyPrayersColumn(): React.ReactElement {
 
 
           return (
-            <li key={p.id} className="rounded-xl bg-[var(--theme-card)] p-3 border border-[var(--theme-border)]">
+            <li key={p.id} className="rounded-xl bg-[var(--theme-accent)] p-3 border border-[var(--theme-border)]">
               <div className="flex items-start justify-between gap-3">
                 <div className="flex flex-col gap-1 min-w-full">
                   <div className="flex items-center gap-2">
                     <StatusPill s={p.status} />
-                    <span className="text-sm opacity-70">{new Date(p.updatedAt).toLocaleString()}</span>
+                    <span className="text-sm text-[var(--theme-text-white)] opacity-70">{new Date(p.updatedAt).toLocaleString()}</span>
                   </div>
 
                   {ed ? (
@@ -338,7 +338,7 @@ export default function MyPrayersColumn(): React.ReactElement {
                             confirmLabel="Delete"
                             cancelLabel="Keep editing"
                             onConfirm={async () => {
-                              await onDelete(p.id);      // uses your existing remove flow
+                              await onDelete(p.id);
                               setConfirmingDeleteId(null);
                             }}
                             onCancel={() => setConfirmingDeleteId(null)}
@@ -348,9 +348,9 @@ export default function MyPrayersColumn(): React.ReactElement {
                     </>
                   ) : (
                     <>
-                      <h3 className="font-semibold text-xl text-[var(--theme-text)] truncate">{p.title}</h3>
-                      <p className="text-lg opacity-90 whitespace-pre-line">{p.content}</p>
-                      <p className="text-base opacity-70">{p.category}</p>
+                      <h3 className="font-semibold text-xl text-[var(--theme-text-white)] truncate">{p.title}</h3>
+                      <p className="text-lg text-[var(--theme-text-white)] opacity-90 whitespace-pre-line">{p.content}</p>
+                      <p className="text-base text-[var(--theme-text-white)] opacity-70">{p.category}</p>
                     </>
                   )}
                 </div>

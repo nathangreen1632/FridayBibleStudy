@@ -310,7 +310,7 @@ function CommentItem(props: Readonly<{
         <>
           <textarea
             className="w-full rounded-lg p-2 border text-sm mt-1"
-            style={{ borderColor: 'var(--theme-border)', background: 'var(--theme-surface)', color: 'var(--theme-text)' }}
+            style={{ borderColor: 'var(--theme-border)', background: 'var(--theme-textbox)', color: 'var(--theme-placeholder)' }}
             value={text}
             onChange={(e) => setText(e.target.value)}
             rows={3}

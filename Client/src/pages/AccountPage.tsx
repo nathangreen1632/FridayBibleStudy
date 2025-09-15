@@ -173,96 +173,109 @@ export default function AccountPage(): React.ReactElement {
           </button>
         </header>
 
-        {/* Post a Prayer */}
-        <section className="bg-[var(--theme-surface)] border border-[var(--theme-border)] rounded-2xl shadow-md md:shadow-[0_4px_14px_0_var(--theme-shadow)] p-4 sm:p-6 md:p-8">
-          <header className="mb-4 sm:mb-6">
-            <h2 className="text-xl sm:text-2xl text-center font-semibold text-[var(--theme-accent)] sm:text-center">
-              Post a Prayer
-            </h2>
-            <p className="opacity-80 text-center sm:text-center text-sm sm:text-base">Share a prayer request or praise with the group</p>
-          </header>
+        {/* Post a Prayer (stacked with a ghost card behind) */}
+        <div className="relative isolate">
+          {/* behind/empty card */}
+          <div
+            aria-hidden="true"
+            className={[
+              'pointer-events-none absolute inset-0',
+              'rounded-2xl bg-[var(--theme-surface)]',
+              'border border-[var(--theme-border)]',
+              'shadow-md md:shadow-[0_4px_14px_0_var(--theme-shadow)]',
+              'z-0',
+              'transform-gpu scale-[1.015] sm:scale-[1.055]', // ← shows on ALL edges
+            ].join(' ')}
+          />
 
-          <form className="space-y-4" onSubmit={postPrayer}>
-            {/* Title */}
-            <label className="block text-xs sm:text-sm font-medium">
-              <span className="text-sm sm:text-base mb-1 block">Title</span>
-              <input
-                required
-                placeholder="Brief title"
-                value={prayer.title}
-                onChange={e => setPrayer({ ...prayer, title: e.target.value })}
-                className="block w-full rounded-xl border border-[var(--theme-border)] bg-[var(--theme-textbox)] px-3 py-2 text-sm sm:text-base
-                           text-[var(--theme-placeholder)] focus:outline-none focus:ring-2 focus:ring-[var(--theme-focus)] placeholder:text-[var(--theme-placeholder)]/80"
-              />
-            </label>
+          {/* front/real card */}
+          <section className="relative z-10 bg-[var(--theme-accent)] border border-[var(--theme-border)] rounded-2xl shadow-md md:shadow-[0_4px_14px_0_var(--theme-shadow)] p-4 sm:p-6 md:p-8">
+            <header className="mb-4 sm:mb-6">
+              <h2 className="text-xl sm:text-2xl text-center font-semibold text-[var(--theme-text-white)] sm:text-center">
+                Post a Prayer
+              </h2>
+              <p className="opacity-80 text-[var(--theme-text-white)] text-center sm:text-center text-sm sm:text-base">Share a prayer request or praise with the group</p>
+            </header>
 
-            {/* Category with Lucide chevron */}
-            <label className="block text-xs sm:text-sm font-medium">
-              <span className="text-sm sm:text-base mb-1 block">Category</span>
-
-              <div className="relative">
-                <select
+            <form className="space-y-4" onSubmit={postPrayer}>
+              {/* Title */}
+              <label className="block text-xs sm:text-sm font-medium">
+                <span className="text-sm text-[var(--theme-text-white)] sm:text-base mb-1 block">Title</span>
+                <input
                   required
-                  value={prayer.category}
-                  onChange={e =>
-                    setPrayer({ ...prayer, category: e.target.value as CategoryOption })
-                  }
-                  className={[
-                    'block w-full appearance-none pr-10 rounded-xl border border-[var(--theme-border)] bg-[var(--theme-textbox)] px-3 py-2',
-                    'text-sm sm:text-base',
-                    // ↓ when empty, show faded placeholder; otherwise normal text
-                    !prayer.category
-                      ? 'text-[var(--theme-placeholder)]/70'
-                      : 'text-[var(--theme-placeholder)]',
-                    'focus:outline-none focus:ring-2 focus:ring-[var(--theme-focus)]',
-                  ].join(' ')}
-                >
-                  {/* Disabled placeholder shows greyed in the dropdown, and as the initial value */}
-                  <option value="">
-                    Select Prayer Type
-                  </option>
-                  <option value="birth">Birth</option>
-                  <option value="long-term">Long-term</option>
-                  <option value="praise">Praise</option>
-                  <option value="prayer">Prayer</option>
-                  <option value="pregnancy">Pregnancy</option>
-                  <option value="salvation">Salvation</option>
-                </select>
-
-                <ChevronDown
-                  className="pointer-events-none absolute right-3 top-1/2 -translate-y-1/2 h-4 w-4 text-[var(--theme-placeholder)]"
-                  aria-hidden="true"
+                  placeholder="Brief title"
+                  value={prayer.title}
+                  onChange={e => setPrayer({ ...prayer, title: e.target.value })}
+                  className="block w-full rounded-xl border border-[var(--theme-border)] bg-[var(--theme-textbox)] px-3 py-2 text-sm sm:text-base
+                           text-[var(--theme-placeholder)] focus:outline-none focus:ring-2 focus:ring-[var(--theme-focus)] placeholder:text-[var(--theme-placeholder)]/80"
                 />
-              </div>
-            </label>
+              </label>
 
+              {/* Category with Lucide chevron */}
+              <label className="block text-xs sm:text-sm font-medium">
+                <span className="text-sm text-[var(--theme-text-white)] sm:text-base mb-1 block">Category</span>
 
-            {/* Content */}
-            <label className="block text-xs sm:text-sm font-medium">
-              <span className="text-sm sm:text-base mb-1 block">Content</span>
-              <textarea
-                required
-                rows={5}
-                placeholder="Write your prayer or praise here…"
-                value={prayer.content}
-                onChange={e => setPrayer({ ...prayer, content: e.target.value })}
-                className="block w-full rounded-xl border border-[var(--theme-border)] bg-[var(--theme-textbox)] px-3 py-2 text-sm sm:text-base leading-relaxed
+                <div className="relative">
+                  <select
+                    required
+                    value={prayer.category}
+                    onChange={e =>
+                      setPrayer({ ...prayer, category: e.target.value as CategoryOption })
+                    }
+                    className={[
+                      'block w-full appearance-none pr-10 rounded-xl border border-[var(--theme-border)] bg-[var(--theme-textbox)] px-3 py-2',
+                      'text-sm sm:text-base',
+                      !prayer.category
+                        ? 'text-[var(--theme-placeholder)]/70'
+                        : 'text-[var(--theme-placeholder)]',
+                      'focus:outline-none focus:ring-2 focus:ring-[var(--theme-focus)]',
+                    ].join(' ')}
+                  >
+                    <option value="">
+                      Select Prayer Type
+                    </option>
+                    <option value="birth">Birth</option>
+                    <option value="long-term">Long-term</option>
+                    <option value="praise">Praise</option>
+                    <option value="prayer">Prayer</option>
+                    <option value="pregnancy">Pregnancy</option>
+                    <option value="salvation">Salvation</option>
+                  </select>
+
+                  <ChevronDown
+                    className="pointer-events-none absolute right-3 top-1/2 -translate-y-1/2 h-4 w-4 text-[var(--theme-placeholder)]"
+                    aria-hidden="true"
+                  />
+                </div>
+              </label>
+
+              {/* Content */}
+              <label className="block text-xs sm:text-sm font-medium">
+                <span className="text-sm text-[var(--theme-text-white)] sm:text-base mb-1 block">Content</span>
+                <textarea
+                  required
+                  rows={5}
+                  placeholder="Write your prayer or praise here…"
+                  value={prayer.content}
+                  onChange={e => setPrayer({ ...prayer, content: e.target.value })}
+                  className="block w-full rounded-xl border border-[var(--theme-border)] bg-[var(--theme-textbox)] px-3 py-2 text-sm sm:text-base leading-relaxed
                            text-[var(--theme-placeholder)] focus:outline-none focus:ring-2 focus:ring-[var(--theme-focus)] placeholder:text-[var(--theme-placeholder)]/70 custom-scrollbar"
-              />
-            </label>
+                />
+              </label>
 
-            {/* Post */}
-            <div className="pt-2">
-              <button
-                className={pressBtn("w-full sm:w-auto rounded-xl bg-[var(--theme-button)] px-5 py-2.5 text-[var(--theme-text-white)] text-sm sm:text-base font-semibold hover:bg-[var(--theme-button-hover)] hover:text-[var(--theme-textbox)] disabled:opacity-60 disabled:cursor-not-allowed")}
-                type="submit"
-                disabled={posting}
-              >
-                {posting ? 'Posting…' : 'Post'}
-              </button>
-            </div>
-          </form>
-        </section>
+              {/* Post */}
+              <div className="pt-2">
+                <button
+                  className={pressBtn("w-full sm:w-auto rounded-xl bg-[var(--theme-surface)] px-5 py-2.5 text-[var(--theme-text)] text-sm sm:text-base font-semibold hover:bg-[var(--theme-button-hover)] hover:text-[var(--theme-textbox)] disabled:opacity-60 disabled:cursor-not-allowed")}
+                  type="submit"
+                  disabled={posting}
+                >
+                  {posting ? 'Posting…' : 'Post'}
+                </button>
+              </div>
+            </form>
+          </section>
+        </div>
       </div>
 
       <MyPrayersColumn />

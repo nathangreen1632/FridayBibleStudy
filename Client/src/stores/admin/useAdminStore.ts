@@ -117,17 +117,50 @@ type State = {
   prevRosterPage: () => Promise<void>;
 };
 
+// --- date helpers (place above safeIso) ---
+const EPOCH_MS_THRESHOLD = 1e12; // < 1e12 => seconds, else milliseconds
+const ONLY_DIGITS = /^\d+$/;
+
+function isFiniteNum(v: unknown): v is number {
+  return typeof v === 'number' && Number.isFinite(v);
+}
+
+function fromEpoch(n: number): Date {
+  const ms = n < EPOCH_MS_THRESHOLD ? n * 1000 : n;
+  return new Date(ms);
+}
+
+function parseDateFromString(s: string): Date | null {
+  const t = s.trim();
+  if (!t) return null;
+  if (ONLY_DIGITS.test(t)) return fromEpoch(Number(t));
+  const d = new Date(t);
+  return Number.isFinite(d.getTime()) ? d : null;
+}
+
+function coerceToDate(v: unknown): Date | null {
+  if (v instanceof Date) return v;
+  if (isFiniteNum(v)) return fromEpoch(v);
+  if (typeof v === 'string') return parseDateFromString(v);
+  // Do not stringify objects to avoid "[object Object]"
+  return null;
+}
+
+// --- simplified, low-CC safeIso ---
 function safeIso(input: unknown): string | null {
-  if (!input) return null;
+  const d = coerceToDate(input);
+  if (!d) return null;
+
+  const t = d.getTime();
+  if (!Number.isFinite(t)) return null;
+
   try {
-    const s = typeof input === 'string' ? input : String(input);
-    const d = new Date(s);
-    if (Number.isNaN(d.getTime())) return null;
-    return d.toISOString();
+    return new Date(t).toISOString();
   } catch {
     return null;
   }
 }
+
 
 // --- helpers used by normalizeThreadPayload ---
 function asRecord(v: unknown): Record<string, unknown> | null {

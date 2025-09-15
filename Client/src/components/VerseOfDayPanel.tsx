@@ -78,9 +78,9 @@ export default function VerseOfDayPanel(): React.ReactElement {
       <aside
         aria-label="Verse of the Day"
         className={[
-          'w-full rounded-2xl bg-[var(--theme-surface)]/80 backdrop-blur',
+          'w-full rounded-2xl bg-[var(--theme-accent)] text-[var(--theme-verse)]',
           'border border-[var(--theme-border)] shadow-md',
-          'px-3 py-3',
+          'px-3 py-3 mb-6',
           'min-[1440px]:fixed min-[1440px]:left-4 min-[1440px]:top-1/2 min-[1440px]:-translate-y-1/2',
           'min-[1440px]:inset-x-auto min-[1440px]:bottom-auto',
           'min-[1440px]:px-4 min-[1440px]:py-4 min-[1440px]:w-64',

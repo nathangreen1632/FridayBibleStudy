@@ -6,11 +6,20 @@ import type { ColumnKey } from '../../components/SortableCard';
 import { usePraisesStore, usePraisesIds, usePraiseById } from '../../stores/usePraisesStore';
 import { useSocketStore } from '../../stores/useSocketStore';
 import { useAuthStore } from '../../stores/useAuthStore';
+import type { Status } from '../../types/domain.types';
+import { useMoveToStatus } from '../../helpers/boardPage.helper';
+import {toast} from "react-hot-toast";
 
 // Small wrapper so we can safely use a hook per-item
-function PraiseCardFromStore({ id, groupId }: Readonly<{ id: number; groupId: number | null }>) {
+function PraiseCardFromStore({
+                               id,
+                               groupId,
+                             }: Readonly<{ id: number; groupId: number | null }>) {
   const p = usePraiseById(id);
+  const moveToStatus = useMoveToStatus(); // recaptcha + PATCH + position:0
+
   if (!p) return null;
+
   return (
     <PrayerCardWithComments
       id={p.id}
@@ -20,6 +29,15 @@ function PraiseCardFromStore({ id, groupId }: Readonly<{ id: number; groupId: nu
       category={p.category}
       createdAt={p.createdAt}
       groupId={groupId}
+      onMove={async (prayerId: number, to: Status) => {
+        try {
+          // persist and let sockets reconcile
+          await moveToStatus(prayerId, to);
+        } catch {
+          console.error('Failed to move prayer to status', to);
+          toast.error('Failed to move prayer to status');
+        }
+      }}
     />
   );
 }
@@ -56,7 +74,9 @@ export default function PraisesBoard(): React.ReactElement {
   }, [groupId, joinGroup]);
 
   const renderCard = useCallback(
-    (id: number, _column: ColumnKey, _index: number) => <PraiseCardFromStore id={id} groupId={groupId ?? null} />,
+    (id: number, _column: ColumnKey, _index: number) => (
+      <PraiseCardFromStore id={id} groupId={groupId ?? null} />
+    ),
     [groupId]
   );
 
@@ -74,7 +94,6 @@ export default function PraisesBoard(): React.ReactElement {
             // ignore or log
           }
         }}
-
         onDockDrop={async (dock, id) => {
           try {
             if (dock === 'dock-active') {

@@ -30,9 +30,12 @@ export async function ensureMediaBinPrayer(
       authorUserId, // matches your ERD
     };
 
+    // helper: does the column exist on the model?
+    const hasCol = (key: string) => Object.hasOwn(attrs, key);
+
     // Helper: set enum safely if present
     const setEnum = (key: string, prefer: string, fallback: string) => {
-      if (!Object.prototype.hasOwnProperty.call(attrs, key)) return;
+      if (!hasCol(key)) return;
       const a = (attrs as any)[key];
       if (Array.isArray(a?.values) && a.values.length > 0) {
         payload[key] = a.values.includes(prefer) ? prefer : a.values[0];
@@ -47,27 +50,26 @@ export async function ensureMediaBinPrayer(
 
     // Satisfy NOT NULL fields dynamically
     // content (TEXT) is NOT NULL in your runtime model
-    if (Object.prototype.hasOwnProperty.call(attrs, 'content')) {
+    if (hasCol('content')) {
       // If allowNull === false, set a default content string
-      const a = (attrs as any)['content'];
+      const a = (attrs as any).content;
       if (a?.allowNull === false) {
-        payload['content'] =
-          'Auto-created media bucket for admin uploads.';
-      } else if (payload['content'] === undefined) {
+        payload.content = 'Auto-created media bucket for admin uploads.';
+      } else if (payload.content === undefined) {
         // Set anyway to be safe
-        payload['content'] = 'Media bin';
+        payload.content = 'Media bin';
       }
     }
 
     // Common columns seen in your ERD — set safe defaults only if they exist
     const setBool = (key: string, val: boolean) => {
-      if (Object.prototype.hasOwnProperty.call(attrs, key)) payload[key] = val;
+      if (hasCol(key)) payload[key] = val;
     };
     const setInt = (key: string, val: number) => {
-      if (Object.prototype.hasOwnProperty.call(attrs, key)) payload[key] = val;
+      if (hasCol(key)) payload[key] = val;
     };
     const setDateNow = (key: string) => {
-      if (Object.prototype.hasOwnProperty.call(attrs, key)) payload[key] = new Date();
+      if (hasCol(key)) payload[key] = new Date();
     };
 
     setBool('isCommentsClosed', false);
