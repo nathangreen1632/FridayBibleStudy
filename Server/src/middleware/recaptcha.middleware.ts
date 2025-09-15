@@ -96,6 +96,7 @@ const ACTION_PATTERNS: Record<string, Array<{ method: string; paths: string[] }>
   admin_event_create: [{ method: 'POST',   paths: ['/api/admin/events', '/admin/events'] }],
   admin_event_update: [{ method: 'PATCH',  paths: ['/api/admin/events/:id', '/admin/events/:id'] }],
   admin_event_delete: [{ method: 'DELETE', paths: ['/api/admin/events/:id', '/admin/events/:id'] }],
+  admin_event_email: [{ method: 'POST', paths: ['/api/admin/events/:id/email', '/admin/events/:id/email', '/:id/email'] }],
 };
 
 /** ----------------------------------------------------------------------------
@@ -154,6 +155,11 @@ const NORMALIZED_ROUTE_ACTIONS: Record<string, string> = {
   // Admin delete & status (canonical)
   'DELETE /api/admin/prayers/:id': 'admin_prayer_delete',
   'PATCH /api/admin/prayers/:id/status': 'admin_patch_status',
+  // Email a single event to the group
+  'POST /api/admin/events/:id/email': 'admin_event_email',
+  'POST /admin/events/:id/email': 'admin_event_email', // legacy/non-api fallback
+  'POST /:id/email': 'admin_event_email',              // router-local safety
+
 };
 
 // Generate multiple lookup keys that tolerate the /api prefix and router mounts
