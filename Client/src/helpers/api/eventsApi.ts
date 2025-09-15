@@ -100,3 +100,19 @@ export async function deleteEvent(id: number): Promise<boolean> {
     return false;
   }
 }
+
+// Email an event to roster (admins only; uses reCAPTCHA)
+export async function emailEvent(id: number): Promise<boolean> {
+  try {
+    const res = await apiWithRecaptcha(`/api/admin/events/${id}/email`, 'admin_event_email', {
+      method: 'POST',
+      credentials: 'include',
+    });
+
+    const { ok, body } = await readBody(res);
+    if (!ok) return false;
+    return body?.ok === true;
+  } catch {
+    return false;
+  }
+}
