@@ -302,8 +302,8 @@ export default function BiblePage(): React.ReactElement {
 
   return (
     <div className="mx-auto w-full max-w-screen-sm md:max-w-5xl px-3 pb-6 pt-2">
-      <div className="sticky top-0 z-10 bg-[var(--theme-surface)]/95 backdrop-blur border border-[var(--theme-border)] rounded-xl p-3 shadow-sm">
-        <h1 className="text-xl md:text-2xl font-extrabold mb-2 md:mb-3">Bible</h1>
+      <div className="sticky top-0 z-10 bg-[var(--theme-accent)] backdrop-blur border border-[var(--theme-border)] rounded-xl p-3 shadow-sm">
+        <h1 className="text-xl md:text-2xl font-extrabold text-[var(--theme-verse)] mb-2 md:mb-3">Bible</h1>
 
         <form onSubmit={onSearch} className="flex flex-col gap-2 md:gap-3">
           {/* Version */}
@@ -364,7 +364,7 @@ export default function BiblePage(): React.ReactElement {
             <button
               type="submit"
               disabled={loading}
-              className="h-12 px-4 rounded-xl bg-[var(--theme-button)] text-[var(--theme-text-white)] hover:bg-[var(--theme-button-hover)] hover:text-[var(--theme-textbox)] disabled:opacity-60"
+              className="h-12 px-4 rounded-xl bg-[var(--theme-surface)] text-[var(--theme-text)] hover:bg-[var(--theme-button-hover)] hover:text-[var(--theme-textbox)] disabled:opacity-60"
             >
               {loading ? 'Loading…' : 'Read'}
             </button>
