@@ -322,3 +322,57 @@ function escapeHtml(s: string): string {
     .replaceAll('"', '&quot;')
     .replaceAll("'", '&#39;');
 }
+
+// --- Event single-card email (compact, same palette & table layout) ---
+export function renderEventEmailHtml(opts: {
+  groupName: string;
+  title: string;
+  content?: string;
+  startsAt?: string | Date | null;
+  endsAt?: string | Date | null;
+  location?: string | null;
+  actionUrl?: string;
+}): string {
+  const { groupName, title, content, startsAt, endsAt, location, actionUrl } = opts;
+
+  function toDateLocal(input: unknown): string | null {
+    try {
+      if (!input) return null;
+      const d = new Date(input as any);
+      if (Number.isNaN(d.getTime())) return null;
+      return `${d.toLocaleDateString()} ${d.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}`;
+    } catch {
+      return null;
+    }
+  }
+
+  const whenStart = toDateLocal(startsAt);
+  const whenEnd = toDateLocal(endsAt);
+  const when = whenStart && whenEnd ? `${whenStart} – ${whenEnd}` : whenStart || null;
+
+  const detailsRows = [
+    when ? `<div style="margin:0 0 6px 0;"><strong>When:</strong> ${escapeHtml(when)}</div>` : '',
+    location ? `<div style="margin:0 0 6px 0;"><strong>Where:</strong> ${escapeHtml(location)}</div>` : '',
+  ].join('');
+
+  const body = content ? `<div style="white-space:pre-wrap;line-height:1.6;margin-top:8px;">${escapeHtml(content)}</div>` : '';
+
+  const cta = actionUrl
+    ? `<a href="${escapeHtml(actionUrl)}" style="display:inline-block;margin-top:16px;padding:10px 14px;background:${COL.BTN_BG};color:${COL.BTN_TEXT};text-decoration:none;border-radius:8px;">Open Events</a>`
+    : '';
+
+  return `
+  <div style="background:${COL.BG};padding:24px;">
+    <table width="100%" cellpadding="0" cellspacing="0" style="max-width:640px;margin:0 auto;background:${COL.SURFACE};border:1px solid ${COL.BORDER};border-radius:12px;">
+      <tr>
+        <td style="padding:20px 22px;">
+          <div style="font-size:14px;color:${COL.D};margin-bottom:6px;">${escapeHtml(groupName)}</div>
+          <h1 style="margin:0 0 8px 0;font-size:20px;line-height:1.3;color:${COL.TEXT};">${escapeHtml(title)}</h1>
+          ${detailsRows}
+          ${body}
+          ${cta}
+        </td>
+      </tr>
+    </table>
+  </div>`;
+}
