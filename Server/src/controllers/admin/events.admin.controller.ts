@@ -6,6 +6,7 @@ import {
   deleteEventById,
   listEventsAdmin,
 } from '../../services/events.service.js';
+import { sendEventEmail } from '../../services/admin/eventEmail.service.js';
 
 function toStringOrNull(v: unknown): string | null {
   if (typeof v !== 'string') return null;
@@ -134,5 +135,26 @@ export async function adminListEvents(req: Request, res: Response): Promise<void
     res.json({ items });
   } catch {
     res.status(500).json({ error: 'Failed to load events.' });
+  }
+}
+
+export async function adminEmailEvent(req: Request, res: Response): Promise<void> {
+  const idRaw = req.params?.id;
+  const id = Number(idRaw);
+  if (!Number.isFinite(id) || id <= 0) {
+    res.status(400).json({ ok: false, error: 'Invalid event id.' });
+    return;
+  }
+
+  try {
+    const requesterId = typeof req.user?.id === 'number' ? req.user.id : 0;
+    const result = await sendEventEmail({ eventId: id, requestedById: requesterId });
+    if (!result.ok) {
+      res.status(500).json({ ok: false, error: result.error || 'Email failed.' });
+      return;
+    }
+    res.json({ ok: true });
+  } catch {
+    res.status(500).json({ ok: false, error: 'Unexpected error.' });
   }
 }
