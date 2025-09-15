@@ -21,18 +21,29 @@ import {
 } from '../services/resend.service.js';
 
 // DRY helper to load a prayer (optionally with author) or return 404
-async function findPrayerOr404(
-  id: number,
-  res: Response,
-  includeAuthor = false
-): Promise<Prayer | undefined> {
-  const include = includeAuthor ? [{ model: User, as: 'author', attributes: ['id', 'name'] }] : undefined;
-  const p = await Prayer.findByPk(id, { include });
-  if (!p) {
-    res.status(404).json({ error: 'Not found' });
-    return undefined;
+export async function findPrayerOr404(
+  id: number | string,
+  res: import('express').Response,
+  includeAuthor: boolean = false
+) {
+  try {
+    const prayer = await Prayer.findByPk(Number(id), {
+      include: includeAuthor
+        ? [{ model: User, as: 'author', attributes: ['id', 'name'] }]
+        : undefined,
+    });
+
+    if (!prayer) {
+      res.status(404).json({ error: 'Prayer not found' });
+      return null;
+    }
+
+    return prayer;
+  } catch (e) {
+    console.error(e);
+    res.status(500).json({ error: 'Failed to load prayer' });
+    return null;
   }
-  return p;
 }
 
 /** ------------------------------------------------------------------------
@@ -260,7 +271,7 @@ export async function createPrayer(req: Request, res: Response): Promise<void> {
 
 export async function updatePrayer(req: Request, res: Response): Promise<void> {
   const id = Number(req.params.id);
-  const { title, content, category, status, position } = req.body as Partial<
+  const {title, content, category, status, position} = req.body as Partial<
     Pick<Prayer, 'title' | 'content' | 'category' | 'status' | 'position'>
   >;
 
@@ -279,13 +290,13 @@ export async function updatePrayer(req: Request, res: Response): Promise<void> {
   let isParticipant = false;
   if (!isAuthor && !isAdmin && isOnlyMove) {
     const pp = await PrayerParticipant.findOne({
-      where: { prayerId: prayer.id, userId: req.user!.userId },
+      where: {prayerId: prayer.id, userId: req.user!.userId},
     });
     isParticipant = !!pp;
   }
 
   if (!isAuthor && !isAdmin && !isParticipant) {
-    res.status(403).json({ error: 'You may not move another\'s prayer' });
+    res.status(403).json({error: 'You may not move another\'s prayer'});
     return;
   }
 
@@ -300,13 +311,25 @@ export async function updatePrayer(req: Request, res: Response): Promise<void> {
   await prayer.save();
 
   if (prevStatus !== prayer.status) {
+    // Reload WITH author so DTO has author populated
+    const fresh = await Prayer.findByPk(prayer.id, {
+      include: [{model: User, as: 'author', attributes: ['id', 'name']}],
+    });
+
+    const dto = toPrayerDTO(fresh ?? prayer);
+
     emitToGroup(prayer.groupId, Events.PrayerMoved, {
-      prayer: toPrayerDTO(prayer),
+      prayer: dto,
       from: prevStatus as 'active' | 'praise' | 'archived',
       to: prayer.status as 'active' | 'praise' | 'archived',
     });
   } else {
-    const payload = { prayer: toPrayerDTO(prayer) };
+    // Also ensure author is present on standard updates
+    const fresh = await Prayer.findByPk(prayer.id, {
+      include: [{model: User, as: 'author', attributes: ['id', 'name']}],
+    });
+
+    const payload = {prayer: toPrayerDTO(fresh ?? prayer)};
     emitToGroup(prayer.groupId, 'prayer:updated', payload);
     emitToGroup(prayer.groupId, Events.PrayerUpdated, payload);
   }
@@ -314,7 +337,7 @@ export async function updatePrayer(req: Request, res: Response): Promise<void> {
   res.json(prayer);
 }
 
-export async function deletePrayer(req: Request, res: Response): Promise<void> {
+  export async function deletePrayer(req: Request, res: Response): Promise<void> {
   const id = Number(req.params.id);
   const prayer = await findPrayerOr404(id, res);
   if (!prayer) return;
