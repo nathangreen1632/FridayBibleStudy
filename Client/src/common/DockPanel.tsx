@@ -48,7 +48,7 @@ export default function Dock(): React.ReactElement {
         'min-[1440px]:px-4 min-[1440px]:py-4 min-[1440px]:w-64',
 
         // Card surface & border (unchanged)
-        'min-[1440px]:rounded-2xl min-[1440px]:bg-[var(--theme-surface)]/80 min-[1440px]:backdrop-blur',
+        'min-[1440px]:rounded-2xl min-[1440px]:bg-[var(--theme-button)] min-[1440px]:backdrop-blur',
         'min-[1440px]:border min-[1440px]:border-[var(--theme-border)] min-[1440px]:shadow-md',
       ].join(' ')}
     >
