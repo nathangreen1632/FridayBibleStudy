@@ -253,13 +253,13 @@ export default function EventsPage(): React.ReactElement {
       )}
 
       {/* === GRID of independent event cards (no list / no dividers) === */}
-      <div className="rounded-xl border border-[var(--theme-border)] bg-[var(--theme-accent)] p-3">
+      <div className="rounded-xl border border-[var(--theme-border)] bg-[var(--theme-surface)] p-3">
         {loading && <div className="p-3">Loading…</div>}
 
         {!loading && items.length === 0 && <div className="p-3">No events yet.</div>}
 
         {!loading && items.length > 0 && (
-          <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-2 bg-[var(--theme-accent)]">
+          <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-2 bg-[var(--theme-surface)]">
             {items.map((ev) => {
               const isEditing = editingId === ev.id;
 
@@ -338,7 +338,7 @@ export default function EventsPage(): React.ReactElement {
               return (
                 <article
                   key={ev.id}
-                  className="rounded-2xl border border-[var(--theme-border)] bg-[var(--theme-surface)] p-4 shadow-sm"
+                  className="rounded-2xl border border-[var(--theme-border)] bg-[var(--theme-accent)] p-4 shadow-sm"
                 >
                   {/* The button spans the whole card content area */}
                   <button
@@ -350,12 +350,12 @@ export default function EventsPage(): React.ReactElement {
                   >
                     <div className="flex items-start justify-between gap-3">
                       <div className="min-w-0">
-                        <div className="font-semibold text-xl text-[var(--theme-text)] group-hover:underline underline-offset-4">
+                        <div className="font-semibold text-xl text-[var(--theme-text-white)] group-hover:underline underline-offset-4">
                           {ev.title || 'Untitled Event'}
                         </div>
 
                         {showDate && startD && (
-                          <div className="text-sm opacity-80 text-[var(--theme-text)]">
+                          <div className="text-sm opacity-80 text-[var(--theme-text-white)]">
                             <span className="font-semibold">Date:</span>{' '}
                             {startD.toLocaleDateString()}
                             {endD && ` – ${endD.toLocaleDateString()}`}
@@ -363,7 +363,7 @@ export default function EventsPage(): React.ReactElement {
                         )}
 
                         {showDate && startD && (
-                          <div className="text-sm opacity-80 text-[var(--theme-text)]">
+                          <div className="text-sm opacity-80 text-[var(--theme-text-white)]">
                             <span className="font-semibold">Time:</span>{' '}
                             {startD.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
                             {endD &&
@@ -372,14 +372,14 @@ export default function EventsPage(): React.ReactElement {
                         )}
 
                         {ev.location && (
-                          <div className="text-sm opacity-80 text-[var(--theme-text)]">
+                          <div className="text-sm opacity-80 text-[var(--theme-text-white)]">
                             <span className="font-semibold">Location:</span> {ev.location}
                           </div>
                         )}
                       </div>
                     </div>
 
-                    <div className="mt-3 text-sm opacity-70">Click to view details</div>
+                    <div className="mt-3 text-sm text-[var(--theme-text-white)] opacity-70">Click to view details</div>
                   </button>
 
                   {/* Admin actions live OUTSIDE the content button (no nesting) */}
