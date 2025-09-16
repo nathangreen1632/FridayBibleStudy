@@ -2,8 +2,8 @@ import React, { useEffect, useRef, useState } from 'react';
 import { useAdminUiStore } from '../../stores/admin/useAdminUiStore';
 import { useSocketStore } from '../../stores/useSocketStore';
 import AdminFiltersView from '../../jsx/admin/adminFiltersView';
-import type { AdminFiltersPatch, Category, Status } from '../../types/admin.types';
-import { CATEGORY_OPTIONS, STATUS_OPTIONS, isCategory, isStatus } from '../../types/admin.types';
+import type { AdminFiltersPatch, Category, Status } from '../../types/admin/admin.types.ts';
+import { CATEGORY_OPTIONS, STATUS_OPTIONS, isCategory, isStatus } from '../../types/admin/admin.types.ts';
 
 const FALLBACK_EVT = 'admin:filters:patch';
 
