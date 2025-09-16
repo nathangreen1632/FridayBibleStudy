@@ -1,7 +1,7 @@
 import React, { useEffect, useMemo, useState } from 'react';
-import { useMyPrayersStore } from '../stores/useMyPrayersStore';
-import type { Category, Prayer, Status } from '../types/domain/domain.types.ts';
-import MyPrayersColumnView from '../jsx/board/myPrayersColumnView.tsx';
+import { useMyPrayersStore } from '../../../stores/useMyPrayersStore.ts';
+import type { Category, Prayer, Status } from '../../../types/domain/domain.types.ts';
+import MyPrayersColumnView from '../../../jsx/board/myPrayersColumnView.tsx';
 
 type EditingState = Record<number, { title: string; content: string; category: Category }>;
 

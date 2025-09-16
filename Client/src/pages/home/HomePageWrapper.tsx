@@ -1,6 +1,6 @@
 // Client/src/pages/HomePage.tsx
 import React from 'react';
-import HomePageView from '../jsx/home/homePageView.tsx';
+import HomePageView from '../../jsx/home/homePageView.tsx';
 
 export default function HomePageWrapper(): React.ReactElement {
   return (

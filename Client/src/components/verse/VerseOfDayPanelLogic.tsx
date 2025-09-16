@@ -1,8 +1,8 @@
 import React, { useEffect, useState } from 'react';
-import { fetchVerseOfDay } from '../helpers/api/bibleApi';
-import { useAuthStore } from '../stores/useAuthStore';
-import { pickPassage } from '../utils/bible.util';
-import VerseOfDayPanelView from '../jsx/shared/verseOfDayPanelView.tsx';
+import { fetchVerseOfDay } from '../../helpers/api/bibleApi.ts';
+import { useAuthStore } from '../../stores/useAuthStore.ts';
+import { pickPassage } from '../../utils/bible.util.ts';
+import VerseOfDayPanelView from '../../jsx/shared/verseOfDayPanelView.tsx';
 
 export default function VerseOfDayPanelLogic(): React.ReactElement {
   const { user } = useAuthStore();

@@ -1,6 +1,6 @@
 // Client/src/pages/contact/ContactForm.logic.tsx
 import React, { useEffect, useState } from 'react';
-import ContactFormView from '../../jsx/contactFormView.tsx';
+import ContactFormView from '../../jsx/roster/contactFormView.tsx';
 import { api } from '../../helpers/http.helper';
 import { loadRecaptchaEnterprise, getRecaptchaToken } from '../../lib/recaptcha.lib';
 import { toast } from 'react-hot-toast'; // ✅ match PortalBoard import
@@ -15,7 +15,7 @@ type ContactPayload = {
 
 type PostResponse = { ok: boolean; error?: string };
 
-export default function ContactPage(): React.ReactElement {
+export default function ContactFormLogic(): React.ReactElement {
   const [form, setForm] = useState<ContactPayload>({
     name: '',
     email: '',

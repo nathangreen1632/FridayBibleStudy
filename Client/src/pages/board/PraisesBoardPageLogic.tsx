@@ -1,57 +1,21 @@
-// Client/src/pages/board/PraisesBoardPage.tsx
-import React, { useEffect, useCallback } from 'react';
-import SingleBoard from '../../components/board/SingleColumnBoard';
-import PrayerCardWithComments from '../../components/PrayerCardWithCommentsLogic.tsx';
-import type { ColumnKey } from '../../components/SortableCard';
-import { usePraisesStore, usePraisesIds, usePraiseById } from '../../stores/usePraisesStore';
+// Client/src/pages/board/PraisesBoardPageLogic.tsx
+import React, { useEffect } from 'react';
+import PraisesBoardPageView from '../../jsx/board/praisesBoardPageView.tsx';
+import { usePraisesStore, usePraisesIds } from '../../stores/usePraisesStore';
 import { useSocketStore } from '../../stores/useSocketStore';
 import { useAuthStore } from '../../stores/useAuthStore';
-import type { Status } from '../../types/domain.types';
-import { useMoveToStatus } from '../../helpers/boardPage.helper';
-import {toast} from "react-hot-toast";
-
-// Small wrapper so we can safely use a hook per-item
-function PraiseCardFromStore({
-                               id,
-                               groupId,
-                             }: Readonly<{ id: number; groupId: number | null }>) {
-  const p = usePraiseById(id);
-  const moveToStatus = useMoveToStatus(); // recaptcha + PATCH + position:0
-
-  if (!p) return null;
-
-  return (
-    <PrayerCardWithComments
-      id={p.id}
-      title={p.title}
-      content={p.content}
-      author={p.author?.name ?? null}
-      category={p.category}
-      createdAt={p.createdAt}
-      groupId={groupId}
-      onMove={async (prayerId: number, to: Status) => {
-        try {
-          // persist and let sockets reconcile
-          await moveToStatus(prayerId, to);
-        } catch {
-          console.error('Failed to move prayer to status', to);
-          toast.error('Failed to move prayer to status');
-        }
-      }}
-    />
-  );
-}
+import type { DockDropHandler, MoveWithinHandler } from '../../types/pages/board.types.ts';
 
 export default function PraisesBoard(): React.ReactElement {
   const fetchInitial = usePraisesStore((s) => s.fetchInitial);
-  const moveWithin  = usePraisesStore((s) => s.moveWithin);
-  const movePrayer  = usePraisesStore((s) => s.movePrayer);
-  const ids         = usePraisesIds();
+  const moveWithin = usePraisesStore((s) => s.moveWithin);
+  const movePrayer = usePraisesStore((s) => s.movePrayer);
+  const ids = usePraisesIds();
 
-  // auth & sockets (match Active/Archive pages)
-  const user      = useAuthStore((s) => s.user);
+  // auth & sockets (match other boards)
+  const user = useAuthStore((s) => s.user);
   const joinGroup = useSocketStore((s) => s.joinGroup);
-  const groupId   = user?.groupId ?? 1;
+  const groupId = user?.groupId ?? 1;
 
   // initial load
   useEffect(() => {
@@ -59,7 +23,7 @@ export default function PraisesBoard(): React.ReactElement {
       try {
         await fetchInitial();
       } catch {
-        // ignore or log
+        // no-throw policy
       }
     })();
   }, [fetchInitial]);
@@ -73,42 +37,36 @@ export default function PraisesBoard(): React.ReactElement {
     }
   }, [groupId, joinGroup]);
 
-  const renderCard = useCallback(
-    (id: number, _column: ColumnKey, _index: number) => (
-      <PraiseCardFromStore id={id} groupId={groupId ?? null} />
-    ),
-    [groupId]
-  );
+  const onMoveWithin: MoveWithinHandler = async (id, toIndex) => {
+    try {
+      await moveWithin(id, toIndex);
+    } catch {
+      // no-throw policy
+    }
+  };
+
+  const onDockDrop: DockDropHandler = async (dock, id) => {
+    try {
+      if (dock === 'dock-active') {
+        await movePrayer(id, 'active');
+        return;
+      }
+      if (dock === 'dock-archive') {
+        await movePrayer(id, 'archived');
+        return;
+      }
+      // 'dock-praise' is a no-op here (already in praise)
+    } catch {
+      // no-throw policy
+    }
+  };
 
   return (
-    <main className="min-h-[70vh] px-3 sm:px-4 md:px-0 overflow-x-hidden">
-      <SingleBoard
-        title="Praises"
-        column="praise"
-        ids={ids}
-        renderCard={renderCard}
-        onMoveWithin={async (id, toIndex) => {
-          try {
-            await moveWithin(id, toIndex);
-          } catch {
-            // ignore or log
-          }
-        }}
-        onDockDrop={async (dock, id) => {
-          try {
-            if (dock === 'dock-active') {
-              await movePrayer(id, 'active');
-            }
-            if (dock === 'dock-archive') {
-              await movePrayer(id, 'archived');
-            }
-            // Stay on the same page per your rule; no navigation.
-          } catch {
-            // ignore or log
-          }
-        }}
-      />
-      {/* Dock removed here; it's rendered inside SingleBoard's DndContext */}
-    </main>
+    <PraisesBoardPageView
+      ids={ids}
+      groupId={groupId ?? null}
+      onMoveWithin={onMoveWithin}
+      onDockDrop={onDockDrop}
+    />
   );
 }

@@ -1,9 +1,9 @@
 // Client/src/components/GravatarStrip.tsx
 import React, { useState } from 'react';
 import { Info } from 'lucide-react';
-import { useAuthStore } from '../stores/useAuthStore';
-import GravatarAvatar from './GravatarAvatar';
-import GravatarModal from '../modals/GravatarModalLogic.tsx';
+import { useAuthStore } from '../../stores/useAuthStore.ts';
+import GravatarAvatar from './GravatarAvatar.tsx';
+import GravatarModal from '../../modals/GravatarModalLogic.tsx';
 
 export default function GravatarStrip(): React.ReactElement | null {
   const user = useAuthStore((s) => s.user);

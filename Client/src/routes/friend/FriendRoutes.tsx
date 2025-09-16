@@ -1,14 +1,14 @@
 import type { RouteObject } from 'react-router-dom';
 import { FriendGuard } from '../../common/friend/FriendAuthGuard';
-import FriendLayout from '../../pages/friend/FriendLayout';
-import PrayersPortalPage from '../../pages/PortalPage';
-import PraisesBoardPage from '../../pages/board/PraisesBoardPage';
-import ArchiveBoardPage from '../../pages/board/ArchiveBoardPage';
-import ProfilePage from '../../pages/AccountPage';
-import PhotosPage from '../../pages/PhotosPage';
-import BiblePage from "../../pages/BiblePage.tsx";
-import EventsPage from '../../pages/EventsPage.tsx';
-import RosterPage from '../../pages/RosterPage.tsx';
+import FriendLayout from '../../pages/layout/FriendLayout.tsx';
+import PrayersPortalPage from '../../pages/portal/PortalPageStub.tsx';
+import PraisesBoardPage from '../../pages/board/PraisesBoardPageLogic.tsx';
+import ArchiveBoardPage from '../../pages/board/ArchivedBoardPageLogic.tsx';
+import ProfilePage from '../../pages/profile/ProfileAccountLogic.tsx';
+import PhotosPageLogic from '../../pages/photos/PhotosPageLogic.tsx';
+import BiblePageLogic from "../../pages/bible/BiblePageLogic.tsx";
+import EventsPageLogic from '../../pages/events/EventsPageLogic.tsx';
+import RosterPageLogic from '../../pages/roster/RosterPageLogic.tsx';
 
 const friendRoutes: RouteObject[] = [
   {
@@ -24,10 +24,10 @@ const friendRoutes: RouteObject[] = [
       { path: 'board/praises', element: <PraisesBoardPage /> },
       { path: 'board/archive', element: <ArchiveBoardPage /> },
       { path: 'profile', element: <ProfilePage /> },
-      { path: 'photos', element: <PhotosPage /> },
-      { path: 'bible', element: <BiblePage /> },
-      { path: 'events', element: <EventsPage /> },
-      { path: 'roster', element: <RosterPage /> },
+      { path: 'photos', element: <PhotosPageLogic /> },
+      { path: 'bible', element: <BiblePageLogic /> },
+      { path: 'events', element: <EventsPageLogic /> },
+      { path: 'roster', element: <RosterPageLogic /> },
     ],
   },
 ];

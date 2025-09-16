@@ -1,7 +1,7 @@
 import React from 'react';
-import type { Status } from '../types/domain/domain.types.ts';
-import type { PrayerCardWithCommentsProps } from '../types/ui/prayerCard.types.ts';
-import PrayerCardWithCommentsView from '../jsx/board/prayerCardWithCommentsView.tsx';
+import type { Status } from '../../../types/domain/domain.types.ts';
+import type { PrayerCardWithCommentsProps } from '../../../types/ui/prayerCard.types.ts';
+import PrayerCardWithCommentsView from '../../../jsx/board/prayerCardWithCommentsView.tsx';
 
 export default function PrayerCardWithCommentsLogic(
   props: Readonly<PrayerCardWithCommentsProps>

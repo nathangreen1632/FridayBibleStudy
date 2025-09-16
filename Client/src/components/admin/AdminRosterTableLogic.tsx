@@ -2,7 +2,7 @@ import React, { useCallback, useMemo, useState } from 'react';
 import { useAdminStore } from '../../stores/admin/useAdminStore';
 import type { RosterSortField } from '../../stores/admin/useAdminStore';
 import AdminRosterTableView from '../../jsx/admin/adminRosterTableView';
-import type { AdminRosterRow, RosterEditKey, RosterColumnDef } from '../../types/roster.types';
+import type { AdminRosterRow, RosterEditKey, RosterColumnDef } from '../../types/domain/roster.types.ts';
 
 type Props = Readonly<{
   rows: AdminRosterRow[];

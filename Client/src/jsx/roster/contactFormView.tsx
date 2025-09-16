@@ -1,6 +1,6 @@
 // Client/src/components/contact/ContactForm.view.tsx
 import React from 'react';
-import {pressBtn} from "../../ui/press.ts";
+import {pressBtn} from "../../../ui/press.ts";
 
 type Props = {
   form: { name: string; email: string; message: string };

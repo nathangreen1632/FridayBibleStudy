@@ -1,16 +1,16 @@
 import React, { useEffect, useMemo, useRef, useState } from 'react';
-import { useCommentsStore } from '../stores/useCommentsStore';
-import { useAuthStore } from '../stores/useAuthStore';
-import type { Comment } from '../types/domain/comment.types.ts';
+import { useCommentsStore } from '../../../stores/useCommentsStore.ts';
+import { useAuthStore } from '../../../stores/useAuthStore.ts';
+import type { Comment } from '../../../types/domain/comment.types.ts';
 import {
   safeParseTime,
   newestLocalFrom,
   computeDisplayCount,
   hasNewFlag,
   sortRootItemsDesc,
-} from '../helpers/commentsPanel.helper';
-import { useOutsideCollapse } from '../hooks/useOutsideCollapse';
-import CommentsPanelView from '../jsx/board/commentsPanelView.tsx';
+} from '../../../helpers/commentsPanel.helper.ts';
+import { useOutsideCollapse } from '../../../hooks/useOutsideCollapse.ts';
+import CommentsPanelView from '../../../jsx/board/commentsPanelView.tsx';
 
 type Props = Readonly<{
   prayerId: number;

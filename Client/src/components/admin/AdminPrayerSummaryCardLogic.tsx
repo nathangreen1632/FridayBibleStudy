@@ -1,7 +1,7 @@
 import React, { useMemo } from 'react';
 import { useAdminStore } from '../../stores/admin/useAdminStore';
 import AdminPrayerSummaryCardView from '../../jsx/admin/adminPrayerSummaryCardView';
-import type { AdminPrayerSummaryData } from '../../types/admin.types';
+import type { AdminPrayerSummaryData } from '../../types/admin/admin.types.ts';
 
 type Props = Readonly<{
   prayerId: number;

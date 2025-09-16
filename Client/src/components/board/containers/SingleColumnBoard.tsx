@@ -10,11 +10,11 @@ import {
   useDndMonitor,                    // ← NEW
 } from '@dnd-kit/core';
 import Column from './ColumnContainerBoard.tsx';
-import Dock from '../../common/DockPanel.tsx'; // ← added
-import type { ColumnKey } from '../SortableCard.tsx';
+import Dock from '../../../common/DockPanel.tsx'; // ← added
+import type { ColumnKey } from '../dnd/SortableCard.tsx';
 
 // NEW: drag guard store hook
-import { useBoardStore } from '../../stores/useBoardStore';
+import { useBoardStore } from '../../../stores/useBoardStore.ts';
 
 type SingleBoardProps = {
   title: string;

@@ -3,7 +3,7 @@ import { create } from 'zustand';
 import { useShallow } from 'zustand/react/shallow';
 import { api } from '../helpers/http.helper';
 import { apiWithRecaptcha } from '../helpers/secure-api.helper';
-import type { Prayer, Status } from '../types/domain.types';
+import type { Prayer, Status } from '../types/domain/domain.types.ts';
 import {
   validateMove,
   makeReordered,

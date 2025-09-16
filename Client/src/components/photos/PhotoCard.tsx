@@ -1,7 +1,7 @@
 // Client/src/components/PhotoCard.tsx
 import React from 'react';
-import type { Photo } from '../types/domain/photo.types.ts';
-import { useAuthStore } from '../stores/useAuthStore';
+import type { Photo } from '../../types/domain/photo.types.ts';
+import { useAuthStore } from '../../stores/useAuthStore.ts';
 import { Trash2 } from 'lucide-react';
 
 type Props = {

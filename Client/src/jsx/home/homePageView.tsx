@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
-import {pressBtn} from "../../ui/press.ts";
+import {pressBtn} from "../../../ui/press.ts";
 
 /**
  * Computes the image's natural aspect ratio at runtime.

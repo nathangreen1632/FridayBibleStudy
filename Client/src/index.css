@@ -92,7 +92,7 @@
     --c-j: #4A6FA5; /* J: desaturated blue */
     --c-k: #00274C; /* K: darkest blue (hover) */
     --c-l: #16803D; /* L: green */
-    ---c-m: #BF5700; /* M: UT burnt orange */
+    --c-m: #BF5700; /* M: UT burnt orange */
     --c-n: #9CA3AF;
 
     /* DARK MODE — 180° from light (A↔E, B↔D, C→B to avoid hold-overs) */
@@ -235,4 +235,9 @@ html {
           0 -1px 0 var(--theme-surface),
           0 -2px 0 var(--theme-border),
           0 -3px 4px var(--theme-shadow);
+}
+
+/* Reserve space for scrollbars to keep corners pretty */
+.scrollpad {
+  scrollbar-gutter: stable both-edges;
 }

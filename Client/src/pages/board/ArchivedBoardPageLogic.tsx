@@ -1,6 +1,6 @@
-// Client/src/pages/board/ArchivedBoardPage.tsx
+// Client/src/pages/board/ArchivedBoardPageLogic.tsx
 import React from 'react';
-import SingleBoard from '../../components/board/SingleColumnBoard';
+import ArchivedBoardPageView from '../../jsx/board/archivedBoardPageView.tsx';
 import { useBoardStore } from '../../stores/useBoardStore';
 import { useSocketStore } from '../../stores/useSocketStore';
 import { useAuthStore } from '../../stores/useAuthStore';
@@ -11,25 +11,28 @@ import {
   usePrayerCardRenderer,
   useOnMove,
 } from '../../helpers/boardPage.helper';
-
-// Only the two board columns are reorderable within this store
-type BoardColumnKey = 'active' | 'archived';
+import type {
+  BoardColumnKey,
+  DockDropHandler,
+  MoveWithinHandler,
+  RenderCardFn,
+} from '../../types/pages/board.types.ts';
 
 export default function ArchiveBoard(): React.ReactElement {
   // board data/actions
   const fetchInitial = useBoardStore((s) => s.fetchInitial);
-  const move        = useBoardStore((s) => s.move);
-  const byId        = useBoardStore((s) => s.byId);
-  const order       = useBoardStore((s) => s.order);
-  const loading     = useBoardStore((s) => s.loading);
-  const error       = useBoardStore((s) => s.error);
+  const move = useBoardStore((s) => s.move);
+  const byId = useBoardStore((s) => s.byId);
+  const order = useBoardStore((s) => s.order);
+  const loading = useBoardStore((s) => s.loading);
+  const error = useBoardStore((s) => s.error);
 
   // auth
   const user = useAuthStore((s) => s.user);
 
   // socket
   const joinGroup = useSocketStore((s) => s.joinGroup);
-  const groupId   = user?.groupId ?? 1;
+  const groupId = user?.groupId ?? 1;
 
   // bootstrap & join
   useBoardBootstrap(fetchInitial);
@@ -37,49 +40,47 @@ export default function ArchiveBoard(): React.ReactElement {
 
   // helpers
   const moveToPraise = useMoveToPraise();
-  const onMove       = useOnMove(move as (id: number, to: BoardColumnKey, idx: number) => Promise<boolean>);
-  const renderCard   = usePrayerCardRenderer(byId as unknown as Map<number, any>, groupId);
+  const onMove = useOnMove(
+    move as (id: number, to: BoardColumnKey, idx: number) => Promise<boolean>
+  );
+  const renderCard: RenderCardFn = usePrayerCardRenderer(
+    byId as unknown as Map<number, any>,
+    groupId
+  );
 
   // archived-only (single column)
   const archivedIds = order.archived ?? [];
 
+  const onMoveWithin: MoveWithinHandler = async (id, toIndex) => {
+    try {
+      await onMove(id, 'archived', toIndex);
+    } catch {
+      // no-throw policy
+    }
+  };
+
+  const onDockDrop: DockDropHandler = async (dock, id) => {
+    try {
+      if (dock === 'dock-active') {
+        await onMove(id, 'active', 0);
+      }
+      if (dock === 'dock-praise') {
+        await moveToPraise(id);
+      }
+      // dock-archive is a no-op (already here)
+    } catch {
+      // no-throw policy
+    }
+  };
+
   return (
-    <main
-      className="min-h-[70vh] px-3 sm:px-4 md:px-0 space-y-4 overflow-x-hidden"
-      data-archived-count={archivedIds.length}
-      data-loading={loading || undefined}
-    >
-      {loading && <div className="text-sm opacity-70">Loading…</div>}
-      {error && <div className="text-sm text-[var(--theme-error)]">{error}</div>}
-
-      <SingleBoard
-        title="Archived"
-        column="archived"
-        ids={archivedIds}
-        renderCard={renderCard}
-        onMoveWithin={async (id, toIndex) => {
-          try {
-            await onMove(id, 'archived', toIndex);
-          } catch {
-            // ignore or log
-          }
-        }}
-
-        onDockDrop={async (dock, id) => {
-          try {
-            if (dock === 'dock-active') {
-              await onMove(id, 'active', 0);
-            }
-            if (dock === 'dock-praise') {
-              await moveToPraise(id); // server-persisted
-            }
-            // Stay on this page per your rule; no navigation.
-          } catch {
-            // ignore or log
-          }
-        }}
-      />
-      {/* Dock removed here; it's rendered inside SingleBoard's DndContext */}
-    </main>
+    <ArchivedBoardPageView
+      archivedIds={archivedIds}
+      loading={loading}
+      error={error}
+      renderCard={renderCard}
+      onMoveWithin={onMoveWithin}
+      onDockDrop={onDockDrop}
+    />
   );
 }

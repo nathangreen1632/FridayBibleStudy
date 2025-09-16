@@ -1,7 +1,7 @@
 // Client/src/pages/EventsPageLogic.tsx
 import React, { useEffect, useMemo, useState } from 'react';
 import toast from 'react-hot-toast';
-import { useAuthStore } from '../stores/useAuthStore';
+import { useAuthStore } from '../../stores/useAuthStore.ts';
 import {
   fetchEvents,
   createEvent,
@@ -9,9 +9,9 @@ import {
   deleteEvent,
   emailEvent,
   type EventRow,
-} from '../helpers/api/eventsApi';
-import { toLocalInputValue } from '../helpers/events.helper';
-import EventsPageView from '../jsx/events/eventsPageView.tsx';
+} from '../../helpers/api/eventsApi.ts';
+import { toLocalInputValue } from '../../helpers/events.helper.ts';
+import EventsPageView from '../../jsx/events/eventsPageView.tsx';
 
 export default function EventsPage(): React.ReactElement {
   const { user } = useAuthStore();

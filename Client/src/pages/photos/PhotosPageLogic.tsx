@@ -1,9 +1,9 @@
 // Client/src/pages/PhotosPageLogic.tsx
 import React, { useCallback, useEffect, useRef, useState } from 'react';
 import toast from 'react-hot-toast';
-import { usePhotoStore } from '../stores/usePhotoStore';
-import PhotosPageView from '../jsx/photos/photosPageView.tsx';
-import type { PhotoItem } from '../types/domain/photo.types.ts';
+import { usePhotoStore } from '../../stores/usePhotoStore.ts';
+import PhotosPageView from '../../jsx/photos/photosPageView.tsx';
+import type { PhotoItem } from '../../types/domain/photo.types.ts';
 
 export default function PhotosPage(): React.ReactElement {
   const fileRef = useRef<HTMLInputElement | null>(null);

@@ -8,16 +8,16 @@ import {
   fetchChapterById,
   fetchBooks,
   fetchChapters,
-} from '../helpers/api/bibleApi';
-import BiblePageView from '../jsx/bible/biblePageView.tsx';
+} from '../../helpers/api/bibleApi.ts';
+import BiblePageView from '../../jsx/bible/biblePageView.tsx';
 import {
   saveState,
   readState,
   pickPassage,
   normalizeBibleList,
   formatBibleLabel,
-} from '../helpers/biblePage.helper';
-import type { BibleMeta, BookMeta, ChapterLite, VersionOption } from '../types/domain/bible.types.ts';
+} from '../../helpers/biblePage.helper.ts';
+import type { BibleMeta, BookMeta, ChapterLite, VersionOption } from '../../types/domain/bible.types.ts';
 
 export default function BiblePage(): React.ReactElement {
   const [bibles, setBibles] = useState<BibleMeta[]>([]);

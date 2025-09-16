@@ -23,5 +23,7 @@
 
     "typeRoots": ["./node_modules/@types", "./src/types"]
   },
-  "include": ["src", "src/types/grecaptcha.d.ts"]
+  "include": ["src",
+    "src/types/api/grecaptcha.d.ts"
+  ]
 }

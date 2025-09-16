@@ -2,7 +2,7 @@ import React from 'react';
 import { useLocation } from 'react-router-dom';
 import { useAdminUiStore } from '../../stores/admin/useAdminUiStore';
 import AdminPrayersTableView from '../../jsx/admin/adminPrayersTableView';
-import type { AdminPrayerRow, AdminUiSnapshot } from '../../types/admin.types';
+import type { AdminPrayerRow, AdminUiSnapshot } from '../../types/admin/admin.types.ts';
 
 type Props = Readonly<{
   rows: AdminPrayerRow[];

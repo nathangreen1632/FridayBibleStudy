@@ -1,19 +1,23 @@
-// Client/src/pages/admin/AdminRosterPage.tsx
 import React, { useEffect, useRef, useState } from 'react';
-import AdminRosterTable from '../../components/admin/AdminRosterTableLogic.tsx';
-import AdminRosterPager from '../../components/admin/AdminRosterPager';
+import { toast } from 'react-hot-toast';
 import { useAdminStore } from '../../stores/admin/useAdminStore';
 import type { RosterSortField } from '../../stores/admin/useAdminStore';
-import {toast} from "react-hot-toast"; // ✅ import the union
+import AdminRosterPageView from '../../jsx/admin/adminRosterPageView';
 
-export default function AdminRosterPage(): React.ReactElement {
+type LoadArgs = {
+  q?: string;
+  page?: number;
+  pageSize?: number;
+  sortBy?: RosterSortField;
+  sortDir?: 'asc' | 'desc';
+};
+
+export default function AdminRosterPageLogic(): React.ReactElement {
   const { roster, loadRoster } = useAdminStore();
 
-  // local input with debounce (mirrors AdminFilters behavior)
   const [qInput, setQInput] = useState('');
   const debounceRef = useRef<number | null>(null);
 
-  // ✅ type these to match the store
   const [sortBy, setSortBy] = useState<RosterSortField | null>(null);
   const [sortDir, setSortDir] = useState<'asc' | 'desc'>('asc');
 
@@ -23,22 +27,14 @@ export default function AdminRosterPage(): React.ReactElement {
       try {
         await loadRoster({ page: 1 });
       } catch {
+        // eslint-disable-next-line no-console
         console.error('Failed to load roster');
         toast.error('Failed to load roster');
       }
     })();
   }, [loadRoster]);
 
-  // Small helper type for clarity (matches store signature)
-  type LoadArgs = {
-    q?: string;
-    page?: number;
-    pageSize?: number;
-    sortBy?: RosterSortField;
-    sortDir?: 'asc' | 'desc';
-  };
-
-  // LIVE SEARCH: debounce server calls on input change
+  // debounced live search
   useEffect(() => {
     const next = qInput.trim();
 
@@ -57,6 +53,7 @@ export default function AdminRosterPage(): React.ReactElement {
         try {
           await loadRoster(args);
         } catch {
+          // eslint-disable-next-line no-console
           console.error('Failed to load roster');
           toast.error('Failed to load roster');
         }
@@ -71,7 +68,7 @@ export default function AdminRosterPage(): React.ReactElement {
     };
   }, [qInput, sortBy, sortDir, loadRoster]);
 
-  // When sort changes, reload with current query
+  // re-load when sorting changes
   useEffect(() => {
     if (!sortBy) return;
     (async () => {
@@ -79,6 +76,7 @@ export default function AdminRosterPage(): React.ReactElement {
         const args: LoadArgs = { q: qInput.trim(), page: 1, sortBy, sortDir };
         await loadRoster(args);
       } catch {
+        // eslint-disable-next-line no-console
         console.error('Failed to load roster');
         toast.error('Failed to load roster');
       }
@@ -95,55 +93,30 @@ export default function AdminRosterPage(): React.ReactElement {
     try {
       await loadRoster(args);
     } catch {
+      // eslint-disable-next-line no-console
       console.error('Failed to load roster');
       toast.error('Failed to load roster');
     }
   }
 
+  function handleSort(field: RosterSortField) {
+    if (sortBy === field) {
+      setSortDir((prev) => (prev === 'asc' ? 'desc' : 'asc'));
+    } else {
+      setSortBy(field);
+      setSortDir('asc');
+    }
+  }
+
   return (
-    <div className="p-3 space-y-3 mx-auto max-w-full">
-      <div className="flex gap-2 items-end">
-        <div className="flex-1">
-          <label htmlFor="roster-search" className="block text-sm mb-1">Search</label>
-          <div className="relative">
-            <input
-              id="roster-search"
-              value={qInput}
-              onChange={(e) => setQInput(e.target.value)}
-              placeholder="Search name, email, city..."
-              className="w-full px-3 py-2 pr-20 rounded-lg border border-[var(--theme-border)] bg-[var(--theme-textbox)] text-[var(--theme-placeholder)] placeholder-[var(--theme-placeholder)]"
-            />
-            {qInput !== '' && (
-              <button
-                type="button"
-                onClick={clearSearch}
-                aria-label="Clear search"
-                className="absolute right-2 top-1/2 -translate-y-1/2 px-3 py-1 rounded-md text-sm
-                           text-[var(--theme-placeholder)]/70 hover:text-[var(--theme-textbox)] hover:bg-[var(--theme-button-hover)]"
-              >
-                Clear
-              </button>
-            )}
-          </div>
-        </div>
-      </div>
-
-      <AdminRosterTable
-        rows={roster}
-        sortBy={sortBy}
-        sortDir={sortDir}
-        onSort={(field: RosterSortField) => {
-          if (sortBy === field) {
-            setSortDir((prev) => (prev === 'asc' ? 'desc' : 'asc'));
-          } else {
-            setSortBy(field);
-            setSortDir('asc');
-          }
-        }}
-      />
-
-      {/* Pager */}
-      <AdminRosterPager />
-    </div>
+    <AdminRosterPageView
+      qInput={qInput}
+      onChangeQuery={setQInput}
+      onClearQuery={clearSearch}
+      rows={roster}
+      sortBy={sortBy}
+      sortDir={sortDir}
+      onSort={handleSort}
+    />
   );
 }

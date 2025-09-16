@@ -4,8 +4,8 @@ import type { Socket } from 'socket.io-client';
 import { getSocket } from '../lib/socket.lib';
 import { useBoardStore } from './useBoardStore.ts';
 import { useCommentsStore } from './useCommentsStore.ts';
-import type { Prayer, Status } from '../types/domain.types';
-import type { Comment } from '../types/comment.types';
+import type { Prayer, Status } from '../types/domain/domain.types.ts';
+import type { Comment } from '../types/domain/comment.types.ts';
 
 // Keep Praises in sync with socket events
 import { usePraisesStore, praisesOnSocketUpsert, praisesOnSocketRemove } from './usePraisesStore.ts';
@@ -14,8 +14,8 @@ import { usePraisesStore, praisesOnSocketUpsert, praisesOnSocketRemove } from '.
 import { myPrayersOnSocketUpsert, myPrayersOnSocketRemove } from './useMyPrayersStore.ts';
 
 // ✅ Typed event constants + value type
-import { Events } from '../types/socket.types';
-import type { EventValue } from '../types/socket.types';
+import { Events } from '../types/domain/socket.types.ts';
+import type { EventValue } from '../types/domain/socket.types.ts';
 
 type PrayerDTO = Prayer;
 

@@ -1,1 +1,1 @@
-export { default } from './board/PrayersBoardPageLogic.tsx';
+export { default } from '../board/PrayersBoardPageLogic.tsx';

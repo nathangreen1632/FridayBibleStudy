@@ -1,12 +1,12 @@
 // Client/src/pages/account/ProfileAccountLogic.tsx
 import React, { useEffect, useState, useCallback } from 'react';
 import { toast } from 'react-hot-toast';
-import { api } from '../helpers/http.helper.ts';
-import { loadRecaptchaEnterprise, getRecaptchaToken } from '../lib/recaptcha.lib.ts';
-import { useAuthStore } from '../stores/useAuthStore.ts';
-import { useUiStore } from '../stores/useUiStore.ts';
-import ProfileAccountView from '../jsx/profile/profileAccountView.tsx';
-import type { PrayerDraft } from '../types/admin/account.types.ts';
+import { api } from '../../helpers/http.helper.ts';
+import { loadRecaptchaEnterprise, getRecaptchaToken } from '../../lib/recaptcha.lib.ts';
+import { useAuthStore } from '../../stores/useAuthStore.ts';
+import { useUiStore } from '../../stores/useUiStore.ts';
+import ProfileAccountView from '../../jsx/profile/profileAccountView.tsx';
+import type { PrayerDraft } from '../../types/admin/account.types.ts';
 
 const SITE_KEY = import.meta.env.VITE_RECAPTCHA_SITE_KEY as string | undefined;
 

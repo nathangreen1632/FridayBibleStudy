@@ -1,10 +1,10 @@
 // Client/src/pages/RegisterPageLogic.tsx
 import React, { useEffect, useMemo, useState } from 'react';
 import { toast } from 'react-hot-toast';
-import { useAuthStore } from '../stores/useAuthStore.ts';
-import { loadRecaptchaEnterprise, getRecaptchaToken } from '../lib/recaptcha.lib.ts';
-import RegisterPageView from '../jsx/auth/registerPageView.tsx';
-import type { RegisterFormState } from '../types/pages/register.types.ts';
+import { useAuthStore } from '../../stores/useAuthStore.ts';
+import { loadRecaptchaEnterprise, getRecaptchaToken } from '../../lib/recaptcha.lib.ts';
+import RegisterPageView from '../../jsx/auth/registerPageView.tsx';
+import type { RegisterFormState } from '../../types/pages/register.types.ts';
 
 const SITE_KEY = import.meta.env.VITE_RECAPTCHA_SITE_KEY as string | undefined;
 

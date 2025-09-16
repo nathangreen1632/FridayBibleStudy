@@ -1,8 +1,8 @@
 import React, { useEffect, useMemo, useState } from 'react';
 import { toast } from 'react-hot-toast';
-import type { ProfileFormProps, FormValues } from '../types/pages/profile.types.ts';
-import { normalizeFromUser, formatPhone, phoneRE } from '../utils/profile.util';
-import ProfileInfoView from '../jsx/profile/profileInfoView.tsx';
+import type { ProfileFormProps, FormValues } from '../../types/pages/profile.types.ts';
+import { normalizeFromUser, formatPhone, phoneRE } from '../../utils/profile.util.ts';
+import ProfileInfoView from '../../jsx/profile/profileInfoView.tsx';
 
 export default function ProfileInfoLogic({
                                            open,

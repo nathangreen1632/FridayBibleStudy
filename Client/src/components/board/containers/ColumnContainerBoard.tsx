@@ -2,7 +2,7 @@
 import React, { useMemo } from 'react';
 import { useDroppable } from '@dnd-kit/core';
 import { SortableContext, verticalListSortingStrategy } from '@dnd-kit/sortable';
-import SortableCard, { type ColumnKey } from '../SortableCard.tsx';
+import SortableCard, { type ColumnKey } from '../dnd/SortableCard.tsx';
 
 interface ColumnProps {
   title: string;

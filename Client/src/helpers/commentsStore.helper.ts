@@ -1,5 +1,5 @@
 // Client/src/helpers/commentsStore.helper.ts
-import type { Comment, ListRootThreadsResponse } from '../types/comment.types';
+import type { Comment, ListRootThreadsResponse } from '../types/domain/comment.types.ts';
 
 /** Minimal shape needed by the helpers to avoid circular deps with the store file. */
 export type ThreadLike = {

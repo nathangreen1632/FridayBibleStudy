@@ -11,9 +11,9 @@ import {
   patchAdminRosterUser,
   deleteAdminRosterUser,
 } from '../../helpers/api/adminApi';
-import type { AdminListResponse, AdminPrayerRow } from '../../types/admin.types';
-import type { Prayer } from '../../types/domain.types';
-import type { Comment } from '../../types/comment.types';
+import type { AdminListResponse, AdminPrayerRow } from '../../types/admin/admin.types.ts';
+import type { Prayer } from '../../types/domain/domain.types.ts';
+import type { Comment } from '../../types/domain/comment.types.ts';
 import {toast} from "react-hot-toast";
 
 /** Roster row shape (admin roster table) */

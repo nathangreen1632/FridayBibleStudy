@@ -1,4 +1,4 @@
-import type { Role, Category, Status } from './domain.types';
+import type { Role, Category, Status } from '../domain/domain.types.ts';
 
 export interface AuthUser {
   id: number; name: string; email: string; role: Role;

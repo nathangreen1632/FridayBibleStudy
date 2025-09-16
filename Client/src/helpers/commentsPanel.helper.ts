@@ -1,5 +1,5 @@
 // Client/src/helpers/commentsPanel.helper.ts
-import type { Comment } from '../types/comment.types';
+import type { Comment } from '../types/domain/comment.types.ts';
 
 /** Parse ISO-ish strings to epoch ms; returns 0 on bad/missing input. */
 export function safeParseTime(iso?: string | null): number {

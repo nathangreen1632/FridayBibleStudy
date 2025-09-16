@@ -1,8 +1,8 @@
 import React, { useEffect, useMemo, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { toast } from 'react-hot-toast';
-import { apiWithRecaptcha } from '../helpers/secure-api.helper';
-import RequestResetPageView from '../jsx/auth/requestResetPageView.tsx';
+import { apiWithRecaptcha } from '../../helpers/secure-api.helper.ts';
+import RequestResetPageView from '../../jsx/auth/requestResetPageView.tsx';
 
 export default function RequestResetPage(): React.ReactElement {
   const nav = useNavigate();

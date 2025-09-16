@@ -1,7 +1,7 @@
 import { create } from 'zustand';
 import { api } from '../helpers/http.helper';
 import { apiWithRecaptcha } from '../helpers/secure-api.helper';
-import type { Prayer, Status } from '../types/domain.types';
+import type { Prayer, Status } from '../types/domain/domain.types.ts';
 import { useAuthStore } from './useAuthStore';
 
 type SortKey = 'updated' | 'created' | 'title';

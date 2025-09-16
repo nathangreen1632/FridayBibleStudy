@@ -23,7 +23,7 @@ export default function AdminFiltersLogic(): React.ReactElement {
   useEffect(() => {
     const gid = typeof ui.groupId === 'number' ? ui.groupId : 1;
     try { joinGroup(gid); } catch {}
-    return () => { try { leaveGroup(gid); } catch {}; };
+    return () => { try { leaveGroup(gid); } catch {} };
   }, [ui.groupId]);
 
   // Re-join on socket reconnect (idempotent)
@@ -34,7 +34,7 @@ export default function AdminFiltersLogic(): React.ReactElement {
       try { joinGroup(gid); } catch {}
     };
     try { socket.on('connect', onConnect); } catch {}
-    return () => { try { socket.off?.('connect', onConnect); } catch {}; };
+    return () => { try { socket.off?.('connect', onConnect); } catch {} };
   }, [socket, ui.groupId, joinGroup]);
 
   // ---- search box (debounced) ----

@@ -2,10 +2,10 @@
 import React, { useEffect, useMemo, useState } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import { toast } from 'react-hot-toast';
-import { apiWithRecaptcha } from '../helpers/secure-api.helper';
-import { submitResetPassword, type ResetPayload } from '../helpers/resetPassword.helper';
-import ResetPasswordPageView from '../jsx/auth/resetPasswordPageView.tsx';
-import type { ResetFormState } from '../types/pages/resetPassword.types.ts';
+import { apiWithRecaptcha } from '../../helpers/secure-api.helper.ts';
+import { submitResetPassword, type ResetPayload } from '../../helpers/resetPassword.helper.ts';
+import ResetPasswordPageView from '../../jsx/auth/resetPasswordPageView.tsx';
+import type { ResetFormState } from '../../types/pages/resetPassword.types.ts';
 
 export default function ResetPasswordPage(): React.ReactElement {
   const nav = useNavigate();

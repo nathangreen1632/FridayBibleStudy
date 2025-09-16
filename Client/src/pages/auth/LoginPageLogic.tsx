@@ -2,10 +2,10 @@
 import React, { useEffect, useMemo, useState } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import { toast } from 'react-hot-toast';
-import { useAuthStore } from '../stores/useAuthStore.ts';
-import { getRecaptchaToken, loadRecaptchaEnterprise } from '../lib/recaptcha.lib.ts';
-import LoginPageView from '../jsx/auth/loginPageView.tsx';
-import type { FromState } from '../types/api/auth.types.ts';
+import { useAuthStore } from '../../stores/useAuthStore.ts';
+import { getRecaptchaToken, loadRecaptchaEnterprise } from '../../lib/recaptcha.lib.ts';
+import LoginPageView from '../../jsx/auth/loginPageView.tsx';
+import type { FromState } from '../../types/api/auth.types.ts';
 
 const SITE_KEY = import.meta.env.VITE_RECAPTCHA_SITE_KEY as string | undefined;
 

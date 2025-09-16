@@ -1,11 +1,11 @@
 import type { RouteObject } from 'react-router-dom';
-import AdminLayout from '../../pages/admin/AdminLayout';
-import AdminPrayersPage from '../../pages/admin/AdminPrayersPage';
-import AdminPrayerDetailPage from '../../pages/admin/AdminPrayerDetailPage';
-import AdminRosterPage from '../../pages/admin/AdminRosterPage';
-import AdminDigestPage from '../../pages/admin/AdminDigestPage';
-import PhotosPage from '../../pages/PhotosPage';
-import EventsPage from '../../pages/EventsPage'; // ⬅️ add this
+import AdminLayout from '../../pages/admin/AdminLayoutLogic.tsx';
+import AdminPrayersPage from '../../pages/admin/AdminPrayersPageLogic.tsx';
+import AdminPrayerDetailPage from '../../pages/admin/AdminPrayerDetailPageLogic.tsx';
+import AdminRosterPage from '../../pages/admin/AdminRosterPageLogic.tsx';
+import AdminDigestPage from '../../pages/admin/AdminDigestPageLogic.tsx';
+import PhotosPageLogic from '../../pages/photos/PhotosPageLogic.tsx';
+import EventsPageLogic from '../../pages/events/EventsPageLogic.tsx'; // ⬅️ add this
 import { AdminGuard } from '../../common/admin/AdminAuthGuard.tsx';
 
 const adminRoutes: RouteObject[] = [
@@ -21,8 +21,8 @@ const adminRoutes: RouteObject[] = [
       { path: 'prayers/:id', element: <AdminPrayerDetailPage /> },
       { path: 'roster', element: <AdminRosterPage /> },
       { path: 'digest', element: <AdminDigestPage /> },
-      { path: 'photos', element: <PhotosPage /> },
-      { path: 'events', element: <EventsPage /> }, // ⬅️ new
+      { path: 'photos', element: <PhotosPageLogic /> },
+      { path: 'events', element: <EventsPageLogic /> }, // ⬅️ new
     ],
   },
 ];

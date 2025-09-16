@@ -2,14 +2,14 @@
 import React from 'react';
 import { Route, Routes, Navigate } from 'react-router-dom';
 
-import HomePage from './pages/HomePage.tsx';
-import Register from './pages/RegisterPage.tsx';
-import Login from './pages/LoginPage.tsx';
-import ContactPageWrapper from './pages/contact/ContactPageWrapper.tsx';
+import HomePageWrapper from './pages/home/HomePageWrapper.tsx';
+import Register from './pages/auth/RegisterPageLogic.tsx';
+import Login from './pages/auth/LoginPageLogic.tsx';
+import ContactFormWrapper from './pages/contact/ContactFormWrapper.tsx';
 
 // Forgot Password
-import RequestReset from './pages/RequestReset.tsx';
-import ResetPassword from './pages/ResetPassword.tsx';
+import RequestResetPageLogic from './pages/auth/RequestResetPageLogic.tsx';
+import ResetPasswordPageLogic from './pages/auth/ResetPasswordPageLogic.tsx';
 
 // Route groups
 import adminRoutes from './routes/admin/AdminRoutes';
@@ -19,14 +19,14 @@ export default function AppRoutes(): React.ReactElement {
   return (
     <Routes>
       {/* Public */}
-      <Route path="/" element={<HomePage />} />
+      <Route path="/" element={<HomePageWrapper />} />
       <Route path="/register" element={<Register />} />
       <Route path="/login" element={<Login />} />
-      <Route path="/contact" element={<ContactPageWrapper />} />
+      <Route path="/contact" element={<ContactFormWrapper />} />
 
       {/* Forgot Password */}
-      <Route path="/request-reset" element={<RequestReset />} />
-      <Route path="/reset-password" element={<ResetPassword />} />
+      <Route path="/request-reset" element={<RequestResetPageLogic />} />
+      <Route path="/reset-password" element={<ResetPasswordPageLogic />} />
 
       {/* Member (Friend) Routes */}
       {friendRoutes.map((route) => (

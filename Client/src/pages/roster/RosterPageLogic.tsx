@@ -1,9 +1,9 @@
 // Client/src/pages/RosterPageLogic.tsx
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import { toast } from 'react-hot-toast';
-import RosterPageView from '../jsx/roster/rosterPageView.tsx';
-import { fetchRoster, type RosterRow } from '../helpers/api/rosterApi';
-import type { LoadArgs, RostersSortField } from '../types/domain/roster.types.ts';
+import RosterPageView from '../../jsx/roster/rosterPageView.tsx';
+import { fetchRoster, type RosterRow } from '../../helpers/api/rosterApi.ts';
+import type { LoadArgs, RostersSortField } from '../../types/domain/roster.types.ts';
 
 export default function RosterPageLogic(): React.ReactElement {
   const [rows, setRows] = useState<RosterRow[]>([]);
