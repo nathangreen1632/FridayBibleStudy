@@ -1,8 +1,16 @@
+// Client/src/jsx/admin/adminPrayerDetailPageView.tsx
 import React from 'react';
 import { Trash2 } from 'lucide-react';
 import ConfirmBar from '../../common/ConfirmBar';
 import { pressBtn } from '../../../ui/press';
 import type { AdminPrayerDetailViewProps } from '../../types/admin/adminPrayerDetail.types.ts';
+
+const STATUS_OPTIONS = ['active', 'praise', 'archived'] as const;
+type Status = typeof STATUS_OPTIONS[number];
+
+function isStatus(v: string): v is Status {
+  return (STATUS_OPTIONS as readonly string[]).includes(v);
+}
 
 export default function AdminPrayerDetailPageView({
                                                     isAdmin,
@@ -22,6 +30,16 @@ export default function AdminPrayerDetailPageView({
                                                     onChangeContent,
                                                     onDeleteUpdate,
                                                   }: AdminPrayerDetailViewProps): React.ReactElement {
+
+  const handleStatusChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
+    const v = e.target.value;
+    if (isStatus(v)) {
+      onChangeStatus(v);            // fully typed as Status
+    } else {
+      onChangeStatus(localStatus);  // graceful fallback: keep current
+    }
+  };
+
   return (
     <div className="space-y-4">
       {/* Back button row */}
@@ -47,7 +65,7 @@ export default function AdminPrayerDetailPageView({
             <select
               id={statusSelectId}
               value={localStatus}
-              onChange={(e) => onChangeStatus(e.target.value as any)}
+              onChange={handleStatusChange}
               className="rounded-lg border border-[var(--theme-border)] bg-[var(--theme-textbox)] text-[var(--theme-placeholder)] placeholder:text-[var(--theme-placeholder)] px-3 py-2"
             >
               <option value="active">Prayer</option>
