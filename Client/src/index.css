@@ -187,6 +187,16 @@ body {
   border: 2px solid var(--theme-scrollbar-track);
 }
 
+/* Hide scrollbars only for the header nav */
+.header-nav--no-scrollbar {
+  -ms-overflow-style: none;   /* IE/Edge legacy */
+  scrollbar-width: none;      /* Firefox */
+}
+.header-nav--no-scrollbar::-webkit-scrollbar {
+  display: none;              /* Chrome/Safari/Edge */
+}
+
+
 /* LIGHT MODE VARIANTS */
 :root {
   --theme-scrollbar-track: var(--theme-surface); /* lighter track */
