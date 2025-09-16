@@ -45,7 +45,7 @@ function SortTh({
     <th
       scope="col"
       aria-sort={ariaSort}
-      className="text-left px-3 py-2 border-t-2 border-b-2 border-[var(--theme-border)] cursor-pointer select-none"
+      className="text-left px-3 py-2 border-t-2 border-b-2 border-[var(--theme-border)] bg-[var(--theme-button-blue)] text-[var(--theme-moveto)] cursor-pointer select-none"
       onClick={() => onSort(field)}
     >
       <div className="flex items-center justify-between w-full">
@@ -122,13 +122,13 @@ export default function RosterPageView({
     bodyRows = rows.map((r) => (
       <tr
         key={r.id}
-        className="even:bg-[var(--theme-card-alt)] hover:bg-[var(--theme-card-hover)]"
+        className="even:bg-[var(--theme-card-alt-inverse)] text-[var(--theme-moveto)] hover:bg-[var(--theme-card-hover)]"
       >
         <td className="px-3 py-2">{r.name}</td>
         <td className="px-3 py-2">
           <a
             href={`mailto:${r.email}`}
-            className="underline text-[var(--theme-strip-text)] hover:text-[var(--theme-link-hover)]"
+            className="underline text-[var(--theme-moveto)] hover:text-[var(--theme-link-hover)]"
           >
             {r.email}
           </a>
@@ -174,8 +174,8 @@ export default function RosterPageView({
       </div>
 
       {/* Table */}
-      <div className="rounded-xl border border-[var(--theme-border)] bg-[var(--theme-surface)]">
-        <div className="px-3 py-2 font-semibold flex items-center justify-between">
+      <div className="rounded-t-xl border border-[var(--theme-border)] bg-[var(--theme-accent)]">
+        <div className="px-3 py-2 text-[var(--theme-moveto)] font-semibold flex items-center justify-between">
           <span>Roster</span>
           <span className="text-xs opacity-70">
             Page {page} • {Math.min(total, (page - 1) * pageSize + 1)}–
@@ -201,7 +201,7 @@ export default function RosterPageView({
                 direction={sortDir}
                 onSort={onSort}
               />
-              <th className="text-left px-3 py-2 border-t-2 border-b-2 border-[var(--theme-border)]">
+              <th className="text-left px-3 py-2 border-t-2 border-b-2 border-[var(--theme-border)] text-[var(--theme-moveto)] bg-[var(--theme-button-blue)]">
                 Phone
               </th>
               <SortTh
