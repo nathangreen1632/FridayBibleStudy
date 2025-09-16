@@ -55,33 +55,40 @@ export default function RosterPageLogic(): React.ReactElement {
 
   // initial load
   useEffect(() => {
-    void load({ page: 1 });
+    (async () => {
+      await load({ page: 1 });
+    })();
   }, [load]);
 
   // debounced live search
   useEffect(() => {
     const next = qInput.trim();
     const id = window.setTimeout(() => {
-      const args: LoadArgs = { q: next, page: 1 };
-      if (sortBy) {
-        args.sortBy = sortBy;
-        args.sortDir = sortDir;
-      }
-      void load(args);
+      (async () => {
+        const args: LoadArgs = { q: next, page: 1 };
+        if (sortBy) {
+          args.sortBy = sortBy;
+          args.sortDir = sortDir;
+        }
+        await load(args);
+      })();
     }, 300);
+
     return () => window.clearTimeout(id);
   }, [qInput, sortBy, sortDir, load]);
 
   // paging (uses current filters)
   useEffect(() => {
-    const args: LoadArgs = {
-      q: qInput.trim(),
-      page,
-      pageSize,
-      sortBy: sortBy ?? undefined,
-      sortDir: sortDir ?? undefined,
-    };
-    void load(args);
+    (async () => {
+      const args: LoadArgs = {
+        q: qInput.trim(),
+        page,
+        pageSize,
+        sortBy: sortBy ?? undefined,
+        sortDir: sortDir ?? undefined,
+      };
+      await load(args);
+    })();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [page]);
 
