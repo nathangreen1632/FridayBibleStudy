@@ -61,6 +61,7 @@
     --theme-card: var(--c-b);
     --theme-card-hover: var(--c-c);
     --theme-card-hover-alt: var(--c-b);
+    --theme-card-alt-inverse: var(--c-h);
     --theme-card-alt-hover: var(--c-n);
     --theme-card-alt: var(--c-f);
     --theme-hover: var(--c-d);
@@ -92,7 +93,7 @@
     --c-j: #4A6FA5; /* J: desaturated blue */
     --c-k: #00274C; /* K: darkest blue (hover) */
     --c-l: #16803D; /* L: green */
-    ---c-m: #BF5700; /* M: UT burnt orange */
+    --c-m: #BF5700; /* M: UT burnt orange */
     --c-n: #9CA3AF;
 
     /* DARK MODE — 180° from light (A↔E, B↔D, C→B to avoid hold-overs) */
@@ -135,7 +136,8 @@
     --theme-card: var(--c-d);
     --theme-card-hover: var(--c-b);
     --theme-card-hover-alt: var(--c-b);
-    --theme-card-alt: var(--c-h); /* darker parchment substitute */
+    --theme-card-alt: var(--c-h);
+    --theme-card-alt-inverse: var(--c-f);
     --theme-hover: var(--c-b);
     --theme-card-alt-hover: var(--c-n);
 
@@ -187,6 +189,16 @@ body {
   border: 2px solid var(--theme-scrollbar-track);
 }
 
+/* Hide scrollbars only for the header nav */
+.header-nav--no-scrollbar {
+  -ms-overflow-style: none;   /* IE/Edge legacy */
+  scrollbar-width: none;      /* Firefox */
+}
+.header-nav--no-scrollbar::-webkit-scrollbar {
+  display: none;              /* Chrome/Safari/Edge */
+}
+
+
 /* LIGHT MODE VARIANTS */
 :root {
   --theme-scrollbar-track: var(--theme-surface); /* lighter track */
@@ -235,4 +247,9 @@ html {
           0 -1px 0 var(--theme-surface),
           0 -2px 0 var(--theme-border),
           0 -3px 4px var(--theme-shadow);
+}
+
+/* Reserve space for scrollbars to keep corners pretty */
+.scrollpad {
+  scrollbar-gutter: stable both-edges;
 }

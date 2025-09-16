@@ -99,21 +99,21 @@ export default function Navbar(): React.ReactElement {
 
         {/* Desktop nav (≥ 1280px) */}
         {/* keep everything on one line, allow horizontal scroll if viewport is just shy */}
-        <nav className="hidden xl:flex items-center gap-2 flex-nowrap overflow-x-auto no-scrollbar">
+        <nav className="hidden xl:flex items-center gap-2 flex-nowrap overflow-x-auto header-nav--no-scrollbar">
           {/* Public */}
-          <NavLink to="/contact" className={({ isActive }) => linkClass(isActive)}>
-            <Mail className="w-4 h-4" />
+          <NavLink to="/contact" className={({isActive}) => linkClass(isActive)}>
+            <Mail className="w-4 h-4"/>
             Contact
           </NavLink>
 
           {!user && (
             <>
-              <NavLink to="/login" className={({ isActive }) => linkClass(isActive)}>
-                <LogIn className="w-4 h-4" />
+              <NavLink to="/login" className={({isActive}) => linkClass(isActive)}>
+                <LogIn className="w-4 h-4"/>
                 Sign in
               </NavLink>
-              <NavLink to="/register" className={({ isActive }) => linkClass(isActive)}>
-                <UserPlus className="w-4 h-4" />
+              <NavLink to="/register" className={({isActive}) => linkClass(isActive)}>
+                <UserPlus className="w-4 h-4"/>
                 Create account
               </NavLink>
             </>
@@ -124,24 +124,24 @@ export default function Navbar(): React.ReactElement {
               {/* ── Admin routes ── */}
               {user.role === 'admin' && (
                 <>
-                  <NavLink to="/admin" end className={({ isActive }) => linkClass(isActive)}>
-                    <ShieldCheck className="w-4 h-4" />
+                  <NavLink to="/admin" end className={({isActive}) => linkClass(isActive)}>
+                    <ShieldCheck className="w-4 h-4"/>
                     Admin
                   </NavLink>
-                  <NavLink to="/admin/digest" className={({ isActive }) => linkClass(isActive)}>
-                    <Mail className="w-4 h-4" />
+                  <NavLink to="/admin/digest" className={({isActive}) => linkClass(isActive)}>
+                    <Mail className="w-4 h-4"/>
                     Digest
                   </NavLink>
-                  <NavLink to="/admin/roster" className={({ isActive }) => linkClass(isActive)}>
-                    <Users className="w-4 h-4" />
+                  <NavLink to="/admin/roster" className={({isActive}) => linkClass(isActive)}>
+                    <Users className="w-4 h-4"/>
                     Roster
                   </NavLink>
-                  <NavLink to="/admin/photos" className={({ isActive }) => linkClass(isActive)}>
-                    <ImageIcon className="w-4 h-4" />
+                  <NavLink to="/admin/photos" className={({isActive}) => linkClass(isActive)}>
+                    <ImageIcon className="w-4 h-4"/>
                     Photos
                   </NavLink>
-                  <NavLink to="/admin/events" className={({ isActive }) => linkClass(isActive)}>
-                    <CalendarDays className="w-4 h-4" />
+                  <NavLink to="/admin/events" className={({isActive}) => linkClass(isActive)}>
+                    <CalendarDays className="w-4 h-4"/>
                     Events
                   </NavLink>
 
@@ -150,7 +150,7 @@ export default function Navbar(): React.ReactElement {
                     className="ml-2 flex items-center gap-1 px-3 py-2 rounded-lg text-sm font-medium bg-[var(--theme-surface)] border border-[var(--theme-border)] hover:bg-[var(--theme-card-hover)] whitespace-nowrap"
                     aria-label="Sign out"
                   >
-                    <LogOut className="w-4 h-4" />
+                    <LogOut className="w-4 h-4"/>
                     Sign out
                   </button>
                 </>
@@ -161,43 +161,43 @@ export default function Navbar(): React.ReactElement {
                 <>
                   {/* Contact already shown publicly to the left, avoid duplicate here */}
 
-                  <NavLink to="/bible" className={({ isActive }) => linkClass(isActive)}>
-                    <BookOpen className="w-4 h-4" />
+                  <NavLink to="/bible" className={({isActive}) => linkClass(isActive)}>
+                    <BookOpen className="w-4 h-4"/>
                     Bible
                   </NavLink>
 
-                  <NavLink to="/portal" className={({ isActive }) => linkClass(isActive)}>
-                    <HelpingHand className="w-4 h-4" />
+                  <NavLink to="/portal" className={({isActive}) => linkClass(isActive)}>
+                    <HelpingHand className="w-4 h-4"/>
                     Prayers
                   </NavLink>
 
-                  <NavLink to="/board/praises" className={({ isActive }) => linkClass(isActive)}>
-                    <Sparkles className="w-4 h-4" />
+                  <NavLink to="/board/praises" className={({isActive}) => linkClass(isActive)}>
+                    <Sparkles className="w-4 h-4"/>
                     Praises
                   </NavLink>
 
-                  <NavLink to="/board/archive" className={({ isActive }) => linkClass(isActive)}>
-                    <Archive className="w-4 h-4" />
+                  <NavLink to="/board/archive" className={({isActive}) => linkClass(isActive)}>
+                    <Archive className="w-4 h-4"/>
                     Archived
                   </NavLink>
 
-                  <NavLink to="/photos" className={({ isActive }) => linkClass(isActive)}>
-                    <ImageIcon className="w-4 h-4" />
+                  <NavLink to="/photos" className={({isActive}) => linkClass(isActive)}>
+                    <ImageIcon className="w-4 h-4"/>
                     Photos
                   </NavLink>
 
-                  <NavLink to="/profile" className={({ isActive }) => linkClass(isActive)}>
-                    <User className="w-4 h-4" />
+                  <NavLink to="/profile" className={({isActive}) => linkClass(isActive)}>
+                    <User className="w-4 h-4"/>
                     Profile
                   </NavLink>
 
-                  <NavLink to="/events" className={({ isActive }) => linkClass(isActive)}>
-                    <CalendarDays className="w-4 h-4" />
+                  <NavLink to="/events" className={({isActive}) => linkClass(isActive)}>
+                    <CalendarDays className="w-4 h-4"/>
                     Events
                   </NavLink>
 
-                  <NavLink to="/roster" className={({ isActive }) => linkClass(isActive)}>
-                    <Users className="w-4 h-4" />
+                  <NavLink to="/roster" className={({isActive}) => linkClass(isActive)}>
+                    <Users className="w-4 h-4"/>
                     Roster
                   </NavLink>
 
@@ -206,7 +206,7 @@ export default function Navbar(): React.ReactElement {
                     className="ml-2 flex items-center gap-1 px-3 py-2 rounded-lg text-sm font-medium bg-[var(--theme-surface)] border border-[var(--theme-border)] hover:bg-[var(--theme-card-hover)] whitespace-nowrap"
                     aria-label="Sign out"
                   >
-                    <LogOut className="w-4 h-4" />
+                    <LogOut className="w-4 h-4"/>
                     Sign out
                   </button>
                 </>

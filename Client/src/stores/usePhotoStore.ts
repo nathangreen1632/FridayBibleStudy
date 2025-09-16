@@ -1,7 +1,7 @@
 // Client/src/stores/usePhotoStore.ts
 import { create } from 'zustand';
 import toast from 'react-hot-toast';
-import type { Photo, PhotoListResponse } from '../types/photo.types';
+import type { Photo, PhotoListResponse } from '../types/domain/photo.types.ts';
 import { fetchPhotos, uploadPhotos, deletePhoto } from '../helpers/api/photoApi';
 import { compressImage } from '../utils/imageCompress';
 

@@ -2,8 +2,8 @@
 import { create } from 'zustand';
 import { api } from '../helpers/http.helper';
 import { apiWithRecaptcha } from '../helpers/secure-api.helper';
-import type { ListPrayersResponse } from '../types/api.type';
-import type { Category, Status } from '../types/domain.types';
+import type { ListPrayersResponse } from '../types/api/api.type.ts';
+import type { Category, Status } from '../types/domain/domain.types.ts';
 
 type ColumnKey = 'active' | 'archived';
 type Item = ListPrayersResponse['items'][number];

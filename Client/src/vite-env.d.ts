@@ -1,2 +1,2 @@
 /// <reference types="vite/client" />
-/// <reference path="./types/grecaptcha.d.ts" />
+/// <reference path="./types/api/grecaptcha.d.ts" />

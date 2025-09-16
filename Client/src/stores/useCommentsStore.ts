@@ -2,7 +2,7 @@
 import { create } from 'zustand';
 import { api } from '../helpers/http.helper';
 import { apiWithRecaptcha } from '../helpers/secure-api.helper';
-import type { Comment, ListRootThreadsResponse } from '../types/comment.types';
+import type { Comment, ListRootThreadsResponse } from '../types/domain/comment.types.ts';
 import { useAuthStore } from './useAuthStore';
 import {
   resolveFetchOpts,

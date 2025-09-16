@@ -1,5 +1,5 @@
 // Client/src/helpers/usePraiseStore.helper.ts
-import type {Prayer} from '../types/domain.types';
+import type {Prayer} from '../types/domain/domain.types.ts';
 
 export type PraiseThread = {
   byId: Map<number, Prayer>;

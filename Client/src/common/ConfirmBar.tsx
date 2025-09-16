@@ -26,7 +26,7 @@ export default function ConfirmBar({
         <button
           type="button"
           onClick={onCancel}
-          className={pressBtn("rounded-xl bg-[var(--theme-button)] text-[var(--theme-text-white)] px-4 py-2 hover:bg-[var(--theme-button-hover)] hover:text-[var(--theme-textbox)]")}
+          className={pressBtn("rounded-xl bg-[var(--theme-button-dark)] text-[var(--theme-text)] px-4 py-2 hover:bg-[var(--theme-button-hover)] hover:text-[var(--theme-textbox)]")}
         >
           {cancelLabel}
         </button>

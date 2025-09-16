@@ -4,7 +4,7 @@ import AppRoutes from './AppRoutes';
 import { Toaster } from 'react-hot-toast';
 import Navbar from './common/Navbar.tsx';
 import Footer from './common/Footer.tsx';
-import GravatarStrip from './components/GravatarStrip.tsx';
+import GravatarStrip from './components/profile/GravatarStrip.tsx';
 import { useLocation } from 'react-router-dom';
 import { useAuthStore } from './stores/useAuthStore';
 

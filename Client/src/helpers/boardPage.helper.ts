@@ -1,8 +1,8 @@
 // Client/src/helpers/boardPage.helper.tsx
 import React, { useCallback, useEffect } from 'react';
-import type { ColumnKey } from '../components/SortableCard';
-import PrayerCardWithComments from '../components/PrayerCardWithComments';
-import type { Prayer, Status } from '../types/domain.types';
+import type { ColumnKey } from '../components/board/dnd/SortableCard.tsx';
+import PrayerCardWithComments from '../components/board/cards/PrayerCardWithCommentsLogic.tsx';
+import type { Prayer, Status } from '../types/domain/domain.types.ts';
 import { apiWithRecaptcha } from './secure-api.helper';
 import { toast } from 'react-hot-toast';
 
