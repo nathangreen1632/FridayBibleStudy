@@ -61,6 +61,7 @@
     --theme-card: var(--c-b);
     --theme-card-hover: var(--c-c);
     --theme-card-hover-alt: var(--c-b);
+    --theme-card-alt-inverse: var(--c-h);
     --theme-card-alt-hover: var(--c-n);
     --theme-card-alt: var(--c-f);
     --theme-hover: var(--c-d);
@@ -135,7 +136,8 @@
     --theme-card: var(--c-d);
     --theme-card-hover: var(--c-b);
     --theme-card-hover-alt: var(--c-b);
-    --theme-card-alt: var(--c-h); /* darker parchment substitute */
+    --theme-card-alt: var(--c-h);
+    --theme-card-alt-inverse: var(--c-f);
     --theme-hover: var(--c-b);
     --theme-card-alt-hover: var(--c-n);
 
