@@ -308,6 +308,16 @@ export default function BiblePage(): React.ReactElement {
   let bookPlaceholder = 'Choose a version first…';
   if (bibleId) bookPlaceholder = books.length > 0 ? 'Choose a book…' : 'Loading books…';
 
+  const handleLoadPrev = React.useCallback(async () => {
+    if (!prevId) return;
+    await loadChapter(prevId);
+  }, [prevId, loadChapter]);
+
+  const handleLoadNext = React.useCallback(async () => {
+    if (!nextId) return;
+    await loadChapter(nextId);
+  }, [nextId, loadChapter]);
+
   return (
     <BiblePageView
       loading={loading}
@@ -327,8 +337,8 @@ export default function BiblePage(): React.ReactElement {
       refText={refText}
       prevId={prevId}
       nextId={nextId}
-      onLoadPrev={() => { void loadChapter(prevId); }}
-      onLoadNext={() => { void loadChapter(nextId); }}
+      onLoadPrev={handleLoadPrev}
+      onLoadNext={handleLoadNext}
     />
   );
 }
