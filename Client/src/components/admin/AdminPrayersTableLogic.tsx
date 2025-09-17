@@ -9,9 +9,6 @@ type Props = Readonly<{
   loading: boolean;
 }>;
 
-/**
- * Owns all non-render logic and passes plain props to the View.
- */
 export default function AdminPrayersTableLogic({ rows, loading }: Props): React.ReactElement {
   const ui = useAdminUiStore();
   const loc = useLocation();

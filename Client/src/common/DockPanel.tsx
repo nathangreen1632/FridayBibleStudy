@@ -1,4 +1,3 @@
-// Client/src/common/DockPanel.tsx
 import React from 'react';
 import { useDroppable } from '@dnd-kit/core';
 
@@ -12,7 +11,6 @@ function Zone({ id, label }: Readonly<ZoneProps>) {
       ref={setNodeRef}
       aria-label={label}
       className={[
-        // consistent cell styling with your theme tokens
         'w-full min-w-0 text-center rounded-xl border border-[var(--theme-border)]',
         'px-4 py-3 text-base md:px-5 md:py-4 md:text-lg',
         'bg-[var(--theme-card)]/90 shadow-sm',
@@ -28,26 +26,16 @@ function Zone({ id, label }: Readonly<ZoneProps>) {
   );
 }
 
-/**
- * Desktop-only rail dock.
- * - Hidden on < 1440px (you said you replaced bottom dock elsewhere)
- * - EXACT same rail styling & position as before for >= 1440px
- */
 export default function Dock(): React.ReactElement {
   return (
     <aside
       aria-label="Board actions"
       className={[
-        // 🔒 Hide entirely on smaller screens
         'hidden',
-
-        // 🖥️ Desktop rail (>=1440px): keep exactly the same layout & positioning
         'min-[1440px]:fixed min-[1440px]:right-4 min-[1440px]:top-1/2 min-[1440px]:-translate-y-1/2',
         'min-[1440px]:inset-x-auto min-[1440px]:bottom-auto',
         'min-[1440px]:grid min-[1440px]:grid-cols-1 min-[1440px]:gap-4',
         'min-[1440px]:px-4 min-[1440px]:py-4 min-[1440px]:w-64',
-
-        // Card surface & border (unchanged)
         'min-[1440px]:rounded-2xl min-[1440px]:bg-[var(--theme-button)] min-[1440px]:backdrop-blur',
         'min-[1440px]:border min-[1440px]:border-[var(--theme-border)] min-[1440px]:shadow-md',
       ].join(' ')}

@@ -1,10 +1,8 @@
-// Client/src/helpers/useAuthStore.helper.ts
 import {api} from './http.helper';
 import {getRecaptchaToken, loadRecaptchaEnterprise} from '../lib/recaptcha.lib';
 
 export type AuthResult = { success: boolean; message?: string };
 
-// Keep messages identical to originals.
 export function requireSiteKey(siteKey: string | undefined): AuthResult | null {
   if (siteKey) return null;
   return { success: false, message: 'Missing reCAPTCHA site key. Please contact the administrator.' };
@@ -37,7 +35,6 @@ export async function getLoginTokenOrError(siteKey: string): Promise<
   }
 }
 
-/** Perform the /login request with consistent headers & body */
 export async function performLoginRequest(
   email: string,
   password: string,
@@ -53,7 +50,6 @@ export async function performLoginRequest(
   });
 }
 
-/** Prefer JSON { error } -> message; fall back to text; null means no error */
 export async function responseErrorMessageIfAny(res: Response): Promise<string | null> {
   if (res.ok) return null;
 
@@ -71,24 +67,23 @@ export async function responseErrorMessageIfAny(res: Response): Promise<string |
       try {
         return JSON.stringify(val);
       } catch {
-        // ignore
+
       }
     }
   } catch {
-    // ignore and try text next
+
   }
 
   try {
     const text = await res.text();
     if (text) message = text;
   } catch {
-    // ignore; use default
+
   }
 
   return message;
 }
 
-/** Safely fetch /me; returns null on failure */
 export async function fetchMeSafe<TUser = unknown>(): Promise<TUser | null> {
   try {
     return await api<TUser>('/api/auth/me', {method: 'GET'});

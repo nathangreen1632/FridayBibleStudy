@@ -1,4 +1,3 @@
-// Client/src/helpers/api/bibleApi.ts
 import { api, apiRaw, readBody } from '../http.helper';
 
 export async function fetchBibleList(): Promise<Response> {
@@ -31,17 +30,12 @@ export function fetchChapterById(chapterId: string, bibleId?: string) {
   return fetch(`/api/bible/chapter/${encodeURIComponent(chapterId)}${qp}`, { credentials: 'include' });
 }
 
-/** --- tolerant books endpoint (updated) --- */
-
 export type Book = { id: string; name: string; abbreviation?: string };
 
 function coerceBooks(body: unknown): Book[] {
   const b: any = body;
 
-  // ✅ add support for { ok: true, data: Book[] }
   if (Array.isArray(b?.data)) return b.data as Book[];
-
-  // existing shapes
   if (Array.isArray(b?.data?.data)) return b.data.data as Book[];
   if (Array.isArray(b?.data?.books)) return b.data.books as Book[];
   if (Array.isArray(b?.books)) return b.books as Book[];
@@ -50,10 +44,6 @@ function coerceBooks(body: unknown): Book[] {
   return [];
 }
 
-/**
- * Tolerant fetch that never throws and normalizes the list of books.
- * Callers handle { ok, status, data, error }.
- */
 export async function fetchBooks(
   bibleId?: string
 ): Promise<{ ok: boolean; status: number; data: Book[]; error?: string }> {
@@ -77,7 +67,6 @@ export async function fetchBooks(
   return { ok: true, status, data };
 }
 
-/** --- chapters endpoint (unchanged) --- */
 export async function fetchChapters(bookId: string, bibleId?: string): Promise<Response> {
   const qp = new URLSearchParams();
   qp.set('bookId', bookId);

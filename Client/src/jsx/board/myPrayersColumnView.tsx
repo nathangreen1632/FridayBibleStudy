@@ -47,7 +47,6 @@ function RowActions(props: Readonly<{
 }>): React.ReactElement {
   return (
     <div className="flex flex-wrap items-center gap-2 mt-2">
-      {/* Move row (full width, above buttons) */}
       <div className="flex items-center gap-1 basis-full pb-1">
         <span className="text-lg text-[var(--theme-text-white)]">Move To →</span>
         <button
@@ -73,7 +72,6 @@ function RowActions(props: Readonly<{
         </button>
       </div>
 
-      {/* Buttons row */}
       <button
         type="button"
         onClick={props.onEdit}
@@ -87,18 +85,13 @@ function RowActions(props: Readonly<{
 }
 
 type Props = Readonly<{
-  // list + loading
   items: Prayer[];
   loading: boolean;
   error: string;
-
-  // query/status UI
   q: string;
   setQuery: (v: string) => void;
   status: 'all' | Status;
   onStatusChange: (next: 'all' | Status) => void;
-
-  // editing state & actions
   editing: Record<number, { title: string; content: string; category: Category }>;
   startEdit: (p: Prayer) => void;
   cancelEdit: (id: number) => void;
@@ -106,8 +99,6 @@ type Props = Readonly<{
   savingId: number | null;
   confirmingDeleteId: number | null;
   setConfirmingDeleteId: (id: number | null) => void;
-
-  // operations
   onSave: (id: number) => void | Promise<void>;
   onMove: (id: number, to: Status) => void | Promise<void>;
   onDelete: (id: number) => void | Promise<void>;
@@ -136,7 +127,6 @@ export default function MyPrayersColumnView({
             className="px-3 py-2 rounded-lg bg-[var(--theme-textbox)] text-[var(--theme-placeholder)] border border-[var(--theme-border)] placeholder:text-[var(--theme-placeholder)] cursor-pointer"
           />
 
-          {/* Select with lucide chevron */}
           <div className="relative">
             <select
               value={status}
@@ -223,7 +213,6 @@ export default function MyPrayersColumnView({
                         />
                       </div>
 
-                      {/* Editor action row */}
                       <div className="mt-3 flex items-center gap-2">
                         <button
                           type="button"
@@ -257,7 +246,6 @@ export default function MyPrayersColumnView({
                         </button>
                       </div>
 
-                      {/* Inline confirm bar (only for this row) */}
                       {confirmingDeleteId === p.id ? (
                         <div className="mt-3 rounded-xl border border-[var(--theme-border)] bg-[var(--theme-surface)] p-3">
                           <ConfirmBar

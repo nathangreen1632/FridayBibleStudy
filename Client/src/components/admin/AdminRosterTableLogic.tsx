@@ -12,15 +12,12 @@ type Props = Readonly<{
   onSort: (field: RosterSortField) => void;
 }>;
 
-/* -------------------- Small helpers -------------------- */
-// Only accept string-ish inputs from our form; never stringify objects.
 function toNullish(v: string | null | undefined): string | null {
   if (v == null) return null;
   const s = v.trim();
   return s === '' ? null : s;
 }
 
-// Fields editable in-line
 const EDIT_KEYS: readonly RosterEditKey[] = [
   'name',
   'email',
@@ -157,7 +154,6 @@ export default function AdminRosterTableLogic({
       sortBy={sortBy}
       sortDir={sortDir}
       onSort={onSort}
-      // edit state + actions
       editId={editId}
       form={form}
       busy={busy}

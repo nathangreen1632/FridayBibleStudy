@@ -1,4 +1,3 @@
-// Client/src/components/admin/AdminPager.tsx
 import React from 'react';
 import { useAdminUiStore } from '../../stores/admin/useAdminUiStore';
 import {pressBtn} from "../../../ui/press.ts";

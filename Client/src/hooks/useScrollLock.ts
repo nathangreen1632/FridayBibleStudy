@@ -6,8 +6,6 @@ export function useScrollLock(locked: boolean) {
 
     const body = document.body;
     const scrollY = window.scrollY;
-
-    // lock
     body.style.position = 'fixed';
     body.style.top = `-${scrollY}px`;
     body.style.left = '0';
@@ -16,7 +14,6 @@ export function useScrollLock(locked: boolean) {
     body.style.overflow = 'hidden';
 
     return () => {
-      // unlock
       body.style.position = '';
       body.style.top = '';
       body.style.left = '';

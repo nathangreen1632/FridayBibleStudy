@@ -1,36 +1,25 @@
-// Client/src/jsx/biblePageView.tsx
 import React from 'react';
 import { ChevronDown } from 'lucide-react';
 import type { VersionOption, BookMeta } from '../../types/domain/bible.types.ts';
 
 type Props = {
   loading: boolean;
-
-  // selects + inputs
   bibleId: string;
   bookId: string;
   reference: string;
-
   versionOptions: VersionOption[];
   books: BookMeta[];
-
-  // placeholders (precomputed to avoid ternaries here)
   versionPlaceholder: string;
   bookPlaceholder: string;
-
-  // handlers
   onSelectBible: (id: string) => void;
   onSelectBook: (id: string) => void;
   onReferenceChange: (next: string) => void;
   onSubmit: (e: React.FormEvent) => Promise<void> | void;
-
-  // content
   html: string;
   chapterId: string;
   refText: string;
   prevId?: string;
   nextId?: string;
-
   onLoadPrev: () => void;
   onLoadNext: () => void;
 };
@@ -67,7 +56,6 @@ export default function BiblePageView({
         </h1>
 
         <form onSubmit={onSubmit} className="flex flex-col gap-2 md:gap-3">
-          {/* Version */}
           <label className="sr-only" htmlFor="bible-select">Version</label>
           <div className="relative">
             <select
@@ -87,7 +75,6 @@ export default function BiblePageView({
             />
           </div>
 
-          {/* Book */}
           <label className="sr-only" htmlFor="book-select">Book</label>
           <div className="relative">
             <select

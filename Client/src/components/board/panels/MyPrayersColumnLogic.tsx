@@ -22,7 +22,7 @@ export default function MyPrayersColumnLogic(): React.ReactElement {
       try {
         await fetchInitial();
       } catch {
-        // ignore
+
       }
     })();
   }, [fetchInitial]);
@@ -61,7 +61,7 @@ export default function MyPrayersColumnLogic(): React.ReactElement {
     setEditing((prev) => {
       const base = prev[id] ?? (() => {
         const p = byId.get(id);
-        return { title: p?.title ?? '', content: p?.content ?? '', category: (p?.category ?? 'prayer') as Category };
+        return { title: p?.title ?? '', content: p?.content ?? '', category: (p?.category ?? 'prayer') };
       })();
       if (field === 'title') return { ...prev, [id]: { ...base, title: value } };
       if (field === 'content') return { ...prev, [id]: { ...base, content: value } };
@@ -98,16 +98,13 @@ export default function MyPrayersColumnLogic(): React.ReactElement {
 
   return (
     <MyPrayersColumnView
-      // list + state
       items={items}
       loading={loading}
       error={error || ''}
-      // query/status UI
       q={q}
       setQuery={setQuery}
       status={status}
       onStatusChange={onStatusChange}
-      // per-row editing
       editing={editing}
       startEdit={startEdit}
       cancelEdit={cancelEdit}
@@ -115,7 +112,6 @@ export default function MyPrayersColumnLogic(): React.ReactElement {
       savingId={savingId}
       confirmingDeleteId={confirmingDeleteId}
       setConfirmingDeleteId={setConfirmingDeleteId}
-      // actions
       onSave={onSave}
       onMove={onMove}
       onDelete={onDelete}

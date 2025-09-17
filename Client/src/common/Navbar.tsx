@@ -1,4 +1,3 @@
-// Client/src/common/Navbar.tsx
 import React, { useState, useEffect, useRef } from 'react';
 import { NavLink, useNavigate, useLocation } from 'react-router-dom';
 import { useAuthStore } from '../stores/useAuthStore.ts';
@@ -23,7 +22,6 @@ import { pressBtn } from '../../ui/press.ts';
 
 function linkClass(isActive: boolean): string {
   const base =
-    // tighten paddings and ensure no-wrap pills
     'flex items-center gap-1 px-2.5 py-2 rounded-lg text-sm font-medium transition-colors whitespace-nowrap';
   const state = isActive
     ? 'bg-[var(--theme-button)] text-[var(--theme-text-white)]'
@@ -87,9 +85,7 @@ export default function Navbar(): React.ReactElement {
 
   return (
     <header className="sticky top-0 z-40 bg-[var(--theme-bg)]/80 backdrop-blur border-b border-[var(--theme-border)]">
-      {/* widen container a bit and keep height comfy */}
       <div className="max-w-7xl mx-auto px-5 py-3 flex items-center justify-between">
-        {/* Brand */}
         <NavLink
           to={brandPath(user)}
           className="text-2xl font-bold text-[var(--theme-accent)] whitespace-nowrap"
@@ -97,10 +93,7 @@ export default function Navbar(): React.ReactElement {
           Friday Bible Study
         </NavLink>
 
-        {/* Desktop nav (≥ 1280px) */}
-        {/* keep everything on one line, allow horizontal scroll if viewport is just shy */}
         <nav className="hidden xl:flex items-center gap-2 flex-nowrap overflow-x-auto header-nav--no-scrollbar">
-          {/* Public */}
           <NavLink to="/contact" className={({isActive}) => linkClass(isActive)}>
             <Mail className="w-4 h-4"/>
             Contact
@@ -121,7 +114,6 @@ export default function Navbar(): React.ReactElement {
 
           {user && (
             <>
-              {/* ── Admin routes ── */}
               {user.role === 'admin' && (
                 <>
                   <NavLink to="/admin" end className={({isActive}) => linkClass(isActive)}>
@@ -156,11 +148,8 @@ export default function Navbar(): React.ReactElement {
                 </>
               )}
 
-              {/* ── Friend routes ── */}
               {user.role !== 'admin' && (
                 <>
-                  {/* Contact already shown publicly to the left, avoid duplicate here */}
-
                   <NavLink to="/bible" className={({isActive}) => linkClass(isActive)}>
                     <BookOpen className="w-4 h-4"/>
                     Bible
@@ -215,7 +204,6 @@ export default function Navbar(): React.ReactElement {
           )}
         </nav>
 
-        {/* ▼ Hamburger + dropdown wrapper (≤ 1279px) */}
         <div className="xl:hidden relative z-50" ref={menuRef}>
           <button
             type="button"
@@ -258,7 +246,6 @@ export default function Navbar(): React.ReactElement {
                 </>
               ) : (
                 <>
-                  {/* ── Admin (mobile) ── */}
                   {user.role === 'admin' && (
                     <>
                       <NavLink to="/admin" end className={({ isActive }) => linkClass(isActive)} onClick={closeMenu}>
@@ -293,7 +280,6 @@ export default function Navbar(): React.ReactElement {
                     </>
                   )}
 
-                  {/* ── Friend (mobile) ── */}
                   {user.role !== 'admin' && (
                     <>
                       <NavLink to="/bible" className={({ isActive }) => linkClass(isActive)} onClick={closeMenu}>
@@ -353,7 +339,6 @@ export default function Navbar(): React.ReactElement {
         </div>
       </div>
 
-      {/* Click-through backdrop behind dropdown (mobile only) */}
       {open && (
         <button
           className="xl:hidden fixed inset-0 z-30 bg-transparent"

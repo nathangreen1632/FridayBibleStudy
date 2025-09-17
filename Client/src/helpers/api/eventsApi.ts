@@ -1,4 +1,3 @@
-// Client/src/helpers/api/eventsApi.ts
 import { api, readBody } from '../http.helper';
 import { apiWithRecaptcha } from '../secure-api.helper';
 
@@ -12,11 +11,8 @@ export type EventRow = {
   createdAt: string;
 };
 
-// ---- Response shapes expected from Server ----
-type ListResp<T> = { data: T };                  // public GET /api/events → { data: items }
+type ListResp<T> = { data: T };
 
-// ------------------------ PUBLIC (friend) ------------------------------------
-// Everyone can read events (no reCAPTCHA; no admin).
 export async function fetchEvents(): Promise<EventRow[]> {
   try {
     const body = await api<ListResp<EventRow[]>>('/api/events', {
@@ -25,13 +21,11 @@ export async function fetchEvents(): Promise<EventRow[]> {
     });
     return Array.isArray(body?.data) ? body.data : [];
   } catch {
-    // api<T> throws on !ok; fall back safely
+
     return [];
   }
 }
 
-// ------------------------ ADMIN (requires reCAPTCHA) ------------------------
-// Create
 export async function createEvent(payload: {
   title: string;
   content: string;
@@ -50,7 +44,6 @@ export async function createEvent(payload: {
     const { ok, body } = await readBody(res);
     if (!ok) return { ok: false };
 
-    // Server returns { ok: true, id }. We tolerate { data } if you add it later.
     if (body?.data) return { ok: true, data: body.data as EventRow };
     return { ok: body?.ok === true };
   } catch {
@@ -58,7 +51,6 @@ export async function createEvent(payload: {
   }
 }
 
-// Update
 export async function updateEvent(
   id: number,
   patch: Partial<Pick<EventRow, 'title' | 'content' | 'location' | 'startsAt' | 'endsAt'>>
@@ -74,8 +66,6 @@ export async function updateEvent(
     const { ok, body } = await readBody(res);
     if (!ok) return { ok: false };
 
-    // Admin update currently returns { ok: true }.
-    // If you later return the updated event, this will pick it up.
     if (body?.data) return { ok: true, data: body.data as EventRow };
     return { ok: body?.ok === true };
   } catch {
@@ -83,7 +73,6 @@ export async function updateEvent(
   }
 }
 
-// Delete
 export async function deleteEvent(id: number): Promise<boolean> {
   try {
     const res = await apiWithRecaptcha(`/api/admin/events/${id}`, 'admin_event_delete', {
@@ -101,7 +90,6 @@ export async function deleteEvent(id: number): Promise<boolean> {
   }
 }
 
-// Email an event to roster (admins only; uses reCAPTCHA)
 export async function emailEvent(id: number): Promise<boolean> {
   try {
     const res = await apiWithRecaptcha(`/api/admin/events/${id}/email`, 'admin_event_email', {

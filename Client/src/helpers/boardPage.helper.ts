@@ -1,4 +1,3 @@
-// Client/src/helpers/boardPage.helper.tsx
 import React, { useCallback, useEffect } from 'react';
 import type { ColumnKey } from '../components/board/dnd/SortableCard.tsx';
 import PrayerCardWithComments from '../components/board/cards/PrayerCardWithCommentsLogic.tsx';
@@ -21,27 +20,18 @@ function fireAndForgetAsync<T>(fn: () => Promise<T>): void {
   });
 }
 
-
-/**
- * One-time bootstrap data fetch for a board page.
- * Safe: never throws; store handles its own error state.
- */
 export function useBoardBootstrap(fetchInitial: () => Promise<void>) {
   useEffect(() => {
     (async () => {
       try {
         await fetchInitial();
       } catch {
-        // store exposes error; swallow to keep UI responsive
+
       }
     })();
   }, [fetchInitial]);
 }
 
-/**
- * Join a socket group for real-time updates.
- * Safe: guards all socket ops; never throws.
- */
 export function useJoinGroup(
   joinGroup: (groupId: number) => void,
   maybeGroupId?: number | null
@@ -52,16 +42,11 @@ export function useJoinGroup(
         joinGroup(maybeGroupId);
       }
     } catch {
-      // ignore; UI remains usable without socket
+
     }
   }, [joinGroup, maybeGroupId]);
 }
 
-/**
- * Server-persisted move to any status ('active' | 'praise' | 'archived').
- * Uses your existing Enterprise reCAPTCHA flow.
- * Safe: graceful failures; no throws.
- */
 export function useMoveToStatus() {
   return useCallback(async (id: number, to: Status) => {
     try {
@@ -86,17 +71,13 @@ export function useMoveToStatus() {
           toast.error('You may not move another\'s prayer.');
         }
       }
-      // success: let socket/state reconcile
+
     } catch {
-      // swallow per project guidance
+
     }
   }, []);
 }
 
-/**
- * Back-compat shim for old callers that only moved to 'praise'.
- * Prefer useMoveToStatus().
- */
 export function useMoveToPraise() {
   const moveToStatus = useMoveToStatus();
   return useCallback(async (id: number) => {
@@ -104,12 +85,6 @@ export function useMoveToPraise() {
   }, [moveToStatus]);
 }
 
-/**
- * Stable renderer for a PrayerCard *with comments*, given a byId map from the store.
- * Accepts an optional groupId so the Comments panel can join the right socket room.
- * Passes onMove for the mobile “Move To →” bar.
- * Safe: returns null on any issue.
- */
 export function usePrayerCardRenderer(byId: Map<number, Prayer>, groupId?: number | null) {
   const moveToStatus = useMoveToStatus();
 
@@ -139,10 +114,6 @@ export function usePrayerCardRenderer(byId: Map<number, Prayer>, groupId?: numbe
   );
 }
 
-/**
- * Wrapper for store.move handler that surfaces a toast on failure (drag & drop).
- * Safe: no throws; returns void.
- */
 export function useOnMove(
   move: (id: number, toStatus: 'active' | 'archived', newIndex: number) => Promise<boolean>
 ) {
@@ -153,7 +124,7 @@ export function useOnMove(
         toast.error('Could not move prayer. Your changes were undone.');
       }
     } catch {
-      // keep UI responsive; store will reconcile state
+
     }
   }, [move]);
 }

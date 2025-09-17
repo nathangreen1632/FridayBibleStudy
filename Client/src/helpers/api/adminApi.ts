@@ -1,5 +1,4 @@
-// Client/src/helpers/api/adminApi.ts
-import { apiWithRecaptcha } from '../secure-api.helper'; // <-- adjust path if different
+import { apiWithRecaptcha } from '../secure-api.helper';
 import type { RosterSortField } from '../../stores/admin/useAdminStore';
 
 type RosterPatch = Partial<{
@@ -11,22 +10,17 @@ type RosterPatch = Partial<{
   addressState: string | null;
   addressZip: string | null;
   spouseName: string | null;
-
-  // NEW: pause/unpause
   emailPaused: boolean;
 }>;
 
-/** GET /admin/prayers (list) — returns Response (caller handles .ok/.json()) */
 export async function fetchAdminPrayers(params: URLSearchParams): Promise<Response> {
   return fetch(`/api/admin/prayers?${params.toString()}`, { credentials: 'include' });
 }
 
-/** GET /admin/prayers/:id/comments (thread) — returns Response */
 export async function fetchPrayerThread(prayerId: number): Promise<Response> {
   return fetch(`/api/admin/prayers/${prayerId}/comments`, { credentials: 'include' });
 }
 
-/** ✅ GET /admin/prayers/:id (detail) — returns Response (same shape as other GETs) */
 export async function fetchPrayerDetail(
   prayerId: number,
   recaptchaToken?: string
@@ -41,7 +35,6 @@ export async function fetchPrayerDetail(
   });
 }
 
-/** POST comment — keep Response shape; attach recaptcha header when available */
 export async function postAdminComment(
   prayerId: number,
   content: string,
@@ -56,7 +49,6 @@ export async function postAdminComment(
   );
 }
 
-/** PATCH status — keep Response shape; attach recaptcha header when available */
 export async function patchPrayerStatus(
   prayerId: number,
   status: 'active' | 'praise' | 'archived',
@@ -71,7 +63,6 @@ export async function patchPrayerStatus(
   );
 }
 
-/** DELETE /admin/prayers/:id — keep Response shape; attach recaptcha header when available */
 export async function deleteAdminPrayer(prayerId: number): Promise<Response> {
   return apiWithRecaptcha(
     `/api/admin/prayers/${prayerId}`,
@@ -82,11 +73,6 @@ export async function deleteAdminPrayer(prayerId: number): Promise<Response> {
   );
 }
 
-/**
- * UPDATED: add sortBy/sortDir (no breaking changes).
- * Builds a querystring with q, page, pageSize, sortBy, sortDir.
- * Returns server JSON or a graceful { ok:false, ... } object on failure.
- */
 export async function fetchAdminRoster(params: {
   q?: string;
   page?: number;
@@ -179,9 +165,9 @@ export async function patchAdminRosterUser(
     try {
       data = await res.json();
     } catch {
-      // best-effort; server should send JSON but we won’t crash if not
+
     }
-    // pass-through; the store merges row safely
+
     return (data && typeof data === 'object' ? (data as any) : { ok: true }) as {
       ok: boolean; row?: unknown; error?: string;
     };

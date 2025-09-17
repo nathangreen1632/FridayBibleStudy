@@ -1,4 +1,3 @@
-// Client/src/components/GravatarStrip.tsx
 import React, { useState } from 'react';
 import { Info } from 'lucide-react';
 import { useAuthStore } from '../../stores/useAuthStore.ts';
@@ -17,12 +16,9 @@ export default function GravatarStrip(): React.ReactElement | null {
         className="w-full px-4 py-2 flex justify-end"
         style={{ background: 'var(--theme-strip)', color: 'var(--theme-strip-text)' }}
       >
-        {/* Right-aligned row: text → avatar → info icon */}
         <div className="flex items-center gap-2 sm:gap-3">
-          {/* Text block */}
           <div className="leading-tight text-right whitespace-nowrap">
             <div className="text-sm opacity-80">Logged In As</div>
-            {/* make name stand out; blue fallback if you don't have a CSS var */}
             <div className="text-sm font-semibold">
               <span
                 className="text-sm sm:text-lg font-semibold"
@@ -32,10 +28,8 @@ export default function GravatarStrip(): React.ReactElement | null {
             </div>
           </div>
 
-          {/* Avatar */}
           <GravatarAvatar email={user.email} name={user.name} size={60} />
 
-          {/* Icon button */}
           <button
             type="button"
             onClick={() => { try { setOpen(true); } catch {} }}

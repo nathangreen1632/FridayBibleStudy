@@ -41,13 +41,12 @@ export default function AdminRosterPageView({
       </div>
 
       <AdminRosterTable
-        rows={rows as any[]} // the table owns the row typing
+        rows={rows as any[]}
         sortBy={sortBy}
         sortDir={sortDir}
         onSort={onSort}
       />
 
-      {/* Pager reads pagination from the store */}
       <AdminRosterPager />
     </div>
   );

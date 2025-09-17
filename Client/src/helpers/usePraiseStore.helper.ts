@@ -1,12 +1,5 @@
-// Client/src/helpers/usePraiseStore.helper.ts
 import type {Prayer} from '../types/domain/domain.types.ts';
 
-export type PraiseThread = {
-  byId: Map<number, Prayer>;
-  order: number[];
-};
-
-/* ----------------------- existing helpers (from earlier) ------------------- */
 export function validateMove(order: number[], id: number, toIndex: number): {
   ok: boolean;
   fromIndex: number;
@@ -99,15 +92,12 @@ export async function parsePrayerSafely(r: Response): Promise<Prayer | undefined
   }
 }
 
-/* ----------------------- NEW helpers for normalizePositions ----------------- */
 export type PositionUpdate = { id: number; position: number };
 
 export function positionForIndex(i: number, step: number): number {
-  // 1-indexed spacing so positions start at `step`
   return (i + 1) * step;
 }
 
-/** Build the list of `{id, position}` updates for a sequential grid. */
 export function computeSequentialUpdates(order: number[], step: number): PositionUpdate[] {
   const updates: PositionUpdate[] = [];
   for (let i = 0; i < order.length; i++) {
@@ -116,7 +106,6 @@ export function computeSequentialUpdates(order: number[], step: number): Positio
   return updates;
 }
 
-/** Apply positions optimistically to any IDs that currently exist in byId. */
 export function applyOptimisticPositions(
   byId: Map<number, Prayer>,
   updates: PositionUpdate[]
@@ -130,7 +119,6 @@ export function applyOptimisticPositions(
   return nextBy;
 }
 
-/** Merge a server-saved Prayer into a byId map (preserving existing fields). */
 export function mergeSavedIntoById(
   currentBy: Map<number, Prayer>,
   saved: Prayer
