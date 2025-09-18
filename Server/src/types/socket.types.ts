@@ -1,6 +1,3 @@
-// Server/src/types/socket.events.ts
-// Keep this list in sync with Client/src/types/socket.types.ts
-
 export type Role = 'classic' | 'admin';
 export type Category = 'prayer' | 'long-term' | 'salvation' | 'pregnancy' | 'birth' | 'praise';
 export type Status = 'active' | 'praise' | 'archived';
@@ -64,8 +61,6 @@ export const Events = {
   PrayerUpdated: 'prayer:updated',
   PrayerMoved:   'prayer:moved',
   PrayerDeleted: 'prayer:deleted',
-
-  // New comment system
   CommentCreated: 'comment:created',
   CommentUpdated: 'comment:updated',
   CommentDeleted: 'comment:deleted',

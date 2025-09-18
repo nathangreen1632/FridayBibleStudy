@@ -1,8 +1,3 @@
-// Server/src/email/templates.ts
-// Purpose: centralize ALL email HTML generation so resend.service.ts stays logic-only.
-// Email-safe: table layout, inline CSS, no external fonts or CSS variables.
-// Colors are mapped from your app palette to fixed hex values (email clients ignore CSS vars).
-
 export type Category =
   | 'prayer'
   | 'long-term'
@@ -11,27 +6,24 @@ export type Category =
   | 'birth'
   | 'praise';
 
-/* -------------------- Palette (from index.css) -------------------- */
 const COL = {
   // palette
-  A: '#CCDAD1', // --c-a
-  B: '#9CAEA9', // --c-b
-  C: '#788585', // --c-c
-  D: '#6F6866', // --c-d
-  E: '#38302E', // --c-e
+  A: '#CCDAD1',
+  B: '#9CAEA9',
+  C: '#788585',
+  D: '#6F6866',
+  E: '#38302E',
 
-  // derived email choices
-  BG: '#9CAEA9',         // --theme-bg  (outer background)
-  SURFACE: '#CCDAD1',    // --theme-surface (card)
-  TEXT: '#38302E',       // --theme-text
-  ACCENT: '#38302E',     // --theme-accent
-  BORDER: '#788585',     // --theme-border
-  BTN_BG: '#38302E',     // --theme-button
-  BTN_TEXT: '#CCDAD1',   // --theme-text-white
-  ERROR: '#ef4444',      // --theme-error (not used but kept)
+  BG: '#9CAEA9',
+  SURFACE: '#CCDAD1',
+  TEXT: '#38302E',
+  ACCENT: '#38302E',
+  BORDER: '#788585',
+  BTN_BG: '#38302E',
+  BTN_TEXT: '#CCDAD1',
+  ERROR: '#ef4444',
 };
 
-/* -------------------- Subjects -------------------- */
 export function subjectForCategory(cat: Category): string {
   switch (cat) {
     case 'praise':    return 'New Praise Posted';
@@ -44,13 +36,6 @@ export function subjectForCategory(cat: Category): string {
   }
 }
 
-/* -------------------- Base Layout -------------------- */
-/**
- * Renders a consistent, email-friendly card.
- * - `preheader` shows as preview text in inboxes (hidden in body)
- * - `bodyHtml` is your content (already escaped where needed)
- * - optional `actionText`/`actionUrl` renders a primary button
- */
 function renderBase(opts: {
   title: string;
   preheader?: string;
@@ -61,7 +46,6 @@ function renderBase(opts: {
 }): string {
   const { title, preheader, bodyHtml, actionText, actionUrl, footerNote } = opts;
 
-  // Button (anchor) — email-safe
   const buttonHtml = actionText && actionUrl
     ? `
       <tr>
@@ -84,7 +68,6 @@ function renderBase(opts: {
     `
     : '';
 
-  // Footer note (muted)
   const footer = footerNote
     ? `
       <tr>
@@ -95,12 +78,10 @@ function renderBase(opts: {
     `
     : '';
 
-  // Preheader (hidden preview)
   const preheaderHtml = preheader
     ? `<span style="display:none!important;visibility:hidden;opacity:0;color:transparent;height:0;width:0;overflow:hidden;mso-hide:all;">${escapeHtml(preheader)}</span>`
     : '';
 
-  // Table layout for wide client support
   return `
 <!doctype html>
 <html lang="en">
@@ -115,7 +96,6 @@ function renderBase(opts: {
       <tr>
         <td align="center">
           <table role="presentation" cellpadding="0" cellspacing="0" width="100%" style="max-width:640px;background:${COL.SURFACE};border:1px solid ${COL.BORDER};border-radius:16px;overflow:hidden;">
-            <!-- Header -->
             <tr>
               <td style="padding:18px 22px;border-bottom:1px solid ${COL.BORDER};">
                 <div style="font-family: Inter, Arial, sans-serif; font-size:18px; line-height:1.3; font-weight:800; color:${COL.ACCENT};">
@@ -127,7 +107,6 @@ function renderBase(opts: {
               </td>
             </tr>
 
-            <!-- Body -->
             <tr>
               <td style="padding:18px 22px;">
                 <div style="font-family: Inter, Arial, sans-serif; font-size:14px; line-height:1.6; color:${COL.TEXT};">
@@ -138,7 +117,6 @@ function renderBase(opts: {
 
             ${buttonHtml}
 
-            <!-- Footer -->
             <tr>
               <td style="padding:0 22px 18px 22px;">
                 ${footer}
@@ -156,7 +134,6 @@ function renderBase(opts: {
   `;
 }
 
-/* -------------------- Public/Group Notifications -------------------- */
 export function renderGroupCategoryHtml(opts: {
   category: Category;
   title: string;
@@ -185,7 +162,6 @@ export function renderGroupCategoryHtml(opts: {
   });
 }
 
-/* -------------------- Admin Notifications -------------------- */
 export function renderAdminCategoryHtml(opts: {
   category: Category;
   title: string;
@@ -217,7 +193,6 @@ export function renderAdminCategoryHtml(opts: {
   return { subject, html };
 }
 
-/* -------------------- Contact Form -------------------- */
 export function renderContactHtml(opts: {
   name: string;
   email: string;
@@ -239,7 +214,6 @@ export function renderContactHtml(opts: {
   return { subject, html };
 }
 
-// -------------------- Digest (Weekly/Periodic) --------------------
 export function renderDigestEmailHtml(opts: {
   groupName: string;
   updates: Array<{
@@ -248,12 +222,11 @@ export function renderDigestEmailHtml(opts: {
     content: string;
     createdAt: Date | string | number;
   }>;
-  periodLabel?: string;   // e.g., "Last 7 Days"
-  actionUrl?: string;     // optional deep link
+  periodLabel?: string;
+  actionUrl?: string;
 }): string {
   const { groupName, updates, periodLabel, actionUrl } = opts;
 
-  // Local safe date -> string
   function toDateSafeLocal(input: unknown): Date {
     try {
       const d = new Date(String(input));
@@ -290,7 +263,6 @@ export function renderDigestEmailHtml(opts: {
     </div>
   `;
 
-  // --- Preheader (no nested ternary) ---
   let preheader: string;
   if (updates.length > 0) {
     const plural = updates.length === 1 ? '' : 's';
@@ -299,7 +271,6 @@ export function renderDigestEmailHtml(opts: {
     preheader = 'No updates in the recent period.';
   }
 
-  // --- Title (no nested template literal) ---
   const titleSuffix = periodLabel ? ` (${periodLabel})` : '';
   const emailTitle = `${groupName} • Prayer Digest${titleSuffix}`;
 
@@ -312,8 +283,6 @@ export function renderDigestEmailHtml(opts: {
   });
 }
 
-
-/* -------------------- Utilities -------------------- */
 function escapeHtml(s: string): string {
   return String(s)
     .replaceAll('&', '&amp;')
@@ -323,7 +292,6 @@ function escapeHtml(s: string): string {
     .replaceAll("'", '&#39;');
 }
 
-// --- Event single-card email (compact, same palette & table layout) ---
 export function renderEventEmailHtml(opts: {
   groupName: string;
   title: string;

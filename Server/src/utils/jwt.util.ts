@@ -1,4 +1,3 @@
-// Server/src/utils/jwt.util.ts
 import jwt from 'jsonwebtoken';
 import { env } from '../config/env.config.js';
 

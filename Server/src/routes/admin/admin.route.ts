@@ -1,4 +1,3 @@
-// Server/src/routes/admin.route.ts
 import { Router } from 'express';
 import { requireAdmin } from '../../middleware/adminGuard.middleware.js';
 import { recaptchaMiddleware } from '../../middleware/recaptcha.middleware.js';
@@ -12,45 +11,36 @@ import {
   setPrayerStatus,
   demoteUser,
   getPrayerDetail,
-  deleteAdminUpdate, // ✅ NEW: admin deletes a single update
+  deleteAdminUpdate,
 } from '../../controllers/admin/admin.controller.js';
 import { previewDigest, sendAutoDigest, sendManualDigest } from '../../controllers/admin/digest.controller.js';
 import { patchAdminEvent, deleteAdminEvent } from '../../controllers/events.controller.js';
-
-// NEW: bring in deletePrayer from your prayer.controller
 import { deletePrayer } from '../../controllers/prayer.controller.js';
 
 const router: Router = Router();
 
-// Existing
 router.post('/promote', requireAdmin, recaptchaMiddleware, promoteUser);
 router.post('/demote', requireAdmin, recaptchaMiddleware, demoteUser);
 router.post('/digests/preview', requireAuth, requireAdmin, previewDigest);
 router.post('/digests/send-auto', requireAuth, requireAdmin, sendAutoDigest);
 router.post('/digests/send-manual', requireAuth, requireAdmin, sendManualDigest);
 
-// Admin adds an update (comment) to a prayer thread
 router.post('/prayers/:prayerId/comments', requireAdmin, recaptchaMiddleware, addAdminComment);
 
-// NEW: admin portal endpoints
 router.get('/prayers', requireAdmin, listPrayers);
 router.get('/prayers/:prayerId', requireAdmin, getPrayerDetail);
 router.get('/prayers/:prayerId/comments', requireAdmin, getPrayerThread);
 
-// Consolidated roster GET (removed duplicate)
 router.get('/roster', requireAuth, requireAdmin, getAdminRoster);
 
-// NEW: update prayer status (admin only)
 router.patch('/prayers/:prayerId/status', requireAdmin, recaptchaMiddleware, setPrayerStatus);
 router.patch('/roster/:id', requireAuth, requireAdmin, patchAdminRosterUser);
 router.patch('/events/:id', requireAuth, requireAdmin, patchAdminEvent);
 
-// NEW: hard delete prayer (admin only)
 router.delete('/prayers/:id', requireAdmin, recaptchaMiddleware, deletePrayer);
 router.delete('/roster/:id', requireAuth, requireAdmin, deleteAdminRosterUser);
 router.delete('/events/:id', requireAuth, requireAdmin, deleteAdminEvent);
 
-// ✅ NEW: admin-only delete of a specific update on a prayer thread
 router.delete('/prayers/:prayerId/comments/:updateId', requireAdmin, deleteAdminUpdate);
 
 export default router;

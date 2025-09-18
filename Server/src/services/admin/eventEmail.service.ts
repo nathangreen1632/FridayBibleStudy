@@ -1,4 +1,3 @@
-// Server/src/services/admin/eventEmail.service.ts
 import { Event, Group, GroupMember, User } from '../../models/index.js';
 import { sendEmail } from '../email.service.js';
 import { renderEventEmailHtml } from '../../email/resend.templates.js';
@@ -27,11 +26,10 @@ export async function computeRecipients(groupId: number): Promise<{ to: string[]
       groupAddress = grp.groupEmail;
     }
   } catch {
-    // ignore; groupAddress stays undefined
+
   }
 
-  // TO: all active member emails (emailPaused = false)
-  let to: string[] = [];
+  let to: string[];
   try {
     const members = await GroupMember.findAll({
       where: { groupId },
@@ -51,7 +49,6 @@ export async function computeRecipients(groupId: number): Promise<{ to: string[]
       .map((m: any) => m?.user?.email)
       .filter(isEmail);
   } catch {
-    // fallback: all users (paused filtered in app)
     try {
       const users = await User.findAll({
         where: { emailPaused: false },
@@ -60,13 +57,12 @@ export async function computeRecipients(groupId: number): Promise<{ to: string[]
       });
       to = users.filter((u: any) => !u?.emailPaused).map((u: any) => u?.email).filter(isEmail);
     } catch {
-      // last resort: no recipients
+
       to = [];
     }
   }
 
-  // CC: all admins (emailPaused = false), plus groupAddress (if present)
-  let cc: string[] = [];
+  let cc: string[];
   try {
     const admins = await User.findAll({
       where: { role: 'admin', emailPaused: false } as any,
@@ -82,7 +78,6 @@ export async function computeRecipients(groupId: number): Promise<{ to: string[]
     cc.push(groupAddress);
   }
 
-  // de-dup TO and CC; also make sure we don’t duplicate the group address in TO
   const dedup = (arr: string[]) => Array.from(new Set(arr));
   const toSet = new Set(dedup(to).filter((e) => e !== groupAddress));
   const ccSet = new Set(dedup(cc).filter((e) => !toSet.has(e)));
@@ -117,19 +112,17 @@ export async function sendEventEmail(params: { eventId: number; requestedById: n
   });
 
   try {
-    let toFinal: string[] = [];
+    let toFinal: string[];
 
     if (to.length > 0) {
       toFinal = to;
     } else if (cc.length > 0) {
-      // fall back to cc if no direct recipients
       toFinal = cc;
     } else {
       toFinal = [];
     }
 
     await sendEmail({
-      // From: prefer group mailbox so replies thread into group inbox if configured
       from: groupAddress || undefined,
       to: toFinal,
       cc: cc.length > 0 ? cc : undefined,

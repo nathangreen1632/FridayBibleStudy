@@ -1,20 +1,18 @@
-// Server/src/utils/bootstrap.ts
 import { Client as PgClient } from 'pg';
 import type { ClientConfig } from 'pg';
 import format from 'pg-format';
-import { Op } from 'sequelize';                  // ⬅️ add
+import { Op } from 'sequelize';
 import { sequelize } from '../config/sequelize.config.js';
 import { env } from '../config/env.config.js';
 import { Group } from '../models/index.js';
 
-// Allow: letters, digits, underscore; must start with a letter or underscore; <= 63 chars
 const SAFE_DB_NAME = /^[A-Za-z_][\w$]{0,62}$/;
 
 function parseAdminUrl(urlStr: string): { adminUrl: string; dbName: string } {
   const url = new URL(urlStr);
   const dbName = url.pathname.replace(/^\//, '');
   const admin = new URL(urlStr);
-  admin.pathname = '/postgres'; // default admin DB
+  admin.pathname = '/postgres';
   return { adminUrl: admin.toString(), dbName };
 }
 
@@ -45,7 +43,6 @@ async function ensureDatabaseExists(urlStr: string): Promise<void> {
   }
 }
 
-/** Idempotent default Group bootstrap (migrates legacy slug → new slug). */
 async function ensureDefaultGroup(): Promise<void> {
   const DEFAULT = {
     name: 'Friday Bible Study',
@@ -54,14 +51,12 @@ async function ensureDefaultGroup(): Promise<void> {
   };
 
   try {
-    // Already correct?
     const existing = await Group.findOne({ where: { slug: DEFAULT.slug } });
     if (existing) {
       console.log('[db] group present:', existing.slug);
       return;
     }
 
-    // Migrate legacy slug if present (keep same ID/FKs)
     const fromSlug = env.MIGRATE_FROM_GROUP_SLUG && env.MIGRATE_FROM_GROUP_SLUG !== env.GROUP_SLUG
       ? env.MIGRATE_FROM_GROUP_SLUG
       : '';
@@ -78,7 +73,6 @@ async function ensureDefaultGroup(): Promise<void> {
       }
     }
 
-    // Nothing exists → create default
     const g = await Group.create(DEFAULT);
     console.log('[db] seeded Group:', g.slug);
   } catch (e) {
@@ -91,8 +85,6 @@ export async function initDb(): Promise<void> {
   await ensureDatabaseExists(env.DATABASE_URL);
   await sequelize.authenticate();
   await sequelize.sync({ alter: env.NODE_ENV !== 'production' });
-
-  // ⬇️ replaces the old inline seed block
   await ensureDefaultGroup();
 
   console.log('[db] ready');

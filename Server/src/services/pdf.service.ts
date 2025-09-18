@@ -18,21 +18,18 @@ export async function buildPrayersPdf(
   for (const item of data) {
     let ctx: DrawContext = addLetterPage(pdf, font);
 
-    // Header block
     drawLine(ctx, `Title: ${item.prayer.title}`, 16);
     drawLine(ctx, `Author: ${item.prayer.author?.name ?? 'Unknown'}`);
     drawLine(ctx, `Category: ${item.prayer.category} — Status: ${item.prayer.status}`);
     drawLine(ctx, `Created: ${new Date(item.prayer.createdAt).toLocaleString()}`);
     drawSpacer(ctx, 6);
 
-    // Body
     drawLine(ctx, 'Content:');
     const content = item.prayer.content ?? '';
     for (const line of wrapText(content, 90)) {
       drawLine(ctx, line, 11);
     }
 
-    // Attachments
     if (item.attachments?.length) {
       drawSpacer(ctx, 8);
       drawLine(ctx, 'Photos:');

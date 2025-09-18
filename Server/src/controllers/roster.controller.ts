@@ -1,10 +1,6 @@
 import type { Request, Response } from 'express';
 import { listRoster } from '../services/admin/roster.service.js';
 
-/**
- * Friend/Admin shared read-only roster list.
- * Admin-only mutations stay under /api/admin/roster.
- */
 export async function getRoster(req: Request, res: Response): Promise<void> {
   const q = typeof req.query.q === 'string' ? req.query.q : undefined;
   const page = typeof req.query.page === 'string' ? Number(req.query.page) : undefined;
@@ -23,7 +19,6 @@ export async function getRoster(req: Request, res: Response): Promise<void> {
     return;
   }
 
-  // Keep response shape simple for client
   res.json({
     ok: true,
     data: result.rows,

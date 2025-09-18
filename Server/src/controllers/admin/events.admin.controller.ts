@@ -1,4 +1,3 @@
-// Server/src/controllers/admin/events.admin.controller.ts
 import type { Request, Response } from 'express';
 import {
   createEvent,
@@ -15,16 +14,14 @@ function toStringOrNull(v: unknown): string | null {
   return t;
 }
 
-// Put these top-level (optional but tidy)
 const DIGITS_ONLY = /^\d+$/;
-const EPOCH_MS_CUTOFF = 1e12; // < 1e12 => seconds, else milliseconds
+const EPOCH_MS_CUTOFF = 1e12;
 
 function epochToDate(n: number): Date {
   const ms = n < EPOCH_MS_CUTOFF ? n * 1000 : n;
   return new Date(ms);
 }
 
-// Replace your current function with this:
 function toDateOrNull(v: unknown): Date | null {
   if (v == null) return null;
 
@@ -45,10 +42,8 @@ function toDateOrNull(v: unknown): Date | null {
     return Number.isFinite(d.getTime()) ? d : null;
   }
 
-  // Do not stringify objects; avoid "[object Object]"
   return null;
 }
-
 
 export async function adminCreateEvent(req: Request, res: Response): Promise<void> {
   const user = req.user;

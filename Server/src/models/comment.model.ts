@@ -5,7 +5,7 @@ export interface CommentAttributes {
   prayerId: number;
   parentId: number | null;
   threadRootId: number | null;
-  depth: number; // 0 = root
+  depth: number;
   authorId: number;
   content: string;
   createdAt: Date;

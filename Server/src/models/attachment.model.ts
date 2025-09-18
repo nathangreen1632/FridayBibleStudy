@@ -7,7 +7,7 @@ export interface AttachmentAttributes {
   fileName: string;
   mimeType: string;
   size: number;
-  note?: string | null; // ✅ new
+  note?: string | null;
   createdAt: Date;
   updatedAt: Date;
 }
@@ -27,7 +27,7 @@ export class Attachment
   declare fileName: string;
   declare mimeType: string;
   declare size: number;
-  declare note?: string | null; // ✅ new
+  declare note?: string | null;
   declare createdAt: Date;
   declare updatedAt: Date;
 
@@ -41,7 +41,7 @@ export class Attachment
         mimeType: { type: DataTypes.STRING(80), allowNull: false },
         size: { type: DataTypes.INTEGER, allowNull: false },
         note: {
-          type: DataTypes.STRING(512), // or DataTypes.TEXT if you want unlimited
+          type: DataTypes.STRING(512),
           allowNull: true,
         },
         createdAt: DataTypes.DATE,

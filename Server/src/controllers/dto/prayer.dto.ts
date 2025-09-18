@@ -1,4 +1,3 @@
-// Server/src/controllers/dto/prayer.dto.ts
 import type { PrayerDTO, AttachmentDTO } from '../../types/socket.types.js';
 
 export function toPrayerDTO(p: any): PrayerDTO {
@@ -14,7 +13,6 @@ export function toPrayerDTO(p: any): PrayerDTO {
     }))
     : undefined;
 
-  // Ensure position is a number so clients can sort reliably
   const position =
     typeof p?.position === 'number'
       ? p.position
@@ -54,8 +52,6 @@ function iso(d: unknown): string {
 
   return now();
 }
-
-/* ------------------ helpers ------------------ */
 
 function now(): string {
   return new Date().toISOString();

@@ -9,7 +9,7 @@ import {
 } from '../services/photos.service.js';
 import { photosUpload } from '../middleware/photosUpload.middleware.js';
 import { ensureMediaBinPrayer } from '../services/prayerBin.service.js';
-import { resolveAdminUploadGroupId } from '../services/adminUploadTarget.service.js'; // ✅ NEW
+import { resolveAdminUploadGroupId } from '../services/adminUploadTarget.service.js';
 
 const router: Router = Router();
 
@@ -30,7 +30,7 @@ function sanitizeNote(input: unknown): string | null {
     } else if (typeof input === 'number' || typeof input === 'boolean') {
       raw = String(input);
     } else {
-      // do not stringify objects/arrays to avoid "[object Object]"
+
       return null;
     }
 
@@ -63,7 +63,6 @@ function getAuthedUser(req: any, res: any): NarrowAuth | null {
   };
 }
 
-/** GET /api/photos?page=&pageSize= */
 router.get('/', requireAuth, async (req, res) => {
   const page = toInt(req.query.page, 1);
   const pageSize = toInt(req.query.pageSize, 24);
@@ -72,13 +71,11 @@ router.get('/', requireAuth, async (req, res) => {
     const result = await listPhotoDtos(page, pageSize);
     res.status(200).json(result);
   } catch (err) {
-    // eslint-disable-next-line no-console
     console.error('[photos.controller] list error:', err);
     res.status(500).json({ error: 'Failed to load photos' });
   }
 });
 
-/** DELETE /api/photos/:id */
 router.delete('/:id', requireAuth, async (req, res) => {
   const id = Number(req.params.id);
   const auth = getAuthedUser(req, res);
@@ -92,13 +89,10 @@ router.delete('/:id', requireAuth, async (req, res) => {
     }
     res.status(200).json({ ok: true });
   } catch (err) {
-    // eslint-disable-next-line no-console
     console.error('[photos.controller] delete error:', err);
     res.status(500).json({ error: 'Failed to delete photo' });
   }
 });
-
-// --- helpers ---------------------------------------------------------------
 
 function getExplicitPrayerId(req: any): number | undefined {
   const explicit = Number(req.body?.prayerId ?? req.query?.prayerId);
@@ -111,14 +105,12 @@ async function ensureBinForGroup(groupId: number, userId: number): Promise<numbe
 }
 
 async function resolveAdminBinTarget(req: any, auth: NarrowAuth): Promise<number | undefined> {
-  // 1) ENV single-group fallback (simple single-group setups)
   const envId = Number(process.env.GROUP_ID ?? '');
   if (Number.isFinite(envId) && envId > 0) {
     const fromEnv = await ensureBinForGroup(Math.floor(envId), auth.id);
     if (fromEnv) return fromEnv;
   }
 
-  // 2) Body/query groupId (else auth.groupId); if missing, try DB-backed resolver
   const payloadGroup = Number(req.body?.groupId ?? req.query?.groupId ?? auth.groupId);
   let groupId: number | undefined =
     Number.isFinite(payloadGroup) && payloadGroup > 0 ? Math.floor(payloadGroup) : undefined;
@@ -133,26 +125,21 @@ async function resolveAdminBinTarget(req: any, auth: NarrowAuth): Promise<number
     if (fromPayload) return fromPayload;
   }
 
-  // 3) Last defensive fallback → system group 1
   return ensureBinForGroup(1, auth.id);
 }
 
-// Keep return type as number | undefined by normalizing nulls
 async function resolveUploadTarget(
   req: any,
   auth: NarrowAuth
 ): Promise<number | undefined> {
-  // Highest priority: explicit prayerId
   const explicit = getExplicitPrayerId(req);
   if (explicit) return explicit;
 
-  // Admin bin resolution (env/payload/db/system)
   if (isAdminRole(auth.role)) {
     const adminTarget = await resolveAdminBinTarget(req, auth);
     if (adminTarget) return adminTarget;
   }
 
-  // Non-admin (or still unresolved): user fallback
   const fallback = await resolveTargetPrayerId(undefined, auth); // number | null
   return (typeof fallback === 'number' && fallback > 0) ? fallback : undefined;
 }
@@ -165,12 +152,9 @@ function validateFiles(
   if (check.ok) {
     return { ok: true, files };
   }
-  // ensure a definite string
   const message = check.error ?? 'Invalid file selection';
   return { ok: false, error: message };
 }
-
-// --- POST /api/photos ------------------------------------------------------
 
 router.post(
   '/',
@@ -181,7 +165,6 @@ router.post(
     if (!auth) return;
 
     try {
-      // 1) Validate files
       const result = validateFiles(req);
       if (!result.ok) {
         res.status(400).json({ error: result.error });
@@ -189,7 +172,6 @@ router.post(
       }
       const { files } = result;
 
-      // 2) Resolve target prayer
       const targetPrayerId = await resolveUploadTarget(req, auth);
       if (!targetPrayerId) {
         console.warn('[photos.controller] no targetPrayerId', {
@@ -207,7 +189,6 @@ router.post(
         return;
       }
 
-      // 3) Persist + respond
       const note = sanitizeNote(req.body?.note);
       const createdIds = await saveUploadedPhotos(files, targetPrayerId, note);
 
@@ -222,7 +203,6 @@ router.post(
 
       res.status(201).json({ ok: true, items });
     } catch (err) {
-      // eslint-disable-next-line no-console
       console.error('[photos.controller] upload error:', err);
       res.status(500).json({ error: 'Failed to upload photos' });
     }

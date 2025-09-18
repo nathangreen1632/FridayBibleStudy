@@ -1,4 +1,3 @@
-// Server/src/services/admin/digest.service.ts
 import { Op } from 'sequelize';
 import { Comment, Group, GroupMember, Prayer, PrayerUpdate, User } from '../../models/index.js';
 import { sendEmail } from '../email.service.js';
@@ -23,12 +22,6 @@ function toDateSafe(input: unknown): Date {
   }
 }
 
-/**
- * Collect last N days of updates for a group.
- * Sources:
- *  - prayerUpdates (joined through prayers -> groupId)
- *  - comments (root-only: depth = 0; joined through prayers -> groupId)
- */
 export async function collectUpdatesLastNDays(
   groupId: number,
   days: number
@@ -110,14 +103,6 @@ export async function collectUpdatesLastNDays(
   }
 }
 
-/**
- * Send the digest to all emails in groupMembers for the group.
- * Uses CC so recipients can "Reply all" and form an email thread.
- *
- * IMPORTANT: Excludes paused users (emailPaused = true).
- * - Option A (preferred): DB-level filter in GroupMember include
- * - Option B (fallback): JS post-filter if we have to fetch Users directly
- */
 export async function sendDigest(params: {
   groupId: number;
   createdById: number;
@@ -127,7 +112,6 @@ export async function sendDigest(params: {
   threadMessageId?: string | null;
 }): Promise<{ ok: boolean; messageId?: string; error?: string }> {
   try {
-    // 1) Load group (for name and optional groupEmail)
     let grp: Group | null = null;
     try {
       grp = await Group.findByPk(params.groupId);
@@ -136,7 +120,6 @@ export async function sendDigest(params: {
     }
     if (!grp) return { ok: false, error: 'Group not found.' };
 
-    // 2) Decide sender/visible To/reply-to
     const fallbackGroupAddress = 'group@fridaybiblestudy.org';
     const groupAddressRaw = (grp as any)?.groupEmail;
     const groupAddress =
@@ -144,10 +127,8 @@ export async function sendDigest(params: {
         ? groupAddressRaw
         : fallbackGroupAddress;
 
-    // 3) Build recipient list (exclude paused)
     let ccEmails: string[] = [];
 
-    // --- Option A: DB-level filter via GroupMember -> User include
     try {
       const members = await GroupMember.findAll({
         where: { groupId: params.groupId },
@@ -156,8 +137,8 @@ export async function sendDigest(params: {
             model: User,
             as: 'user',
             required: true,
-            where: { emailPaused: false }, // <-- exclude paused at the DB layer
-            attributes: ['email'],         // we only need the email here
+            where: { emailPaused: false },
+            attributes: ['email'],
           },
         ],
         limit: 5000,
@@ -167,15 +148,13 @@ export async function sendDigest(params: {
         .map((m: any) => m?.user?.email)
         .filter((e: unknown): e is string => typeof e === 'string' && e.includes('@'));
     } catch {
-      // ignore; fallback below
+
     }
 
-    // --- Fallback: if group membership path failed or produced nothing, fetch users directly
     if (!ccEmails.length) {
       try {
-        // Option B: JS post-filter (but also filter at DB level for efficiency)
         const users = await User.findAll({
-          where: { emailPaused: false }, // DB filter; still post-filter defensively below
+          where: { emailPaused: false },
           attributes: ['email', 'emailPaused'],
           limit: 5000,
         });
@@ -189,16 +168,14 @@ export async function sendDigest(params: {
       }
     }
 
-    // 3c) de-dup, exclude the group address itself, and cap to a safe limit
     const dedup = Array.from(new Set(ccEmails))
       .filter((e) => e.toLowerCase() !== String(groupAddress).toLowerCase())
-      .slice(0, 95); // headroom under typical 100-recipient per-field limits
+      .slice(0, 95);
 
     if (!dedup.length) {
       return { ok: false, error: 'No recipients: users table has no valid emails.' };
     }
 
-    // 4) Subject + HTML
     const subject =
       typeof params.subject === 'string' && params.subject.trim().length > 0
         ? params.subject
@@ -213,19 +190,13 @@ export async function sendDigest(params: {
         createdAt: u.createdAt,
       })),
       periodLabel: 'Last 7 Days',
-      // actionUrl: 'https://your-app.example.com/groups/...' // optional deep link
     });
 
-    // 5) Send the email via Resend
-    //    From = group mailbox (so recipients see group@)
-    //    To   = group mailbox (so the group inbox keeps a copy)
-    //    CC   = all recipients (so "Reply all" threads the conversation)
-    //    Reply-To = group mailbox (so replies go back to group@)
     try {
       await sendEmail({
         from: groupAddress,
-        to: dedup,                // direct recipients
-        cc: groupAddress,         // group inbox receives a copy
+        to: dedup,
+        cc: groupAddress,
         replyTo: params.replyTo?.includes('@') ? params.replyTo : groupAddress,
         subject,
         html,
