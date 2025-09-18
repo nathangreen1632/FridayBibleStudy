@@ -1,4 +1,3 @@
-// Client/src/jsx/loginPageView.tsx
 import React from 'react';
 import { Link } from 'react-router-dom';
 import { pressBtn } from '../../../ui/press.ts';
@@ -43,7 +42,6 @@ export default function LoginPageView({
           </p>
         </header>
 
-        {/* Email */}
         <label className="block text-xs sm:text-sm font-medium">
           <span className="text-[var(--theme-text-white)] text-sm sm:text-base mb-1 block">Email</span>
           <input
@@ -58,7 +56,6 @@ export default function LoginPageView({
           />
         </label>
 
-        {/* Password */}
         <label className="block text-xs sm:text-sm font-medium">
           <span className="text-[var(--theme-text-white)] text-sm sm:text-base mb-1 block">Password</span>
           <div className="relative">

@@ -1,9 +1,8 @@
-// Client/src/pages/contact/ContactForm.logic.tsx
 import React, { useEffect, useState } from 'react';
 import ContactFormView from '../../jsx/roster/contactFormView.tsx';
 import { api } from '../../helpers/http.helper';
 import { loadRecaptchaEnterprise, getRecaptchaToken } from '../../lib/recaptcha.lib';
-import { toast } from 'react-hot-toast'; // ✅ match PortalBoard import
+import { toast } from 'react-hot-toast';
 
 const SITE_KEY = import.meta.env.VITE_RECAPTCHA_SITE_KEY as string | undefined;
 
@@ -23,11 +22,9 @@ export default function ContactFormLogic(): React.ReactElement {
   });
   const [submitting, setSubmitting] = useState(false);
 
-  // load reCAPTCHA Enterprise early
   useEffect(() => {
     if (!SITE_KEY) return;
     loadRecaptchaEnterprise(SITE_KEY).catch(() => {
-      // non-fatal — user can retry submit, we’ll attempt token again then
     });
   }, []);
 
@@ -43,7 +40,6 @@ export default function ContactFormLogic(): React.ReactElement {
 
     setSubmitting(true);
     try {
-      // try to get a token (action name must match server guard)
       const recaptchaToken = SITE_KEY
         ? await getRecaptchaToken(SITE_KEY, 'contact_submit').catch(() => undefined)
         : undefined;

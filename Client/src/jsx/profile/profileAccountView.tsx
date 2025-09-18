@@ -1,4 +1,3 @@
-// Client/src/jsx/profileAccountView.tsx
 import React from 'react';
 import { ChevronDown } from 'lucide-react';
 import Modal from '../../modals/ModalLogic.tsx';
@@ -9,33 +8,22 @@ import { pressBtn } from '../../../ui/press.ts';
 import type { CategoryOption, PrayerDraft } from '../../types/admin/account.types.ts';
 
 type Props = {
-  // auth/user (view only needs existence + to pass through)
   user: object | null;
-
-  // UI state
   loading: boolean;
   saving: boolean;
   posting: boolean;
   savedMsg: string | null;
   formDirty: boolean;
   confirmExit: boolean;
-
-  // prayer draft
   prayer: PrayerDraft;
   setPrayer: (next: PrayerDraft) => void;
-
-  // modal helpers
   isProfileOpen: boolean;
   openProfile: () => void;
   requestCloseProfile: () => void;
   confirmExitWithoutSaving: () => void;
   cancelExit: () => void;
-
-  // actions
   onSaveProfile: (values: Record<string, unknown>) => Promise<void>;
   postPrayer: (e: React.FormEvent) => Promise<void>;
-
-  // NEW: thread through to ProfileInfo to avoid unused param stub
   onDirtyChange: (v: boolean) => void;
 };
 
@@ -71,7 +59,6 @@ export default function ProfileAccountView({
   return (
     <div className="min-h-[80vh] bg-[var(--theme-bg)] text-[var(--theme-text)]">
       <div className="mx-auto max-w-4xl px-3 sm:px-6 py-6 sm:py-8 space-y-6 sm:space-y-8">
-        {/* Header */}
         <header className="flex items-center justify-between">
           <div>
             <h1 className="text-2xl sm:text-3xl font-semibold text-[var(--theme-accent)]">Account</h1>
@@ -88,9 +75,7 @@ export default function ProfileAccountView({
           </button>
         </header>
 
-        {/* Post a Prayer (stacked w/ ghost card) */}
         <div className="relative isolate">
-          {/* behind/empty card */}
           <div
             aria-hidden="true"
             className={[
@@ -103,7 +88,6 @@ export default function ProfileAccountView({
             ].join(' ')}
           />
 
-          {/* front/real card */}
           <section className="relative z-10 bg-[var(--theme-accent)] border border-[var(--theme-border)] rounded-2xl shadow-md md:shadow-[0_4px_14px_0_var(--theme-shadow)] p-4 sm:p-6 md:p-8">
             <header className="mb-4 sm:mb-6">
               <h2 className="text-xl sm:text-2xl text-center font-semibold text-[var(--theme-text-white)]">
@@ -115,7 +99,6 @@ export default function ProfileAccountView({
             </header>
 
             <form className="space-y-4" onSubmit={postPrayer}>
-              {/* Title */}
               <label className="block text-xs sm:text-sm font-medium">
                 <span className="text-sm text-[var(--theme-text-white)] sm:text-base mb-1 block">Title</span>
                 <input
@@ -128,7 +111,6 @@ export default function ProfileAccountView({
                 />
               </label>
 
-              {/* Category with Lucide chevron */}
               <label className="block text-xs sm:text-sm font-medium">
                 <span className="text-sm text-[var(--theme-text-white)] sm:text-base mb-1 block">Category</span>
 
@@ -162,7 +144,6 @@ export default function ProfileAccountView({
                 </div>
               </label>
 
-              {/* Content */}
               <label className="block text-xs sm:text-sm font-medium">
                 <span className="text-sm text-[var(--theme-text-white)] sm:text-base mb-1 block">Content</span>
                 <textarea
@@ -176,7 +157,6 @@ export default function ProfileAccountView({
                 />
               </label>
 
-              {/* Post */}
               <div className="pt-2">
                 <button
                   className={pressBtn(
@@ -195,7 +175,6 @@ export default function ProfileAccountView({
 
       <MyPrayersColumn />
 
-      {/* Profile Modal */}
       <Modal
         open={isProfileOpen}
         onRequestClose={requestCloseProfile}

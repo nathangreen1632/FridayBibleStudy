@@ -1,4 +1,3 @@
-// Client/src/App.tsx
 import React, { useEffect, useState } from 'react';
 import AppRoutes from './AppRoutes';
 import { Toaster } from 'react-hot-toast';
@@ -8,21 +7,15 @@ import GravatarStrip from './components/profile/GravatarStrip.tsx';
 import { useLocation } from 'react-router-dom';
 import { useAuthStore } from './stores/useAuthStore';
 
-/**
- * Bootstraps authentication once on app mount.
- * We block route rendering until /api/auth/me resolves so guards
- * do not spuriously redirect when user is still null during boot.
- */
 function AuthBootstrap({ children }: Readonly<{ children: React.ReactElement }>) {
   const me = useAuthStore((s) => s.me);
   const [booting, setBooting] = useState(true);
 
   useEffect(() => {
     let alive = true;
-    // Best-effort hydrate current session from HttpOnly cookie
     me()
       .catch(() => {
-        // swallow: guards will handle unauthenticated flow
+
       })
       .finally(() => {
         if (alive) setBooting(false);
@@ -47,7 +40,6 @@ function AuthBootstrap({ children }: Readonly<{ children: React.ReactElement }>)
             aria-live="polite"
           >
             <div className="flex items-center gap-3">
-              {/* simple spinner */}
               <span
                 className={[
                   'inline-block h-5 w-5 rounded-full border-2',
@@ -70,26 +62,21 @@ function AuthBootstrap({ children }: Readonly<{ children: React.ReactElement }>)
 export default function App(): React.ReactElement {
   const loc = useLocation();
 
-  // Only widen the Admin Roster page
   let mainWidth = 'max-w-7xl 2xl:max-w-[80rem]';
   if (loc.pathname.startsWith('/admin/roster')) {
-    // slightly wider, adjust to taste
     mainWidth = 'max-w-[88rem] 2xl:max-w-[96rem]';
   }
 
   return (
     <AuthBootstrap>
       <div className="min-h-screen flex flex-col bg-[var(--theme-bg)]">
-        {/* Header */}
         <Navbar />
         <GravatarStrip />
 
-        {/* Page content grows to push footer down */}
         <main className={['flex-grow w-full mx-auto', mainWidth].join(' ')}>
           <AppRoutes />
         </main>
 
-        {/* Footer always at the bottom */}
         <Footer />
         <Toaster
           toastOptions={{

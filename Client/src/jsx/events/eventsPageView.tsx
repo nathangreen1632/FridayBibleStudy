@@ -1,4 +1,3 @@
-// Client/src/jsx/eventsPageView.tsx
 import React from 'react';
 import { ChevronDown } from 'lucide-react';
 import EventModal from '../../modals/EventModalLogic.tsx';
@@ -22,19 +21,13 @@ type EditForm = {
 
 type Props = {
   isAdmin: boolean;
-
-  // list + status
   items: EventRow[];
   loading: boolean;
-
-  // create form
   create: CreateForm;
   setCreate: (next: CreateForm) => void;
   isCreateOpen: boolean;
   toggleCreateOpen: () => void;
   onCreate: (e: React.FormEvent) => Promise<void> | void;
-
-  // edit
   editingId: number | null;
   edit: EditForm;
   setEdit: (next: EditForm) => void;
@@ -42,12 +35,8 @@ type Props = {
   beginEdit: (id: number) => void;
   cancelEdit: () => void;
   saveEdit: (id: number) => Promise<void> | void;
-
-  // actions
   onEmailEvent: (id: number) => Promise<void> | void;
   removeRow: (id: number) => Promise<void> | void;
-
-  // modal
   modalOpen: boolean;
   modalEvent: EventRow | null;
   closeModal: () => void;
@@ -58,13 +47,11 @@ export default function EventsPageView({
                                          isAdmin,
                                          items,
                                          loading,
-
                                          create,
                                          setCreate,
                                          isCreateOpen,
                                          toggleCreateOpen,
                                          onCreate,
-
                                          editingId,
                                          edit,
                                          setEdit,
@@ -72,10 +59,8 @@ export default function EventsPageView({
                                          beginEdit,
                                          cancelEdit,
                                          saveEdit,
-
                                          onEmailEvent,
                                          removeRow,
-
                                          modalOpen,
                                          modalEvent,
                                          closeModal,
@@ -87,7 +72,6 @@ export default function EventsPageView({
 
       {isAdmin && (
         <div className="mb-4 rounded-xl border border-[var(--theme-border)] bg-[var(--theme-surface)]">
-          {/* Toggle header */}
           <button
             type="button"
             aria-expanded={isCreateOpen}
@@ -100,7 +84,6 @@ export default function EventsPageView({
             />
           </button>
 
-          {/* Collapsible body */}
           {isCreateOpen && (
             <form
               onSubmit={onCreate}
@@ -151,8 +134,7 @@ export default function EventsPageView({
           )}
         </div>
       )}
-
-      {/* === GRID of independent event cards === */}
+      
       <div className="rounded-xl border border-[var(--theme-border)] bg-[var(--theme-surface)] p-3">
         {loading && <div className="p-3">Loading…</div>}
 
@@ -230,7 +212,6 @@ export default function EventsPageView({
                 );
               }
 
-              // view card
               const startD = ev.startsAt ? new Date(ev.startsAt) : null;
               const endD = ev.endsAt ? new Date(ev.endsAt) : null;
 

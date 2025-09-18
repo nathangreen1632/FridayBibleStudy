@@ -1,4 +1,3 @@
-// Client/src/pages/EventsPageLogic.tsx
 import React, { useEffect, useMemo, useState } from 'react';
 import toast from 'react-hot-toast';
 import { useAuthStore } from '../../stores/useAuthStore.ts';
@@ -20,7 +19,6 @@ export default function EventsPage(): React.ReactElement {
   const [items, setItems] = useState<EventRow[]>([]);
   const [loading, setLoading] = useState(true);
 
-  // create form (admin)
   const [create, setCreate] = useState({
     title: '',
     content: '',
@@ -31,7 +29,6 @@ export default function EventsPage(): React.ReactElement {
 
   const [isCreateOpen, setIsCreateOpen] = useState(false);
 
-  // edit state
   const [editingId, setEditingId] = useState<number | null>(null);
   const editing = useMemo(
     () => items.find((x) => x.id === editingId) || null,
@@ -57,7 +54,6 @@ export default function EventsPage(): React.ReactElement {
     return edit.endsAt !== eAt;
   }, [editing, edit]);
 
-  // modal state
   const [modalOpen, setModalOpen] = useState(false);
   const [modalEvent, setModalEvent] = useState<EventRow | null>(null);
 
@@ -66,7 +62,7 @@ export default function EventsPage(): React.ReactElement {
       setModalEvent(ev);
       setModalOpen(true);
     } catch {
-      // ignore
+
     }
   }
   function closeModal() {
@@ -74,7 +70,7 @@ export default function EventsPage(): React.ReactElement {
       setModalOpen(false);
       setModalEvent(null);
     } catch {
-      // ignore
+
     }
   }
 
@@ -98,11 +94,9 @@ export default function EventsPage(): React.ReactElement {
   async function onCreate(e: React.FormEvent) {
     e.preventDefault();
 
-    // Use the exact parameter type that createEvent expects
     const payload: Parameters<typeof createEvent>[0] = {
       title: create.title,
       content: create.content,
-      // optional fields: send undefined when empty to satisfy the union types
       startsAt: create.startsAt ? create.startsAt : undefined,
       endsAt: create.endsAt ? create.endsAt : undefined,
       location: create.location ? create.location : undefined,
@@ -115,7 +109,6 @@ export default function EventsPage(): React.ReactElement {
         return;
       }
 
-      // reset form
       setCreate({ title: '', content: '', startsAt: '', endsAt: '', location: '' });
 
       if (res.data) {

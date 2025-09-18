@@ -1,9 +1,8 @@
-// Client/src/types/photo.types.ts
 import React from 'react';
 
 export type Photo = {
   id: number;
-  url: string;            // fully qualified or server-relative path to the image
+  url: string;
   filename: string;
   userId: number;
   uploaderName: string;

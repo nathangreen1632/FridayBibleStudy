@@ -1,4 +1,3 @@
-// Server/src/services/photos.service.ts
 import { Op } from 'sequelize';
 import { Attachment, Prayer, User } from '../models/index.js';
 
@@ -6,10 +5,10 @@ export type PhotoDto = {
   id: number;
   url: string;
   filename: string;
-  userId: number;        // owner of the related prayer (authorUserId)
+  userId: number;
   uploaderName: string;
-  createdAt: string;     // ISO
-  note?: string | null;  // ✅ optional footer note
+  createdAt: string;
+  note?: string | null;
 };
 
 function totalBytes(files: Express.Multer.File[]): number {
@@ -36,7 +35,6 @@ function safeIso(input: unknown): string {
   }
 }
 
-/** GET list → shaped DTOs */
 export async function listPhotoDtos(page: number, pageSize: number): Promise<{
   items: PhotoDto[];
   total: number;
@@ -50,7 +48,6 @@ export async function listPhotoDtos(page: number, pageSize: number): Promise<{
     limit: pageSize,
   });
 
-  // attachments.prayerId → prayers.authorUserId
   const prayerIds = Array.from(
     new Set(rows.map((a: any) => Number(a.prayerId)).filter((n) => Number.isFinite(n) && n > 0))
   );
@@ -67,7 +64,6 @@ export async function listPhotoDtos(page: number, pageSize: number): Promise<{
     ownerByPrayer.set(Number(p.id), Number(p.authorUserId) || 0);
   }
 
-  // Fetch uploader names
   const ownerIds = Array.from(new Set(Array.from(ownerByPrayer.values()).filter((n) => n > 0)));
   const owners = ownerIds.length
     ? await User.findAll({ where: { id: { [Op.in]: ownerIds } }, attributes: ['id', 'name'] })
@@ -82,17 +78,16 @@ export async function listPhotoDtos(page: number, pageSize: number): Promise<{
       id: a.id,
       url: toPublicUrl(a),
       filename: a.fileName ?? '',
-      userId: ownerId, // == prayers.authorUserId
+      userId: ownerId,
       uploaderName: nameById.get(ownerId) ?? 'Unknown',
       createdAt: safeIso(a.createdAt),
-      note: a.note ?? null, // ✅ surface the note to the client
+      note: a.note ?? null,
     };
   });
 
   return { items, total: count, page, pageSize };
 }
 
-/** DELETE guard (admin or owner = prayers.authorUserId) */
 export async function deletePhotoIfAllowed(
   attachmentId: number,
   me: { id: number; role: string } | undefined
@@ -119,10 +114,6 @@ export async function deletePhotoIfAllowed(
   return { ok: true, status: 200 as const };
 }
 
-/** Decide which prayer to attach uploads to:
- *  - prefer explicit prayerId from client
- *  - else most recent prayer by this user (authorUserId)
- */
 export async function resolveTargetPrayerId(
   explicitPrayerId: number | undefined,
   me: { id: number } | undefined
@@ -141,16 +132,10 @@ export async function resolveTargetPrayerId(
   return latest ? Number(latest.id) : null;
 }
 
-/**
- * Persist a batch of uploaded files as Attachment rows.
- * Applies the SAME optional `note` to every created row in this request.
- *
- * @returns array of created attachment IDs
- */
 export async function saveUploadedPhotos(
   files: Express.Multer.File[],
   prayerId: number,
-  note?: string | null // ✅ new param
+  note?: string | null
 ): Promise<number[]> {
   if (!Array.isArray(files) || files.length === 0) return [];
 
@@ -159,23 +144,20 @@ export async function saveUploadedPhotos(
     try {
       const row = await Attachment.create({
         prayerId,
-        filePath: `uploads/${f.filename}`, // keep consistent with your existing pathing
+        filePath: `uploads/${f.filename}`,
         fileName: f.originalname,
         mimeType: f.mimetype || 'application/octet-stream',
         size: f.size || 0,
-        note: note ?? null, // ✅ persist the batch note
+        note: note ?? null,
       });
       if (row?.id) ids.push(Number(row.id));
     } catch (e) {
-      // eslint-disable-next-line no-console
       console.error('[photos.service] saveUploadedPhotos create failed:', e);
-      // continue to next file (graceful)
     }
   }
   return ids;
 }
 
-/** Validate server-side limits */
 export function validateUploadBatch(files: Express.Multer.File[]): { ok: boolean; error?: string } {
   const MAX_FILES = 4;
   const MAX_TOTAL = 10 * 1024 * 1024;

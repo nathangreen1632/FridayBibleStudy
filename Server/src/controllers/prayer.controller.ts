@@ -1,26 +1,19 @@
-// Server/src/controllers/prayer.controller.ts
 import type { Request, Response } from 'express';
 import type { Order, WhereOptions } from 'sequelize';
-
 import path from 'path';
-
 import { sequelize } from '../config/sequelize.config.js';
 import { env } from '../config/env.config.js';
 import { emitToGroup } from '../config/socket.config.js';
-
 import { Group, PrayerUpdate, User, Attachment, PrayerParticipant } from '../models/index.js';
 import { Prayer, type Status } from '../models/prayer.model.js';
-
 import { Events } from '../types/socket.types.js';
 import { toPrayerDTO } from './dto/prayer.dto.js';
-
 import {
   notifyGroupOnCategoryCreate,
   notifyAdminOnCategoryCreate,
   sendEmailViaResend,
 } from '../services/resend.service.js';
 
-// DRY helper to load a prayer (optionally with author) or return 404
 export async function findPrayerOr404(
   id: number | string,
   res: import('express').Response,
@@ -46,11 +39,6 @@ export async function findPrayerOr404(
   }
 }
 
-/** ------------------------------------------------------------------------
- * Keep column positions dense so manual sorting remains meaningful.
- * Re-pack positions to 0..N-1 and emit per-item updates so clients reconcile.
- * Non-fatal: any failure is swallowed.
- * -----------------------------------------------------------------------*/
 async function normalizePositions(groupId: number, status: Status): Promise<void> {
   try {
     const rows = await Prayer.findAll({
@@ -74,7 +62,7 @@ async function normalizePositions(groupId: number, status: Status): Promise<void
       try {
         await Prayer.update({ position: i }, { where: { id: rows[i].id } });
       } catch {
-        // best-effort
+
       }
 
       try {
@@ -87,11 +75,11 @@ async function normalizePositions(groupId: number, status: Status): Promise<void
           emitToGroup(p.groupId, Events.PrayerUpdated, payload);
         }
       } catch {
-        // best-effort
+
       }
     }
   } catch {
-    // non-fatal
+
   }
 }
 
@@ -143,10 +131,6 @@ export async function listPrayers(req: Request, res: Response): Promise<void> {
   res.json({ items: filtered, total: count });
 }
 
-/** ------------------------------------------------------------------------
- * listMyPrayers — only prayers created by the authenticated user
- * Mirrors listPrayers query params & ordering; returns DTOs.
- * -----------------------------------------------------------------------*/
 export async function listMyPrayers(req: Request, res: Response): Promise<void> {
   const page = Number(req.query.page ?? 1);
   const pageSize = Number(req.query.pageSize ?? 50);
@@ -209,16 +193,13 @@ export async function createPrayer(req: Request, res: Response): Promise<void> {
 
   const authorUserId = req.user!.role === 'admin' && actAsUserId ? actAsUserId : req.user!.userId;
 
-  // single-group v1; ensure a Group exists during boot/seed
   const group = await Group.findOne();
   const groupId = group?.id ?? 1;
 
   const created = await Prayer.create({ title, content, category, groupId, authorUserId, status: 'active' });
 
-  // emit full DTO (typed + legacy)
   emitToGroup(groupId, Events.PrayerCreated, { prayer: toPrayerDTO(created) });
 
-  // Put new prayers at the top immediately, then normalize
   try {
     const minPosRaw = await Prayer.min('position', { where: { groupId, status: 'active' } });
     let nextPos = -1;
@@ -237,15 +218,15 @@ export async function createPrayer(req: Request, res: Response): Promise<void> {
         emitToGroup(groupId, Events.PrayerUpdated, payload);
       }
     } catch {
-      // best-effort
+
     }
 
     await normalizePositions(groupId, 'active');
+
   } catch {
-    // non-fatal
+
   }
 
-  // Non-fatal email notifications
   const linkUrl = `${env.PUBLIC_URL}/portal/prayers/${created.id}`;
   try {
     await notifyGroupOnCategoryCreate({
@@ -311,7 +292,6 @@ export async function updatePrayer(req: Request, res: Response): Promise<void> {
   await prayer.save();
 
   if (prevStatus !== prayer.status) {
-    // Reload WITH author so DTO has author populated
     const fresh = await Prayer.findByPk(prayer.id, {
       include: [{model: User, as: 'author', attributes: ['id', 'name']}],
     });
@@ -324,7 +304,6 @@ export async function updatePrayer(req: Request, res: Response): Promise<void> {
       to: prayer.status as 'active' | 'praise' | 'archived',
     });
   } else {
-    // Also ensure author is present on standard updates
     const fresh = await Prayer.findByPk(prayer.id, {
       include: [{model: User, as: 'author', attributes: ['id', 'name']}],
     });
@@ -367,7 +346,7 @@ export async function updatePrayer(req: Request, res: Response): Promise<void> {
   try {
     emitToGroup(groupId, 'prayer:deleted', { id });
   } catch {
-    // non-fatal
+
   }
 
   try {
@@ -408,8 +387,9 @@ export async function createUpdate(req: Request, res: Response): Promise<void> {
     } catch {}
 
     await normalizePositions(prayer.groupId, prayer.status);
+
   } catch {
-    // update still succeeds even if bump/normalize fails
+
   }
 
   try {

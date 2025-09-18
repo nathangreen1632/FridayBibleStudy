@@ -21,20 +21,17 @@ export default function AdminRosterPageLogic(): React.ReactElement {
   const [sortBy, setSortBy] = useState<RosterSortField | null>(null);
   const [sortDir, setSortDir] = useState<'asc' | 'desc'>('asc');
 
-  // initial load
   useEffect(() => {
     (async () => {
       try {
         await loadRoster({ page: 1 });
       } catch {
-        // eslint-disable-next-line no-console
         console.error('Failed to load roster');
         toast.error('Failed to load roster');
       }
     })();
   }, [loadRoster]);
 
-  // debounced live search
   useEffect(() => {
     const next = qInput.trim();
 
@@ -53,7 +50,6 @@ export default function AdminRosterPageLogic(): React.ReactElement {
         try {
           await loadRoster(args);
         } catch {
-          // eslint-disable-next-line no-console
           console.error('Failed to load roster');
           toast.error('Failed to load roster');
         }
@@ -68,7 +64,6 @@ export default function AdminRosterPageLogic(): React.ReactElement {
     };
   }, [qInput, sortBy, sortDir, loadRoster]);
 
-  // re-load when sorting changes
   useEffect(() => {
     if (!sortBy) return;
     (async () => {
@@ -76,7 +71,6 @@ export default function AdminRosterPageLogic(): React.ReactElement {
         const args: LoadArgs = { q: qInput.trim(), page: 1, sortBy, sortDir };
         await loadRoster(args);
       } catch {
-        // eslint-disable-next-line no-console
         console.error('Failed to load roster');
         toast.error('Failed to load roster');
       }
@@ -93,8 +87,7 @@ export default function AdminRosterPageLogic(): React.ReactElement {
     try {
       await loadRoster(args);
     } catch {
-      // eslint-disable-next-line no-console
-      console.error('Failed to load roster');
+      console.error('Failed to load roster', roster);
       toast.error('Failed to load roster');
     }
   }

@@ -1,4 +1,3 @@
-// Server/src/controllers/bible.controller.ts
 import type { Request, Response } from 'express';
 import {
   listBibles,
@@ -8,9 +7,6 @@ import {
   getChapterById as svcGetChapterById, listChaptersForBook, listBooksForBible,
 } from '../services/bible.service.js';
 
-/**
- * GET /api/bible/bibles
- */
 export async function listBiblesController(req: Request, res: Response): Promise<void> {
   const out = await listBibles();
   if (!out.ok) {
@@ -20,9 +16,6 @@ export async function listBiblesController(req: Request, res: Response): Promise
   res.json({ ok: true, data: out.data });
 }
 
-/**
- * GET /api/bible/passage?reference=JHN.3.16&bibleId=...
- */
 export async function getPassageController(req: Request, res: Response): Promise<void> {
   const reference = String(req.query.reference ?? '').trim();
   const bibleId = String(req.query.bibleId ?? '').trim();
@@ -41,9 +34,6 @@ export async function getPassageController(req: Request, res: Response): Promise
   res.json({ ok: true, data: out.data });
 }
 
-/**
- * GET /api/bible/verse-of-day?bibleId=...
- */
 export async function getVerseOfDayController(req: Request, res: Response): Promise<void> {
   const bibleId = String(req.query.bibleId ?? '').trim();
 
@@ -56,9 +46,6 @@ export async function getVerseOfDayController(req: Request, res: Response): Prom
   res.json({ ok: true, data: out.data });
 }
 
-/**
- * GET /api/bible/first-chapter?bibleId=...
- */
 export async function getFirstChapterController(req: Request, res: Response): Promise<void> {
   const bibleId = String(req.query?.bibleId ?? '').trim();
   try {
@@ -73,9 +60,6 @@ export async function getFirstChapterController(req: Request, res: Response): Pr
   }
 }
 
-/**
- * GET /api/bible/chapter/:chapterId?bibleId=...
- */
 export async function getChapterByIdController(req: Request, res: Response): Promise<void> {
   const bibleId = String(req.query?.bibleId ?? '').trim();
   const chapterId = String(req.params?.chapterId ?? '').trim();
@@ -97,7 +81,6 @@ export async function getChapterByIdController(req: Request, res: Response): Pro
   }
 }
 
-/** GET /api/bible/books?bibleId=... */
 export async function listBooksController(req: Request, res: Response): Promise<void> {
   const bibleId = String(req.query?.bibleId ?? '').trim();
   const out = await listBooksForBible(bibleId);
@@ -108,7 +91,6 @@ export async function listBooksController(req: Request, res: Response): Promise<
   res.json({ ok: true, data: out.data });
 }
 
-/** GET /api/bible/chapters?bibleId=...&bookId=GEN */
 export async function listChaptersController(req: Request, res: Response): Promise<void> {
   const bibleId = String(req.query?.bibleId ?? '').trim();
   const bookId = String(req.query?.bookId ?? '').trim();

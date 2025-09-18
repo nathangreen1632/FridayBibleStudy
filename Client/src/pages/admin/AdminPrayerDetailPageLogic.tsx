@@ -1,11 +1,9 @@
 import React, { useEffect, useState } from 'react';
 import { useLocation, useNavigate, useParams } from 'react-router-dom';
 import { toast } from 'react-hot-toast';
-
 import { useAdminStore } from '../../stores/admin/useAdminStore';
 import { useAdminUiStore } from '../../stores/admin/useAdminUiStore';
 import { useAuthStore } from '../../stores/useAuthStore';
-
 import AdminPrayerSummaryCard from '../../components/admin/AdminPrayerSummaryCardLogic.tsx';
 import AdminPrayerDetailPageView from '../../jsx/admin/adminPrayerDetailPageView';
 import type { AdminStatus } from '../../types/admin/adminPrayerDetail.types.ts';
@@ -30,21 +28,18 @@ export default function AdminPrayerDetailPageLogic(): React.ReactElement {
   const statusSelectId = 'admin-detail-status';
   const updateTextareaId = 'admin-detail-update';
 
-  // Load thread on mount / id change
   useEffect(() => {
     if (!prayerId) return;
     (async () => {
       try {
         await loadThread(prayerId);
       } catch {
-        // eslint-disable-next-line no-console
         console.error('Failed to load prayer thread');
         toast.error('Failed to load prayer thread');
       }
     })();
   }, [prayerId, loadThread]);
 
-  // Sync localStatus to store’s current status
   useEffect(() => {
     const current = detailPrayers[prayerId];
     const s = current?.status;
@@ -97,12 +92,12 @@ export default function AdminPrayerDetailPageLogic(): React.ReactElement {
         }
       }
 
-      // Fallback: archive if hard-delete isn’t available.
       await setStatus(prayerId, 'archived');
       setShowDeleteConfirm(false);
       onBack();
     } catch {
-      // keep confirm visible; allow retry
+      console.error('Failed to delete prayer', prayerId);
+      toast.error('Failed to delete prayer.');
     }
   }
 
@@ -146,7 +141,6 @@ export default function AdminPrayerDetailPageLogic(): React.ReactElement {
         }
       }
 
-      // Fallback direct API call
       const resp = await fetch(
         `/api/admin/prayers/${encodeURIComponent(prayerId)}/comments/${encodeURIComponent(commentId)}`,
         { method: 'DELETE', credentials: 'include', headers: { accept: 'application/json' } }
@@ -166,7 +160,6 @@ export default function AdminPrayerDetailPageLogic(): React.ReactElement {
 
   return (
     <>
-      {/* Keep your summary card on the page (reads from store) */}
       <AdminPrayerSummaryCard prayerId={prayerId} />
 
       <AdminPrayerDetailPageView

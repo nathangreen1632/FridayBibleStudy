@@ -1,15 +1,9 @@
-// Client/src/helpers/api/photoApi.ts
-
 type UploadOptions = {
   prayerId?: number;
   recaptchaToken?: string;
-  note?: string; // ✅ new: optional footer note for this batch
+  note?: string;
 };
 
-/* Client-side API for Photos, aligned with your existing fetch style.
-   - Graceful errors only; no throws
-   - Optional reCAPTCHA header (x-recaptcha-token)
-*/
 export async function fetchPhotos(
   page = 1,
   pageSize = 24,
@@ -33,13 +27,11 @@ export async function uploadPhotos(files: File[], opts: UploadOptions = {}): Pro
     form.append('prayerId', String(opts.prayerId));
   }
 
-  // ✅ append note if provided (trimmed)
   if (typeof opts.note === 'string') {
     const trimmed = opts.note.trim();
     if (trimmed.length > 0) form.append('note', trimmed);
   }
 
-  // IMPORTANT: do NOT set Content-Type here; the browser will add the multipart boundary
   const headers: Record<string, string> = {};
   if (opts.recaptchaToken) headers['x-recaptcha-token'] = opts.recaptchaToken;
 

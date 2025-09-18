@@ -1,4 +1,3 @@
-// Client/src/pages/board/PraisesBoardPageLogic.tsx
 import React, { useEffect } from 'react';
 import PraisesBoardPageView from '../../jsx/board/praisesBoardPageView.tsx';
 import { usePraisesStore, usePraisesIds } from '../../stores/usePraisesStore';
@@ -12,28 +11,26 @@ export default function PraisesBoard(): React.ReactElement {
   const movePrayer = usePraisesStore((s) => s.movePrayer);
   const ids = usePraisesIds();
 
-  // auth & sockets (match other boards)
   const user = useAuthStore((s) => s.user);
   const joinGroup = useSocketStore((s) => s.joinGroup);
   const groupId = user?.groupId ?? 1;
 
-  // initial load
   useEffect(() => {
     (async () => {
       try {
         await fetchInitial();
       } catch {
-        // no-throw policy
+
       }
     })();
   }, [fetchInitial]);
 
-  // join the user's group room for real-time events
+
   useEffect(() => {
     try {
       if (groupId) joinGroup(groupId);
     } catch {
-      // ignore; UI remains usable without socket
+
     }
   }, [groupId, joinGroup]);
 
@@ -41,7 +38,7 @@ export default function PraisesBoard(): React.ReactElement {
     try {
       await moveWithin(id, toIndex);
     } catch {
-      // no-throw policy
+
     }
   };
 
@@ -55,9 +52,9 @@ export default function PraisesBoard(): React.ReactElement {
         await movePrayer(id, 'archived');
         return;
       }
-      // 'dock-praise' is a no-op here (already in praise)
+
     } catch {
-      // no-throw policy
+
     }
   };
 

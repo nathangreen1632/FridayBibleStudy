@@ -1,15 +1,7 @@
-// Client/src/hooks/useOutsideCollapse.ts
 import React, { useEffect } from 'react';
 
-/**
- * Collapses (calls onClose) when a pointerdown occurs outside the referenced element.
- *
- * @param ref     React ref to the root container you want to monitor
- * @param open    Whether the container is currently open/expanded
- * @param onClose Callback to close/collapse the container
- */
 export function useOutsideCollapse<T extends HTMLElement>(
-  ref: React.RefObject<T | null>,   // ✅ allow null
+  ref: React.RefObject<T | null>,
   open: boolean,
   onClose: () => void
 ): void {
@@ -24,7 +16,6 @@ export function useOutsideCollapse<T extends HTMLElement>(
       if (!root.contains(target)) onClose();
     };
 
-    // capture ensures we run before other handlers; passive avoids blocking scrolling
     document.addEventListener('pointerdown', handler, { capture: true, passive: true });
 
     return () => {

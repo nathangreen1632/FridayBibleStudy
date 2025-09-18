@@ -1,4 +1,3 @@
-// Client/src/jsx/resetPasswordPageView.tsx
 import React from 'react';
 import type { ResetFormState } from '../../types/pages/resetPassword.types.ts';
 
@@ -11,13 +10,10 @@ type Props = {
   showNew: boolean;
   showConfirm: boolean;
   valid: boolean;
-
   update: <K extends keyof ResetFormState>(key: K, value: string) => void;
   onSubmit: (e: React.FormEvent) => void;
   onToggleShowNew: () => void;
   onToggleShowConfirm: () => void;
-
-  // logic-owned formatter for the OTP display (keeps digits in state)
   formatOtp: (raw: string) => string;
 };
 
@@ -66,7 +62,7 @@ export default function ResetPasswordPageView({
               name="otp"
               type="text"
               inputMode="numeric"
-              pattern="^[0-9]{3}-?[0-9]{3}$"   // allows 123456 or 123-456
+              pattern="^[0-9]{3}-?[0-9]{3}$"
               value={formatOtp(form.otp)}
               maxLength={7}
               onChange={(e) => update('otp', e.target.value.replace(/\D/g, '').slice(0, 6))}

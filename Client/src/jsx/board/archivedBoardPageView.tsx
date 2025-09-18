@@ -1,4 +1,3 @@
-// Client/src/jsx/archivedBoardPageView.tsx
 import React from 'react';
 import SingleBoard from '../../components/board/containers/SingleColumnBoard.tsx';
 import type {
@@ -44,18 +43,17 @@ export default function ArchivedBoardPageView({
           try {
             await onMoveWithin(id, toIndex);
           } catch {
-            // swallow; upstream guards
+
           }
         }}
         onDockDrop={async (dock, id) => {
           try {
             await onDockDrop(dock, id);
           } catch {
-            // swallow; upstream guards
+
           }
         }}
       />
-      {/* Dock remains inside SingleBoard's DndContext */}
     </main>
   );
 }

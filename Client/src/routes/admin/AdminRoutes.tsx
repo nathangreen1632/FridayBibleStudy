@@ -5,7 +5,7 @@ import AdminPrayerDetailPage from '../../pages/admin/AdminPrayerDetailPageLogic.
 import AdminRosterPage from '../../pages/admin/AdminRosterPageLogic.tsx';
 import AdminDigestPage from '../../pages/admin/AdminDigestPageLogic.tsx';
 import PhotosPageLogic from '../../pages/photos/PhotosPageLogic.tsx';
-import EventsPageLogic from '../../pages/events/EventsPageLogic.tsx'; // ⬅️ add this
+import EventsPageLogic from '../../pages/events/EventsPageLogic.tsx';
 import { AdminGuard } from '../../common/admin/AdminAuthGuard.tsx';
 
 const adminRoutes: RouteObject[] = [
@@ -22,7 +22,7 @@ const adminRoutes: RouteObject[] = [
       { path: 'roster', element: <AdminRosterPage /> },
       { path: 'digest', element: <AdminDigestPage /> },
       { path: 'photos', element: <PhotosPageLogic /> },
-      { path: 'events', element: <EventsPageLogic /> }, // ⬅️ new
+      { path: 'events', element: <EventsPageLogic /> },
     ],
   },
 ];

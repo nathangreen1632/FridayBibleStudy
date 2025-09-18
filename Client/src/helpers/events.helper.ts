@@ -1,6 +1,3 @@
-// Client/src/helpers/events.util.ts
-
-/** Convert stored ISO to datetime-local input value (YYYY-MM-DDTHH:mm) */
 export function toLocalInputValue(iso: string): string {
   try {
     const d = new Date(iso);

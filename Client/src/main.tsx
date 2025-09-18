@@ -9,10 +9,8 @@ import { loadRecaptchaEnterprise } from './lib/recaptcha.lib';
 
 const SITE_KEY = import.meta.env.VITE_RECAPTCHA_SITE_KEY as string | undefined;
 
-// Preload reCAPTCHA Enterprise once on app boot (safe if injected elsewhere too)
 if (SITE_KEY) {
   loadRecaptchaEnterprise(SITE_KEY).catch(() => {
-    // Optional: swallow or route to a logger
     console.warn('reCAPTCHA failed to preload (likely adblock or network).');
   });
 }

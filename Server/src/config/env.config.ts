@@ -1,4 +1,3 @@
-// Server/src/config/env.config.ts
 import path from 'path';
 import './dotenv.config.js';
 import { parseNodeEnv, req, opt, int } from '../helpers/env.helper.js';
@@ -38,7 +37,6 @@ export interface Env {
   BIBLE_API_KEY: string;
   BIBLE_DEFAULT_BIBLE_ID: string;
 
-  /** Comma-separated list of emails to auto-elevate to admin on login */
   ADMIN_EMAILS: string;
 }
 
@@ -75,6 +73,5 @@ export const env: Env = {
   BIBLE_API_KEY: opt('BIBLE_API_KEY', ''),
   BIBLE_DEFAULT_BIBLE_ID: opt('BIBLE_DEFAULT_BIBLE_ID', ''),
 
-  // NEW: list of bootstrap admin emails
   ADMIN_EMAILS: process.env.ADMIN_EMAILS ?? '',
 };

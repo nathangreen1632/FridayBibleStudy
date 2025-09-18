@@ -1,4 +1,3 @@
-// Server/src/controllers/auth.controller.ts
 import type { Request, Response } from 'express';
 import dayjs from 'dayjs';
 import { User, OtpToken } from '../models/index.js';
@@ -32,7 +31,6 @@ export async function register(req: Request, res: Response): Promise<void> {
   const token = signJwt({userId: user.id, role: user.role});
   setCookie(res, token);
 
-  // Verification email (styled with theme colors + larger text for readability)
   await sendEmail({
     to: email,
     subject: 'Welcome to Friday Bible Study',
@@ -40,7 +38,6 @@ export async function register(req: Request, res: Response): Promise<void> {
   <div style="background-color:#CCDAD1; padding:20px; font-family:Inter, sans-serif;">
     <div style="max-width:600px; margin:0 auto; background-color:#9CAEA9; border-radius:12px; padding:24px; color:#38302E; line-height:1.7; font-size:16px;">
 
-      <!-- Dark-mode helper (email-safe). If unsupported, the link stays blue. -->
       <style>
         @media (prefers-color-scheme: dark) {
           .fallback-link { color: #ffffff !important; }
@@ -77,7 +74,6 @@ export async function register(req: Request, res: Response): Promise<void> {
         <li><strong>Search</strong> — quickly find specific requests or praises you have created to keep them up to date.</li>
       </ul>
 
-      <!-- Centered button (always Michigan Blue) -->
       <p style="margin: 1.5em 0; text-align:center;">
         <a href="https://www.fridaybiblestudy.org/login"
            style="display:inline-block; background-color:#00274C; color:#ffffff; 
@@ -88,7 +84,6 @@ export async function register(req: Request, res: Response): Promise<void> {
         </a>
       </p>
 
-      <!-- Centered fallback text -->
       <p style="font-size:15px; color:#38302E; margin-top:1em; text-align:center;">
         If the button above doesn’t work, copy and paste this link into your browser:<br>
         <a href="https://www.fridaybiblestudy.org/login" 
@@ -124,7 +119,6 @@ export async function login(req: Request, res: Response): Promise<void> {
   const ok = await verifyPassword(password, user.passwordHash);
   if (!ok) { res.status(401).json({ error: 'Invalid credentials' }); return; }
 
-  // --- BOOTSTRAP ONLY: promote the first admin on first successful login ---
   try {
     const alreadyHasAdmin = await anyAdminExists();
     if (!alreadyHasAdmin && isBootstrapEmail(user.email)) {
@@ -132,9 +126,8 @@ export async function login(req: Request, res: Response): Promise<void> {
       await user.save();
     }
   } catch {
-    // Do not block login on bootstrap errors
+
   }
-  // --- END BOOTSTRAP ---
 
   const token = signJwt({ userId: user.id, role: user.role });
   setCookie(res, token);
@@ -180,7 +173,7 @@ export async function me(req: Request, res: Response): Promise<void> {
 export async function requestReset(req: Request, res: Response): Promise<void> {
   const { email } = req.body as { email: string };
   const user = await User.findOne({ where: { email } });
-  if (!user) { res.json({ ok: true }); return; } // avoid user enumeration
+  if (!user) { res.json({ ok: true }); return; }
 
   const otp = crypto.randomInt(100000, 999999).toString();
   const otpHash = await bcrypt.hash(otp, 10);
@@ -194,7 +187,6 @@ export async function requestReset(req: Request, res: Response): Promise<void> {
   <div style="background-color:#CCDAD1; padding:20px; font-family:Inter, sans-serif;">
     <div style="max-width:600px; margin:0 auto; background-color:#9CAEA9; border-radius:12px; padding:24px; color:#38302E; line-height:1.7; font-size:16px;">
 
-      <!-- Dark-mode helper (email-safe). If unsupported, the link stays blue. -->
       <style>
         @media (prefers-color-scheme: dark) {
           .fallback-link { color: #ffffff !important; }
@@ -206,7 +198,6 @@ export async function requestReset(req: Request, res: Response): Promise<void> {
       <p>Hi ${user.name},</p>
       <p>Use this one-time code to reset your password. It expires in 10 minutes.</p>
 
-      <!-- Big OTP pill -->
       <p style="margin: 1.25em 0; text-align:center;">
         <span style="
           display:inline-block;
@@ -225,8 +216,6 @@ export async function requestReset(req: Request, res: Response): Promise<void> {
         </span>
       </p>
 
-
-      <!-- Reset page link (same styling approach as your welcome email) -->
       <p style="font-size:15px; color:#38302E; margin-top:1em; text-align:center;">
         Then open the reset page and enter your code:<br>
         <a href="https://www.fridaybiblestudy.org/reset-password"
@@ -267,7 +256,7 @@ export async function resetPassword(req: Request, res: Response): Promise<void> 
   user.passwordHash = await hashPassword(newPassword);
   await user.save();
 
-  await token.destroy(); // single-use
+  await token.destroy();
 
   res.json({ ok: true });
 }
@@ -293,11 +282,9 @@ export async function updateProfile(req: Request, res: Response): Promise<void> 
     const user = await User.findByPk(req.user.userId);
     if (!user) { res.status(404).json({ error: 'Not found' }); return; }
 
-    // Helpers
     const clean = (v: unknown) => (typeof v === 'string' ? v.trim() : v);
     const phoneRE = /^\d{3}-\d{3}-\d{4}$/;
 
-    // Server-side phone validation (only if provided and non-empty)
     if (phone !== undefined) {
       const cleanedPhone = clean(phone) as string | undefined;
       if (cleanedPhone && !phoneRE.test(cleanedPhone)) {
@@ -306,7 +293,6 @@ export async function updateProfile(req: Request, res: Response): Promise<void> 
       }
     }
 
-    // Start from current values; only overwrite if a non-empty value is provided
     const next = {
       name: user.name,
       phone: user.phone,
@@ -329,14 +315,13 @@ export async function updateProfile(req: Request, res: Response): Promise<void> 
 
     (Object.keys(candidates) as (keyof typeof next)[]).forEach((key) => {
       const val = candidates[key];
-      if (val === undefined) return;                      // not provided -> leave as-is
-      if (typeof val === 'string' && val.trim() === '') { // empty string -> ignore to protect data
+      if (val === undefined) return;
+      if (typeof val === 'string' && val.trim() === '') {
         return;
       }
       (next as any)[key] = val;
     });
 
-    // Detect no-op
     const unchanged =
       next.name === user.name &&
       next.phone === user.phone &&
@@ -363,7 +348,6 @@ export async function updateProfile(req: Request, res: Response): Promise<void> 
       return;
     }
 
-    // Persist only when there are changes
     user.name = next.name;
     user.phone = next.phone;
     user.addressStreet = next.addressStreet;

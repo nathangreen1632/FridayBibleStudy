@@ -1,4 +1,3 @@
-// Client/src/components/board/ColumnContainer.board.tsx
 import React, { useMemo } from 'react';
 import { useDroppable } from '@dnd-kit/core';
 import { SortableContext, verticalListSortingStrategy } from '@dnd-kit/sortable';
@@ -17,7 +16,6 @@ export default function Column({
                                  ids,
                                  renderCard,
                                }: Readonly<ColumnProps>): React.ReactElement {
-  // Stable droppable id used elsewhere for fallback resolution
   const droppableId = useMemo(
     () => (column === 'active' ? 'col-active' : 'col-archived'),
     [column],

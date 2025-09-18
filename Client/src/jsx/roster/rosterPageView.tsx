@@ -1,4 +1,3 @@
-// Client/src/jsx/rosterPageView.tsx
 import React from 'react';
 import { ArrowDownAZ, ArrowUpAZ } from 'lucide-react';
 import type { RosterRow } from '../../helpers/api/rosterApi.ts';
@@ -57,21 +56,14 @@ function SortTh({
 }
 
 type Props = {
-  // data
   rows: RosterRow[];
   loading: boolean;
-
-  // search
   qInput: string;
   onChangeQuery: (v: string) => void;
   onClearQuery: () => void;
-
-  // sorting
   sortBy: RostersSortField | null;
   sortDir: 'asc' | 'desc';
   onSort: (field: RostersSortField) => void;
-
-  // paging
   page: number;
   total: number;
   pageSize: number;
@@ -100,7 +92,6 @@ export default function RosterPageView({
                                          onPrev,
                                          onNext,
                                        }: Readonly<Props>): React.ReactElement {
-  // table body
   let bodyRows: React.ReactNode;
   if (loading) {
     bodyRows = (
@@ -144,7 +135,6 @@ export default function RosterPageView({
 
   return (
     <div className="p-3 space-y-3 mx-auto max-w-full">
-      {/* Search */}
       <div className="flex gap-2 items-end">
         <div className="flex-1">
           <label htmlFor="roster-search" className="block text-sm mb-1">
@@ -173,7 +163,6 @@ export default function RosterPageView({
         </div>
       </div>
 
-      {/* Table */}
       <div className="rounded-t-xl border border-[var(--theme-border)] bg-[var(--theme-accent)]">
         <div className="px-3 py-2 text-[var(--theme-moveto)] font-semibold flex items-center justify-between">
           <span>Roster</span>
@@ -240,7 +229,6 @@ export default function RosterPageView({
         </div>
       </div>
 
-      {/* Pager */}
       <div className="flex items-center justify-between">
         <button
           type="button"

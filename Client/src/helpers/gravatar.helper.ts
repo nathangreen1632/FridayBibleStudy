@@ -1,4 +1,3 @@
-// Client/src/helpers/gravatar.helper.ts
 import md5 from 'blueimp-md5';
 
 export function getGravatarUrl(email?: string | null, size: number = 96): string {
@@ -6,7 +5,6 @@ export function getGravatarUrl(email?: string | null, size: number = 96): string
     const normalized = (email ?? '').trim().toLowerCase();
     if (!normalized) return '';
     const hash = md5(normalized);
-    // d=identicon gives you a nice default; r=g is the usual safe rating.
     return `https://www.gravatar.com/avatar/${hash}?s=${encodeURIComponent(String(size))}&d=identicon&r=g`;
   } catch {
     return '';

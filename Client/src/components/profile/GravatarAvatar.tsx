@@ -1,4 +1,3 @@
-// Client/src/components/GravatarAvatar.tsx
 import React, { useMemo, useState } from 'react';
 import { getGravatarUrl, getInitials } from '../../helpers/gravatar.helper.ts';
 

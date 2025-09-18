@@ -41,7 +41,6 @@ function SortableHeader(props: Readonly<{
   );
 }
 
-/* -------------------- Read-only row -------------------- */
 function RosterReadRow({
                          r,
                          onStartEdit,
@@ -96,7 +95,6 @@ function RosterReadRow({
   );
 }
 
-/* -------------------- Edit row -------------------- */
 function RosterEditRow({
                          r,
                          form,
@@ -150,7 +148,6 @@ function RosterEditRow({
   );
 }
 
-/* -------------------- Main table (pure view) -------------------- */
 type ViewProps = Readonly<{
   className?: string;
   rows: AdminRosterRow[];
@@ -158,15 +155,11 @@ type ViewProps = Readonly<{
   sortBy: RosterSortField | null;
   sortDir: 'asc' | 'desc';
   onSort: (field: RosterSortField) => void;
-
-  // editing
   editId: number | null;
   form: Partial<AdminRosterRow>;
   busy: boolean;
   error: string;
   EDIT_KEYS: readonly RosterEditKey[];
-
-  // actions
   onStartEdit: (r: AdminRosterRow) => void;
   onChange: (k: RosterEditKey, v: string) => void;
   onSave: (id: number) => void | Promise<void>;

@@ -8,15 +8,17 @@ export default function EventModalLogic({
                                           event,
                                           onClose,
                                         }: Readonly<EventModalProps>): React.ReactElement | null {
-  // Lock body scroll while open
   useScrollLock(open);
 
-  // ESC to close (same pattern as LightboxModal)
   useEffect(() => {
     if (!open) return;
     const onKey = (e: KeyboardEvent) => {
       if (e.key === 'Escape') {
-        try { onClose(); } catch { /* graceful no-throw */ }
+        try { onClose();
+
+        } catch {
+
+        }
       }
     };
     document.addEventListener('keydown', onKey);

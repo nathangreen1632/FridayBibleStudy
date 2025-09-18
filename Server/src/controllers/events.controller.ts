@@ -1,4 +1,3 @@
-// Server/src/controllers/events.controller.ts
 import type { Request, Response } from 'express';
 import { listEvents } from '../services/events.service.js';
 import { Event } from '../models/index.js';
@@ -25,10 +24,6 @@ export async function getGroupEvents(req: Request, res: Response): Promise<void>
   }
 }
 
-/**
- * PATCH /api/admin/events/:id
- * Body: { title?, content?, location?, startsAt?, endsAt? }
- */
 export async function patchAdminEvent(req: Request, res: Response): Promise<void> {
   try {
     const id = Number(req.params?.id);
@@ -43,7 +38,6 @@ export async function patchAdminEvent(req: Request, res: Response): Promise<void
       return;
     }
 
-    // Only update provided fields (null means "ignore")
     const title = toStr(req.body?.title);
     const content = toStr(req.body?.content);
     const location = toStr(req.body?.location);
@@ -64,9 +58,6 @@ export async function patchAdminEvent(req: Request, res: Response): Promise<void
   }
 }
 
-/**
- * DELETE /api/admin/events/:id
- */
 export async function deleteAdminEvent(req: Request, res: Response): Promise<void> {
   try {
     const id = Number(req.params?.id);

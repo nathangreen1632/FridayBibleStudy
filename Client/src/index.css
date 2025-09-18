@@ -3,25 +3,21 @@
 
 @layer base {
   :root {
-    /* base palette */
-    --c-a: #CCDAD1; /* A */
-    --c-b: #9CAEA9; /* B */
-    --c-c: #788585; /* C */
-    --c-d: #6F6866; /* D */
-    --c-e: #38302E; /* E */
-
-    /* extended palette */
-    --c-f: #E8E3DC; /* F: soft parchment */
-    --c-g: #B2C5B2; /* G: muted sage */
-    --c-h: #5C6A72; /* H: slate gray */
-    --c-i: #A27B5C; /* I: warm sand/tan */
-    --c-j: #4A6FA5; /* J: desaturated blue (optional CTA/link) */
-    --c-k: #00274C; /* K: darkest blue (hover) */
-    --c-l: #16803D; /* L: green */
-    --c-m: #BF5700; /* M: UT burnt orange */
+    --c-a: #CCDAD1;
+    --c-b: #9CAEA9;
+    --c-c: #788585;
+    --c-d: #6F6866;
+    --c-e: #38302E;
+    --c-f: #E8E3DC;
+    --c-g: #B2C5B2;
+    --c-h: #5C6A72;
+    --c-i: #A27B5C;
+    --c-j: #4A6FA5;
+    --c-k: #00274C;
+    --c-l: #16803D;
+    --c-m: #BF5700;
     --c-n: #9CA3AF;
 
-    /* LIGHT MODE */
     --theme-bg: var(--c-b);
     --theme-surface: var(--c-a);
     --theme-text: var(--c-e);
@@ -38,7 +34,6 @@
     --theme-scripture: var(--c-f);
     --theme-verse: var(--c-f);
 
-    /* buttons */
     --theme-button: var(--c-e);
     --theme-button-blue: var(--c-d);
     --theme-button-blue-hover: var(--c-c);
@@ -48,16 +43,13 @@
     --theme-pill-green: var(--c-l);
     --theme-pill-orange: var(--c-m);
 
-    /* extended buttons / links */
     --theme-link: var(--c-j);
     --theme-link-hover: #3B5C84;
 
-    /* semantic colors */
     --theme-success: var(--c-g);
     --theme-warning: var(--c-i);
     --theme-info: var(--c-j);
 
-    /* cards & interactive */
     --theme-card: var(--c-b);
     --theme-card-hover: var(--c-c);
     --theme-card-hover-alt: var(--c-b);
@@ -66,37 +58,32 @@
     --theme-card-alt: var(--c-f);
     --theme-hover: var(--c-d);
 
-    /* focus & elevation */
     --theme-focus: var(--c-d);
     --theme-shadow: rgba(56, 48, 46, 0.35);
 
-    /* error */
-    --theme-error: #ef4444; /* red-500 */
-    --theme-button-error: #c43838; /* red-600 */
+    --theme-error: #ef4444;
+    --theme-button-error: #c43838;
   }
 }
 
 @media (prefers-color-scheme: dark) {
   :root {
-    /* base palette */
-    --c-a: #CCDAD1; /* A */
-    --c-b: #9CAEA9; /* B */
-    --c-c: #788585; /* C */
-    --c-d: #6F6866; /* D */
-    --c-e: #38302E; /* E */
+    --c-a: #CCDAD1;
+    --c-b: #9CAEA9;
+    --c-c: #788585;
+    --c-d: #6F6866;
+    --c-e: #38302E;
 
-    /* extended palette */
-    --c-f: #E8E3DC; /* F: soft parchment */
-    --c-g: #B2C5B2; /* G: muted sage */
-    --c-h: #5C6A72; /* H: slate gray */
-    --c-i: #A27B5C; /* I: warm sand/tan */
-    --c-j: #4A6FA5; /* J: desaturated blue */
-    --c-k: #00274C; /* K: darkest blue (hover) */
-    --c-l: #16803D; /* L: green */
-    --c-m: #BF5700; /* M: UT burnt orange */
+    --c-f: #E8E3DC;
+    --c-g: #B2C5B2;
+    --c-h: #5C6A72;
+    --c-i: #A27B5C;
+    --c-j: #4A6FA5;
+    --c-k: #00274C;
+    --c-l: #16803D;
+    --c-m: #BF5700;
     --c-n: #9CA3AF;
 
-    /* DARK MODE — 180° from light (A↔E, B↔D, C→B to avoid hold-overs) */
     --theme-bg: var(--c-d);
     --theme-surface: var(--c-e);
     --theme-text: var(--c-a);
@@ -113,7 +100,6 @@
     --theme-scripture: var(--c-e);
     --theme-verse: var(--c-e);
 
-    /* buttons */
     --theme-button: var(--c-a);
     --theme-button-blue: var(--c-b);
     --theme-button-blue-hover: var(--c-a);
@@ -123,16 +109,13 @@
     --theme-pill-green: var(--c-l);
     --theme-pill-orange: var(--c-m);
 
-    /* extended buttons / links */
     --theme-link: var(--c-j);
     --theme-link-hover: #678CB8;
 
-    /* semantic colors */
     --theme-success: var(--c-g);
     --theme-warning: var(--c-i);
     --theme-info: var(--c-j);
 
-    /* cards & interactive */
     --theme-card: var(--c-d);
     --theme-card-hover: var(--c-b);
     --theme-card-hover-alt: var(--c-b);
@@ -141,33 +124,27 @@
     --theme-hover: var(--c-b);
     --theme-card-alt-hover: var(--c-n);
 
-    /* focus & elevation */
     --theme-focus: var(--c-a);
     --theme-shadow: rgba(204, 218, 209, 0.35);
 
-    /* error */
-    --theme-error: #ef4444; /* red-500 */
-    --theme-button-error: #c43838; /* red-600 */
+    --theme-error: #ef4444;
+    --theme-button-error: #c43838;
   }
 }
 
-
-/* PLACEHOLDER COLOR */
 @layer base {
   input::placeholder {
     color: var(--theme-text);
-    opacity: 0.7; /* brighter than Tailwind default 0.35 */
+    opacity: 0.7;
   }
 }
 
-/* GLOBAL STYLES */
 body {
   font-family: 'Inter', sans-serif;
   background: var(--theme-bg);
   color: var(--theme-text);
 }
 
-/* GLOBAL SCROLLBAR */
 .custom-scrollbar {
   scrollbar-width: thin;
   scrollbar-color: var(--theme-scrollbar-thumb) var(--theme-scrollbar-track);
@@ -189,52 +166,43 @@ body {
   border: 2px solid var(--theme-scrollbar-track);
 }
 
-/* Hide scrollbars only for the header nav */
 .header-nav--no-scrollbar {
-  -ms-overflow-style: none;   /* IE/Edge legacy */
-  scrollbar-width: none;      /* Firefox */
+  -ms-overflow-style: none;
+  scrollbar-width: none;
 }
 .header-nav--no-scrollbar::-webkit-scrollbar {
-  display: none;              /* Chrome/Safari/Edge */
+  display: none;
 }
 
-
-/* LIGHT MODE VARIANTS */
 :root {
-  --theme-scrollbar-track: var(--theme-surface); /* lighter track */
-  --theme-scrollbar-thumb: var(--theme-accent);  /* darker thumb */
+  --theme-scrollbar-track: var(--theme-surface);
+  --theme-scrollbar-thumb: var(--theme-accent);
 }
 
-/* DARK MODE VARIANTS */
+
 @media (prefers-color-scheme: dark) {
   :root {
-    --theme-scrollbar-track: var(--theme-bg);     /* darkest background */
-    --theme-scrollbar-thumb: var(--theme-accent); /* light accent */
+    --theme-scrollbar-track: var(--theme-bg);
+    --theme-scrollbar-thumb: var(--theme-accent);
   }
 }
 
-/* --- Mobile WebKit: reduce double-tap zoom & tap highlight --- */
 html {
-  /* Prevent text auto-zoom heuristics */
   -webkit-text-size-adjust: 100%;
 }
 
 @supports (-webkit-touch-callout: none) {
-  /* Tell iOS Safari/Chromium to treat taps as “manipulation” (no dbl-tap zoom) */
   html, body,
   a, button, input, label, select, textarea {
     touch-action: manipulation;
   }
 
-  /* Remove iOS tap highlight flash (cosmetic) */
   * {
     -webkit-tap-highlight-color: rgba(0,0,0,0);
   }
 }
 
-/* Subtle 3D text variants driven by your theme tokens */
 .text-3d-raised {
-  /* slight “lifted” look */
   text-shadow:
           0 1px 0 var(--theme-surface),
           0 2px 0 var(--theme-border),
@@ -242,14 +210,12 @@ html {
 }
 
 .text-3d-engraved {
-  /* slight “pressed in” look */
   text-shadow:
           0 -1px 0 var(--theme-surface),
           0 -2px 0 var(--theme-border),
           0 -3px 4px var(--theme-shadow);
 }
 
-/* Reserve space for scrollbars to keep corners pretty */
 .scrollpad {
   scrollbar-gutter: stable both-edges;
 }

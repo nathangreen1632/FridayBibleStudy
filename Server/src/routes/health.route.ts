@@ -1,4 +1,3 @@
-// Server/src/routes/health.route.ts
 import { Router } from 'express';
 const router: Router = Router();
 
@@ -10,7 +9,7 @@ router.get('/', (_req, res) => {
       timestamp: Date.now(),
     });
   } catch {
-    // graceful fallback
+
     res.status(200).json({ ok: false });
   }
 });

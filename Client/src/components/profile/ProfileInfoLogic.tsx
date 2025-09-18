@@ -14,12 +14,10 @@ export default function ProfileInfoLogic({
   const initial = useMemo(() => normalizeFromUser(user), [user]);
   const [form, setForm] = useState<FormValues>(initial);
 
-  // Reseed when the backing user changes
   useEffect(() => {
     setForm(normalizeFromUser(user));
   }, [user]);
 
-  // Reseed when modal opens
   useEffect(() => {
     if (open) setForm(normalizeFromUser(user));
   }, [open, user]);
@@ -33,7 +31,7 @@ export default function ProfileInfoLogic({
     try {
       onDirtyChange?.(dirty);
     } catch {
-      // ignore; graceful handling
+
     }
   }, [dirty, onDirtyChange]);
 
@@ -47,7 +45,7 @@ export default function ProfileInfoLogic({
       toast('No changes to save.', { icon: 'ℹ️' });
       return;
     }
-    // phone is optional, but if provided it must match 555-123-4567
+
     if (form.phone && !phoneRE.test(form.phone)) {
       toast.error('Please enter your phone as 555-123-4567');
       return;
@@ -55,7 +53,7 @@ export default function ProfileInfoLogic({
     try {
       await onSave(form);
     } catch {
-      // swallow; your onSave can toast if needed
+
     }
   }
 

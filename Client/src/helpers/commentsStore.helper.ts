@@ -1,7 +1,5 @@
-// Client/src/helpers/commentsStore.helper.ts
 import type { Comment, ListRootThreadsResponse } from '../types/domain/comment.types.ts';
 
-/** Minimal shape needed by the helpers to avoid circular deps with the store file. */
 export type ThreadLike = {
   byId: Map<number | string, Comment>;
   rootOrder: Array<number | string>;
@@ -10,7 +8,6 @@ export type ThreadLike = {
 
 export type FetchOpts = { reset?: boolean; limit?: number } | undefined;
 
-/** Resolve (limit, opts) from the legacy signature (number | opts, opts). */
 export function resolveFetchOpts(
   limitOrOpts?: number | FetchOpts,
   maybeOpts?: FetchOpts
@@ -33,25 +30,21 @@ export function resolveFetchOpts(
   return { limit, opts };
 }
 
-/** Reset a thread to empty state (fresh paging). */
 export function applyReset(t: ThreadLike): void {
   t.byId = new Map();
   t.rootOrder = [];
   t.rootPage = { cursor: null, hasMore: true, loading: false, error: null };
 }
 
-/** Skip if already loading, or if no-more-data AND at least one page already present. */
 export function shouldSkipLoad(t: ThreadLike): boolean {
   return Boolean(t.rootPage.loading || (!t.rootPage.hasMore && t.rootOrder.length > 0));
 }
 
-/** Toggle loading; clear error on start. */
 export function markLoading(t: ThreadLike, v: boolean): void {
   t.rootPage.loading = v;
   if (v) t.rootPage.error = null;
 }
 
-/** Build query string for the /api/comments/list endpoint. */
 export function buildListQuery(prayerId: number, limit: number, cursor?: string | null): string {
   const params = new URLSearchParams();
   if (cursor) params.set('cursor', String(cursor));
@@ -60,7 +53,6 @@ export function buildListQuery(prayerId: number, limit: number, cursor?: string 
   return params.toString();
 }
 
-/** Upsert roots into the thread map, preserving authorName if server omits it. */
 export function upsertRootsIntoThread(
   t: ThreadLike,
   items: ListRootThreadsResponse['items']
@@ -78,7 +70,6 @@ export function upsertRootsIntoThread(
   t.byId = nextById;
 }
 
-/** Merge order arrays while preserving existing order and avoiding duplicates. */
 export function mergeOrderNoDupes(
   current: Array<number | string>,
   newIds: Array<number | string>
@@ -94,7 +85,6 @@ export function mergeOrderNoDupes(
   return merged;
 }
 
-/** Apply server paging flags. */
 export function applyServerPaging(
   t: ThreadLike,
   data: ListRootThreadsResponse
@@ -104,7 +94,6 @@ export function applyServerPaging(
   t.rootPage.loading = false;
 }
 
-/** Compute updated meta maps (counts / lastCommentAt / closed) from response. */
 export function applyMetaMaps(
   getCounts: () => Map<number, number>,
   getLastCommentAt: () => Map<number, string>,

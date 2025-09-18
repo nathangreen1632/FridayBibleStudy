@@ -1,6 +1,3 @@
-// Client/src/types/socket.types.ts
-
-// Use a const object instead of `enum`
 export const Events = {
   PrayerCreated: 'prayer:created',
   PrayerUpdated: 'prayer:updated',
@@ -8,7 +5,7 @@ export const Events = {
   PrayerDeleted: 'prayer:deleted',
 
   UpdateCreated: 'update:created',
-  UpdateDeleted: 'update:deleted',   // ✅ NEW
+  UpdateDeleted: 'update:deleted',
 
   CommentCreated: 'comment:created',
   CommentUpdated: 'comment:updated',
@@ -17,6 +14,5 @@ export const Events = {
   CommentCount: 'prayer:commentCount',
 } as const;
 
-// Derive type for strong typing if you want
 export type EventKey = keyof typeof Events;
 export type EventValue = (typeof Events)[EventKey];

@@ -19,7 +19,7 @@ export default function AdminPrayersPageLogic(): React.ReactElement {
           pageSize: ui.pageSize,
         });
       } catch {
-        // keep UI resilient; surface toasts inside store if desired
+        console.error('Failed to load prayers', loading);
       }
     })();
   }, [loadList, ui.q, ui.groupId, ui.status, ui.category, ui.page, ui.pageSize]);

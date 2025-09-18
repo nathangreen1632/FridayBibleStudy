@@ -86,23 +86,17 @@ export class Prayer extends Model<PrayerAttributes, PrayerCreation> implements P
     return Prayer;
   }
 
-  // ✅ Tell Sequelize exactly how to join
   static associate(models: any): void {
-    // prayers.authorUserId → users.id
     Prayer.belongsTo(models.User,  {
       as: 'author',
       foreignKey: 'authorUserId',
       targetKey: 'id',
     });
 
-    // prayers.groupId → groups.id
     Prayer.belongsTo(models.Group, {
       as: 'group',
       foreignKey: 'groupId',
       targetKey: 'id',
     });
-
-    // Optional: uncomment if you use eager loads elsewhere
-    // Prayer.hasMany(models.Comment, { as: 'comments', foreignKey: 'prayerId', sourceKey: 'id' });
   }
 }

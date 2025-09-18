@@ -1,4 +1,3 @@
-// Client/src/helpers/error.helper.ts
 export function humanizeError(value: unknown, fallback: string): string {
   if (typeof value === 'string') return value;
   if (value && typeof value === 'object') {
@@ -7,7 +6,7 @@ export function humanizeError(value: unknown, fallback: string): string {
     try {
       return JSON.stringify(value);
     } catch {
-      // ignore
+
     }
   }
   return fallback;

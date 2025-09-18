@@ -1,4 +1,3 @@
-// Server/src/controllers/comments.controller.ts
 import type { Request, Response, Router } from 'express';
 import { Router as makeRouter } from 'express';
 import { Op, QueryTypes } from 'sequelize';
@@ -29,11 +28,6 @@ import {
 
 export const commentsRouter: Router = makeRouter();
 
-/**
- * GET /comments/list?prayerId=&cursor=&limit=
- * Paginates root threads for a prayer by latest activity (root.createdAt or newest reply).
- * Returns preview of up to 3 newest replies per root.
- */
 commentsRouter.get('/list', requireAuth, async (req: Request, res: Response) => {
   try {
     const prayerId = Number(req.query.prayerId || '0');
@@ -119,7 +113,6 @@ commentsRouter.get('/list', requireAuth, async (req: Request, res: Response) => 
   }
 });
 
-/** GET /comments/replies?rootId=&limit= */
 commentsRouter.get('/replies', requireAuth, async (req: Request, res: Response) => {
   try {
     const rootId = Number(req.query.rootId || '0');
@@ -139,7 +132,6 @@ commentsRouter.get('/replies', requireAuth, async (req: Request, res: Response) 
   }
 });
 
-/** POST /comments/create  body: { prayerId, content, parentId?, cid? } */
 commentsRouter.post(
   '/create',
   requireAuth,
@@ -190,7 +182,6 @@ commentsRouter.post(
   }
 );
 
-/** PATCH /comments/:commentId  body: { content } */
 commentsRouter.patch(
   '/:commentId',
   requireAuth,
@@ -231,7 +222,6 @@ commentsRouter.patch(
   }
 );
 
-/** DELETE /comments/:commentId */
 commentsRouter.delete(
   '/:commentId',
   requireAuth,
@@ -268,7 +258,6 @@ commentsRouter.delete(
 
       await Prayer.update({ commentCount: newCount, lastCommentAt: lastAt }, { where: { id: (c as any).prayerId } });
 
-      // ⬇️ NEW: notify clients about deletion + updated counts
       emitDeleted((prayer as any).groupId, {
         prayerId: (c as any).prayerId,
         commentId: (c as any).id,
@@ -283,7 +272,6 @@ commentsRouter.delete(
   }
 );
 
-/** POST /comments/seen  body: { prayerId, at? } */
 commentsRouter.post(
   '/seen',
   requireAuth,
@@ -304,7 +292,6 @@ commentsRouter.post(
   }
 );
 
-/** PATCH /comments/closed  body: { prayerId, isClosed }  (admin only) */
 commentsRouter.patch(
   '/closed',
   requireAuth,
@@ -324,7 +311,6 @@ commentsRouter.patch(
 
       await Prayer.update({ isCommentsClosed: isClosed }, { where: { id: prayerId } });
 
-      // ⬇️ NEW: notify clients that comments-open state changed
       emitCommentsClosed((p as any).groupId, { prayerId, isCommentsClosed: isClosed });
 
       return res.status(200).json({ ok: true, prayerId, isCommentsClosed: isClosed });
@@ -334,7 +320,6 @@ commentsRouter.patch(
   }
 );
 
-/** GET /comments/search?q=&groupId=&limit= */
 commentsRouter.get('/search', requireAuth, async (req: Request, res: Response) => {
   try {
     const q = String(req.query.q || '').trim();

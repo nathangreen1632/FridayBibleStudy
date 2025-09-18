@@ -1,4 +1,3 @@
-// Client/src/pages/RosterPageLogic.tsx
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import { toast } from 'react-hot-toast';
 import RosterPageView from '../../jsx/roster/rosterPageView.tsx';
@@ -9,14 +8,11 @@ export default function RosterPageLogic(): React.ReactElement {
   const [rows, setRows] = useState<RosterRow[]>([]);
   const [loading, setLoading] = useState<boolean>(true);
 
-  // search
   const [qInput, setQInput] = useState('');
 
-  // sorting
   const [sortBy, setSortBy] = useState<RostersSortField | null>(null);
   const [sortDir, setSortDir] = useState<'asc' | 'desc'>('asc');
 
-  // paging
   const [page, setPage] = useState<number>(1);
   const [pageSize] = useState<number>(25);
   const [total, setTotal] = useState<number>(0);
@@ -43,7 +39,7 @@ export default function RosterPageLogic(): React.ReactElement {
         if (typeof res?.total === 'number') setTotal(res.total);
         if (typeof res?.page === 'number') setPage(res.page);
       } catch {
-        // surface a friendly message; fail soft
+        console.error('Failed to load roster', args);
         toast.error('Failed to load roster');
         setRows([]);
       } finally {
@@ -53,14 +49,12 @@ export default function RosterPageLogic(): React.ReactElement {
     [page, pageSize]
   );
 
-  // initial load
   useEffect(() => {
     (async () => {
       await load({ page: 1 });
     })();
   }, [load]);
 
-  // debounced live search
   useEffect(() => {
     const next = qInput.trim();
     const id = window.setTimeout(() => {
@@ -77,7 +71,6 @@ export default function RosterPageLogic(): React.ReactElement {
     return () => window.clearTimeout(id);
   }, [qInput, sortBy, sortDir, load]);
 
-  // paging (uses current filters)
   useEffect(() => {
     (async () => {
       const args: LoadArgs = {
@@ -89,7 +82,6 @@ export default function RosterPageLogic(): React.ReactElement {
       };
       await load(args);
     })();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [page]);
 
   async function clearSearch(): Promise<void> {

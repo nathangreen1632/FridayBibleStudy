@@ -13,33 +13,32 @@ export default function LightboxModalLogic({
   const imgRef = useRef<HTMLImageElement | null>(null);
   const [imgWidth, setImgWidth] = useState<number>(0);
 
-  // Lock body scroll while the modal is open (consistent with your other modals)
   useScrollLock(open);
 
-  // ESC to close
   useEffect(() => {
     if (!open) return;
     const onKey = (e: KeyboardEvent) => {
       if (e.key === 'Escape') {
-        try { onClose(); } catch { /* graceful no-throw */ }
+        try { onClose();
+
+        } catch {
+
+        }
       }
     };
     document.addEventListener('keydown', onKey);
     return () => document.removeEventListener('keydown', onKey);
   }, [open, onClose]);
 
-  // Track the rendered width of the image (portrait/landscape)
   useEffect(() => {
     if (!open) return;
 
     const el = imgRef.current;
     if (!el) return;
 
-    // initial measure (cached images)
     const initial = el.clientWidth;
     if (Number.isFinite(initial) && initial > 0) setImgWidth(initial);
 
-    // ResizeObserver (reads from current ref each time)
     let ro: ResizeObserver | undefined;
     if (typeof ResizeObserver !== 'undefined') {
       ro = new ResizeObserver(() => {
@@ -51,7 +50,6 @@ export default function LightboxModalLogic({
       ro.observe(el);
     }
 
-    // Fallback on window resize (read from current ref)
     const onResize = () => {
       const cur = imgRef.current;
       if (!cur) return;
@@ -60,7 +58,6 @@ export default function LightboxModalLogic({
     };
     window.addEventListener('resize', onResize);
 
-    // Capture size once the image finishes loading
     const onLoad = () => onResize();
     el.addEventListener('load', onLoad, { once: true });
 

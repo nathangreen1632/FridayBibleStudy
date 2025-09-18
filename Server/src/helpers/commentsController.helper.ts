@@ -1,4 +1,3 @@
-// Server/src/helpers/commentsController.helper.ts
 import type { Request } from 'express';
 import { Op } from 'sequelize';
 import { Comment, GroupMember, Prayer, User } from '../models/index.js';
@@ -6,7 +5,6 @@ import { emitToGroup } from '../config/socket.config.js';
 import { toPrayerDTO } from '../controllers/dto/prayer.dto.js';
 import { Events } from '../types/socket.types.js';
 
-/** ----------------------------- shared types ------------------------------ */
 export type SafeUser = {
   id: number;
   role: 'classic' | 'admin';
@@ -17,7 +15,6 @@ export type SafeUser = {
 
 export type UserLite = { name?: string | null; email?: string | null };
 
-/** ------------------------------ core helpers ----------------------------- */
 export function actor(req: Request): SafeUser | null {
   const u = (req as any).user as {
     userId?: number;
@@ -47,7 +44,6 @@ export function safeMessage(e: unknown, fb: string): string {
   return fb;
 }
 
-/** --------------------------- user enrichment ----------------------------- */
 export async function loadUserMap(ids: number[]): Promise<Map<number, UserLite>> {
   const uniq = Array.from(new Set(ids.filter((v): v is number => Number.isFinite(v))));
   if (!uniq.length) return new Map();
@@ -78,7 +74,6 @@ export function mapComment(c: Comment, users?: Map<number, UserLite>) {
   };
 }
 
-/** -------------------------- SQL quoting helpers -------------------------- */
 export function quoteIdent(x: string) {
   return `"${x.replace(/"/g, '""')}"`;
 }
@@ -94,7 +89,6 @@ export function tableRefFromModel(m: any): string {
   return quoteIdent('comments');
 }
 
-/** ------------------------- create-comment helpers ------------------------ */
 export type CreateBody = {
   prayerId?: number;
   content?: string;
@@ -183,7 +177,6 @@ export async function buildAuthorMapFor(userId: number): Promise<Map<number, Use
   return m;
 }
 
-/** ---------------------------- emit helpers ------------------------------- */
 export function emitCreationEvents(args: {
   groupId: number;
   pid: number;
@@ -209,7 +202,6 @@ export function emitCreationEvents(args: {
   } catch {}
 }
 
-/** NEW: emits for non-create flows so the client stays in sync */
 export function emitUpdated(
   groupId: number,
   payload: { prayerId: number; comment: ReturnType<typeof mapComment> }
@@ -262,7 +254,7 @@ export async function bumpCardIfRoot(prayer: Prayer, inserted: Comment): Promise
     try { emitToGroup(prayer.groupId, 'prayer:updated', payload); } catch {}
     try { emitToGroup(prayer.groupId, Events.PrayerUpdated, payload); } catch {}
   } catch {
-    // non-fatal
+
   }
 }
 
@@ -295,6 +287,6 @@ export async function bestEffortNotify(prayer: Prayer, content: string): Promise
       html: safeHtml,
     }).catch(() => {});
   } catch {
-    // best-effort only
+
   }
 }

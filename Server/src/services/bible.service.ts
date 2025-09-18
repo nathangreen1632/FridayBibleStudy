@@ -1,9 +1,17 @@
-// Server/src/services/bible.service.ts
 import { env } from '../config/env.config.js';
 
 type ServiceOk<T> = { ok: true; status: number; data: T };
 type ServiceErr = { ok: false; status: number; error?: string };
 type ServiceResult<T> = ServiceOk<T> | ServiceErr;
+type JsonObj = Record<string, unknown>;
+
+type ChapterOk = {
+  content: string;
+  reference: string;
+  chapterId: string;
+  prevId?: string;
+  nextId?: string;
+};
 
 const API_BASE = 'https://api.scripture.api.bible/v1';
 
@@ -24,20 +32,17 @@ async function apiFetch(path: string, init?: RequestInit): Promise<Response> {
   }
 }
 
-/* ---------- minimal /passages call: ONLY ?reference= ---------- */
 async function fetchPassage(bibleId: string, reference: string): Promise<Response> {
   const qp = new URLSearchParams();
-  qp.set('reference', reference);       // ← ONLY this param
+  qp.set('reference', reference);
   return apiFetch(`/bibles/${encodeURIComponent(bibleId)}/passages?${qp.toString()}`);
 }
 
-/* ---------- /bibles ---------- */
 export async function listBibles(): Promise<ServiceResult<unknown>> {
   if (!env.BIBLE_API_KEY) {
     return { ok: false, status: 500, error: 'Missing BIBLE_API_KEY' };
   }
 
-  // ✅ Only English bibles
   const res = await apiFetch('/bibles?language=eng');
   const status = res.status;
 
@@ -55,8 +60,6 @@ export async function listBibles(): Promise<ServiceResult<unknown>> {
   }
 }
 
-
-/* ---------- /passages ---------- */
 export async function getPassage(bibleId: string, reference: string): Promise<ServiceResult<unknown>> {
   const id = bibleId?.trim() || (env.BIBLE_DEFAULT_BIBLE_ID ?? '').trim();
   if (!id) return { ok: false, status: 400, error: 'Missing bibleId and no default configured' };
@@ -68,7 +71,6 @@ export async function getPassage(bibleId: string, reference: string): Promise<Se
   if (!res.ok) {
     if (process.env.NODE_ENV !== 'production') {
       let body = ''; try { body = await res.clone().text(); } catch {}
-      // eslint-disable-next-line no-console
       console.warn('[PASSAGE] upstream error:', status, body || '<no body>', { id, reference });
     }
     let error: string | undefined; try { error = (await res.json())?.error; } catch {}
@@ -79,7 +81,6 @@ export async function getPassage(bibleId: string, reference: string): Promise<Se
   catch { return { ok: false, status: 502, error: 'Bad response from provider' }; }
 }
 
-/* ---------- Verse of the Day (minimal) ---------- */
 export async function getVerseOfDay(bibleId?: string): Promise<ServiceResult<unknown>> {
   const id = bibleId?.trim() || (env.BIBLE_DEFAULT_BIBLE_ID ?? '').trim();
   if (!id) return { ok: false, status: 400, error: 'Missing bibleId and no default configured' };
@@ -124,24 +125,6 @@ export async function getVerseOfDay(bibleId?: string): Promise<ServiceResult<unk
   }
 }
 
-
-/* ========================================================================== */
-/* --- NEW: helpers for books/chapters navigation (stable, provider-safe) --- */
-/* ========================================================================== */
-
-type ChapterOk = {
-  content: string;
-  reference: string;
-  chapterId: string;
-  prevId?: string;
-  nextId?: string;
-};
-
-// put near the top of bible.service.ts
-type JsonObj = Record<string, unknown>;
-
-
-// safer JSON helper (no `any`)
 async function fetchJsonSafe(res: Response): Promise<JsonObj | null> {
   try {
     return (await res.json()) as JsonObj;
@@ -150,7 +133,6 @@ async function fetchJsonSafe(res: Response): Promise<JsonObj | null> {
   }
 }
 
-// raw fetchers — return { body: JsonObj | null } instead of `any | null`
 async function listBooksRaw(
   bibleId: string
 ): Promise<{ ok: boolean; status: number; body: JsonObj | null }> {
@@ -181,8 +163,6 @@ async function getChapterRaw(
   return { ok: r.ok, status: r.status, body };
 }
 
-
-/** First chapter id in canonical order (first book -> first chapter). */
 async function resolveFirstChapterId(bibleId: string): Promise<ServiceResult<{ chapterId: string }>> {
   const books = await listBooksRaw(bibleId);
   if (!books.ok || !Array.isArray(books.body?.data) || books.body.data.length === 0) {
@@ -201,11 +181,8 @@ async function resolveFirstChapterId(bibleId: string): Promise<ServiceResult<{ c
   return { ok: true, status: 200, data: { chapterId: firstChapterId } };
 }
 
-// --- helpers ---------------------------------------------------------------
-
 function badUpstream<T = never>(status: number, body: any, msg = 'Failed to fetch chapter'): ServiceResult<T> {
   if (process.env.NODE_ENV !== 'production') {
-    // eslint-disable-next-line no-console
     console.warn('[CHAPTER] upstream error:', status, body ?? '<no body>');
   }
   const errorText: string | undefined = body?.error ?? body?.message;
@@ -229,7 +206,6 @@ function sameBookNeighbors(chapterIds: Array<{ id: string }>, chapterId: string)
   return { prev, next };
 }
 
-// add these tiny helpers near the other helpers in bible.service.ts
 function asFiniteNumber(v: unknown): number | undefined {
   if (typeof v === 'number' && Number.isFinite(v)) return v;
   if (v === null || v === undefined) return undefined;
@@ -240,7 +216,6 @@ function asFiniteNumber(v: unknown): number | undefined {
 function asString(v: unknown): string | undefined {
   return typeof v === 'string' ? v : undefined;
 }
-
 
 async function crossBookNeighbors(
   bibleId: string,
@@ -298,8 +273,6 @@ async function computeNeighbors(
   return { prevId: prev ?? cross.prev, nextId: next ?? cross.next };
 }
 
-// --- refactor --------------------------------------------------------------
-
 export async function getChapterById(
   bibleId: string,
   chapterId: string
@@ -308,24 +281,19 @@ export async function getChapterById(
   if (!id) return { ok: false, status: 400, error: 'Missing bibleId and no default configured' };
   if (!chapterId?.trim()) return { ok: false, status: 400, error: 'Missing chapterId' };
 
-  // 1) fetch chap content
   const chapter = await getChapterRaw(id, chapterId);
   if (!chapter.ok) {
     return badUpstream(chapter.status, chapter.body);
   }
 
-  // 2) neighbors (same book, then cross-book if needed)
   const { prevId, nextId } = await computeNeighbors(id, chapterId);
 
-  // 3) normalize payload
   const { content, reference } = pickChapterItem(chapter.body);
   if (!content) return { ok: false, status: 502, error: 'Bad chapter response from provider' };
 
   return { ok: true, status: 200, data: { content, reference: reference ?? '', chapterId, prevId, nextId } };
 }
 
-
-/** First chapter HTML for a bible (content + neighbors). */
 export async function getFirstChapter(bibleId: string): Promise<ServiceResult<ChapterOk>> {
   const id = bibleId?.trim() || (env.BIBLE_DEFAULT_BIBLE_ID ?? '').trim();
   if (!id) return { ok: false, status: 400, error: 'Missing bibleId and no default configured' };
@@ -336,7 +304,6 @@ export async function getFirstChapter(bibleId: string): Promise<ServiceResult<Ch
   return getChapterById(id, (firstId.data as any).chapterId);
 }
 
-// --- PUBLIC: list books for a bible (minimal payload) ---
 export async function listBooksForBible(bibleId?: string): Promise<ServiceResult<Array<{ id: string; name?: string; abbreviation?: string }>>> {
   const id = bibleId?.trim() || (env.BIBLE_DEFAULT_BIBLE_ID ?? '').trim();
   if (!id) return { ok: false, status: 400, error: 'Missing bibleId and no default configured' };
@@ -354,7 +321,6 @@ export async function listBooksForBible(bibleId?: string): Promise<ServiceResult
   return { ok: true, status: 200, data: items };
 }
 
-// --- PUBLIC: list chapters for a book (minimal payload) ---
 export async function listChaptersForBook(
   bibleId: string | undefined,
   bookId: string | undefined

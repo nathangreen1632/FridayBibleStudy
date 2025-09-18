@@ -21,7 +21,6 @@ export default function AdminPrayerSummaryCardLogic({ prayerId, className }: Pro
   const prayer = detailPrayers[prayerId];
 
   const data: AdminPrayerSummaryData = useMemo(() => {
-    // title fallback order: domain.title (trimmed) → row.title → "Untitled"
     let title = 'Untitled';
     const domainTitle = prayer?.title?.trim();
     if (domainTitle && domainTitle.length > 0) title = domainTitle;

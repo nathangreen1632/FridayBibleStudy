@@ -1,4 +1,3 @@
-// Client/src/pages/board/ArchivedBoardPageLogic.tsx
 import React from 'react';
 import ArchivedBoardPageView from '../../jsx/board/archivedBoardPageView.tsx';
 import { useBoardStore } from '../../stores/useBoardStore';
@@ -19,7 +18,6 @@ import type {
 } from '../../types/pages/board.types.ts';
 
 export default function ArchiveBoard(): React.ReactElement {
-  // board data/actions
   const fetchInitial = useBoardStore((s) => s.fetchInitial);
   const move = useBoardStore((s) => s.move);
   const byId = useBoardStore((s) => s.byId);
@@ -27,18 +25,14 @@ export default function ArchiveBoard(): React.ReactElement {
   const loading = useBoardStore((s) => s.loading);
   const error = useBoardStore((s) => s.error);
 
-  // auth
   const user = useAuthStore((s) => s.user);
 
-  // socket
   const joinGroup = useSocketStore((s) => s.joinGroup);
   const groupId = user?.groupId ?? 1;
 
-  // bootstrap & join
   useBoardBootstrap(fetchInitial);
   useJoinGroup(joinGroup, groupId);
 
-  // helpers
   const moveToPraise = useMoveToPraise();
   const onMove = useOnMove(
     move as (id: number, to: BoardColumnKey, idx: number) => Promise<boolean>
@@ -48,14 +42,13 @@ export default function ArchiveBoard(): React.ReactElement {
     groupId
   );
 
-  // archived-only (single column)
   const archivedIds = order.archived ?? [];
 
   const onMoveWithin: MoveWithinHandler = async (id, toIndex) => {
     try {
       await onMove(id, 'archived', toIndex);
     } catch {
-      // no-throw policy
+      console.error('Failed to move prayer to archived', id, toIndex);
     }
   };
 
@@ -67,9 +60,9 @@ export default function ArchiveBoard(): React.ReactElement {
       if (dock === 'dock-praise') {
         await moveToPraise(id);
       }
-      // dock-archive is a no-op (already here)
+
     } catch {
-      // no-throw policy
+
     }
   };
 

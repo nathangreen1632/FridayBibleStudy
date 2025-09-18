@@ -16,7 +16,6 @@ export function normalizeFromUser(user: User): FormValues {
       ? user.name
       : '';
 
-  // Casting for optional profile fields that may not exist on User shape
   const anyUser = user as any;
 
   return {

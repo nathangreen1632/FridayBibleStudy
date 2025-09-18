@@ -31,7 +31,7 @@ export interface Prayer {
   title: string;
   content: string;
   category: Category;
-  status: Status;        // 'active' | 'main' | 'archived'
+  status: Status;
   position: number;
   impersonatedByAdminId?: number | null;
   createdAt: string;

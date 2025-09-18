@@ -1,5 +1,3 @@
-// Client/src/types/register.types.ts
-
 export type RegisterFormState = {
   name: string;
   phone: string;

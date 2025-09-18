@@ -1,4 +1,3 @@
-// Client/src/jsx/registerPageView.tsx
 import React from 'react';
 import { pressBtn } from '../../../ui/press.ts';
 import type { RegisterFormState } from '../../types/pages/register.types.ts';
@@ -8,19 +7,14 @@ type Props = {
   loading: boolean;
   ready: boolean;
   error: string | null;
-
   showPw: boolean;
   showConfirm: boolean;
   passwordsMatch: boolean;
   showPwdStatus: boolean;
-
-  // handlers
   onChange: (next: Partial<RegisterFormState>) => void;
   onTogglePw: () => void;
   onToggleConfirm: () => void;
   onSubmit: (e: React.FormEvent) => void;
-
-  // phone formatter (kept in logic, but used here)
   formatPhone: (v: string) => string;
 };
 
@@ -57,7 +51,6 @@ export default function RegisterPageView({
           <p className="text-[var(--theme-text-white)] text-sm sm:text-md opacity-80">Join the Friday Bible Study community</p>
         </header>
 
-        {/* Name */}
         <label className="block text-xs sm:text-sm font-medium">
           <span className="text-[var(--theme-text-white)] text-sm sm:text-base mb-1 block">Name</span>
           <input
@@ -72,7 +65,6 @@ export default function RegisterPageView({
           />
         </label>
 
-        {/* Phone (strict format) */}
         <label className="block text-xs sm:text-sm font-medium">
           <span className="text-[var(--theme-text-white)] text-sm sm:text-base mb-1 block">Phone</span>
           <input
@@ -81,7 +73,7 @@ export default function RegisterPageView({
             inputMode="numeric"
             name="tel"
             autoComplete="tel"
-            maxLength={12} // 3+1+3+1+4
+            maxLength={12}
             placeholder="555-123-4567"
             value={form.phone}
             onChange={(e) => onChange({ phone: formatPhone(e.target.value) })}
@@ -92,7 +84,6 @@ export default function RegisterPageView({
           />
         </label>
 
-        {/* Email */}
         <label className="block text-xs sm:text-sm font-medium">
           <span className="text-[var(--theme-text-white)] text-sm sm:text-base mb-1 block">Email</span>
           <input
@@ -108,7 +99,6 @@ export default function RegisterPageView({
           />
         </label>
 
-        {/* Password */}
         <label className="block text-xs sm:text-sm font-medium">
           <span className="text-[var(--theme-text-white)] text-sm sm:text-base mb-1 block">Password</span>
           <div className="relative">
@@ -134,7 +124,6 @@ export default function RegisterPageView({
           </div>
         </label>
 
-        {/* Confirm Password */}
         <label className="block text-xs sm:text-sm font-medium">
           <span className="text-[var(--theme-text-white)] text-sm sm:text-base mb-1 block">Confirm Password</span>
           <div className="relative">

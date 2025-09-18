@@ -1,4 +1,3 @@
-// Client/src/components/board/SortableCard.board.tsx
 import React, { useMemo } from 'react';
 import { useSortable } from '@dnd-kit/sortable';
 import { CSS } from '@dnd-kit/utilities';

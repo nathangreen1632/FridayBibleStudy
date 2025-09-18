@@ -6,7 +6,6 @@ export async function getAdminRoster(req: Request, res: Response): Promise<void>
   const page = typeof req.query.page === 'string' ? Number(req.query.page) : undefined;
   const pageSize = typeof req.query.pageSize === 'string' ? Number(req.query.pageSize) : undefined;
 
-  // ✅ NEW: parse sort params (leave validation to service)
   let sortBy: string | undefined;
   if (typeof req.query.sortBy === 'string') {
     sortBy = req.query.sortBy;
@@ -50,7 +49,6 @@ export async function patchAdminRosterUser(req: Request, res: Response): Promise
     emailPaused: req.body?.emailPaused as boolean | undefined,
   };
 
-  // …then drop any that are undefined so we don't null-out required fields.
   const clean: Record<string, unknown> = {};
   for (const [k, v] of Object.entries(allowed)) {
     if (v !== undefined) clean[k] = v;

@@ -1,4 +1,3 @@
-// Client/src/common/ConfirmBar.tsx
 import React from 'react';
 import {pressBtn} from "../../ui/press.ts";
 

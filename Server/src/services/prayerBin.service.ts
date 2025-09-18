@@ -1,14 +1,7 @@
-// Server/src/services/prayerBin.service.ts
 import { Prayer } from '../models/index.js';
 
 type EnsureBinResult = { ok: boolean; prayerId?: number; message?: string };
 
-/**
- * Ensure a per-group "[System] Media Bin" prayer.
- * - Satisfies NOT NULL columns dynamically (e.g., content)
- * - Sets enum defaults (category/status) if columns exist
- * - Only touches columns that exist on the model
- */
 export async function ensureMediaBinPrayer(
   groupId: number,
   authorUserId: number
@@ -16,24 +9,20 @@ export async function ensureMediaBinPrayer(
   try {
     const title = 'Admin Media Bin';
 
-    // 1) Reuse if it already exists for this group
     const existing = await Prayer.findOne({ where: { groupId, title } });
     if (existing?.id) return { ok: true, prayerId: existing.id };
 
-    // 2) Create new — schema aware
     const attrs: Record<string, any> =
       (Prayer as unknown as { rawAttributes?: Record<string, any> }).rawAttributes ?? {};
 
     const payload: Record<string, unknown> = {
       title,
       groupId,
-      authorUserId, // matches your ERD
+      authorUserId,
     };
 
-    // helper: does the column exist on the model?
     const hasCol = (key: string) => Object.hasOwn(attrs, key);
 
-    // Helper: set enum safely if present
     const setEnum = (key: string, prefer: string, fallback: string) => {
       if (!hasCol(key)) return;
       const a = (attrs as any)[key];
@@ -44,24 +33,18 @@ export async function ensureMediaBinPrayer(
       }
     };
 
-    // Your ERD shows enums: category, status
     setEnum('category', 'prayer', 'prayer');
     setEnum('status', 'active', 'active');
 
-    // Satisfy NOT NULL fields dynamically
-    // content (TEXT) is NOT NULL in your runtime model
     if (hasCol('content')) {
-      // If allowNull === false, set a default content string
       const a = (attrs as any).content;
       if (a?.allowNull === false) {
         payload.content = 'Auto-created media bucket for admin uploads.';
       } else if (payload.content === undefined) {
-        // Set anyway to be safe
         payload.content = 'Media bin';
       }
     }
 
-    // Common columns seen in your ERD — set safe defaults only if they exist
     const setBool = (key: string, val: boolean) => {
       if (hasCol(key)) payload[key] = val;
     };
@@ -76,14 +59,12 @@ export async function ensureMediaBinPrayer(
     setInt('position', 0);
     setInt('commentCount', 0);
     setDateNow('lastCommentAt');
-    // If your model has 'impersonatedByAdminId', leave it unset (NULL)
 
     const created = await Prayer.create(payload as any);
     if (created?.id) return { ok: true, prayerId: created.id };
 
     return { ok: false, message: 'Create returned no id' };
   } catch (err) {
-    // eslint-disable-next-line no-console
     console.error('[ensureMediaBinPrayer] error:', err);
     return { ok: false, message: 'Exception creating Media Bin' };
   }

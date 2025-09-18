@@ -1,4 +1,3 @@
-// Server/src/services/recaptcha.service.ts
 import { GoogleAuth, AnyAuthClient } from 'google-auth-library';
 import fs from 'fs/promises';
 import path from 'path';
@@ -26,29 +25,18 @@ export type RecaptchaVerificationResult = {
   isScoreAcceptable: boolean;
 };
 
-/** New: call signature for the service */
 export type VerifyRecaptchaOptions = {
   token: string;
   expectedAction: string;
-  ip?: string;         // optional: forwarded to Google
-  userAgent?: string;  // optional: forwarded to Google
+  ip?: string;
+  userAgent?: string;
 };
 
 const IS_PROD = env.NODE_ENV === 'production';
 const MIN_SCORE = env.RECAPTCHA_MIN_SCORE;
 
-// -----------------------------------------------------------------------------
-// Service Account preparation
-// -----------------------------------------------------------------------------
-
 const DEFAULT_KEY_PATH = path.resolve(process.cwd(), 'Server/.runtime/keys/gcp-sa.json');
 
-/**
- * Ensure the service-account JSON exists at the target path.
- * - If the file already exists: return its path.
- * - If GOOGLE_CREDENTIALS_B64 is present: mkdir -p, write the file (0600), return its path.
- * - Otherwise: log once and return null (graceful disable).
- */
 async function ensureServiceAccountFile(): Promise<string | null> {
   try {
     const target = env.SERVICE_ACCOUNT_KEY_PATH && env.SERVICE_ACCOUNT_KEY_PATH.trim().length > 0
@@ -57,12 +45,11 @@ async function ensureServiceAccountFile(): Promise<string | null> {
 
     const dir = path.dirname(target);
 
-    // If it exists, we're done.
     try {
       await fs.readFile(target);
       return target;
     } catch {
-      // continue to try writing from B64
+
     }
 
     const b64 = env.GOOGLE_CREDENTIALS_B64;
@@ -86,7 +73,6 @@ async function ensureServiceAccountFile(): Promise<string | null> {
   }
 }
 
-// Quick visibility at startup (after attempting to ensure the file exists)
 (async () => {
   try {
     const keyPath = await ensureServiceAccountFile();
@@ -105,14 +91,6 @@ async function ensureServiceAccountFile(): Promise<string | null> {
   }
 })();
 
-// -----------------------------------------------------------------------------
-// Verification
-// -----------------------------------------------------------------------------
-
-/**
- * Verify a reCAPTCHA Enterprise token against Google.
- * Accepts an options object so callers can pass ip/userAgent without breaking.
- */
 export async function verifyRecaptchaToken(
   opts: VerifyRecaptchaOptions
 ): Promise<RecaptchaVerificationResult> {
@@ -133,10 +111,8 @@ export async function verifyRecaptchaToken(
   if (!env.RECAPTCHA_SITE_KEY) return defaultResult;
   if (!env.RECAPTCHA_PROJECT_ID) return defaultResult;
 
-  // Ensure the service account key exists (mkdir -p + write from B64 if necessary)
   const keyPath = await ensureServiceAccountFile();
   if (!keyPath) {
-    // Graceful disable when creds aren’t available
     return defaultResult;
   }
 
@@ -157,7 +133,6 @@ export async function verifyRecaptchaToken(
 
     const apiUrl = `https://recaptchaenterprise.googleapis.com/v1/projects/${env.RECAPTCHA_PROJECT_ID}/assessments`;
 
-    // Build the event payload; include ip / UA only when present
     const event: Record<string, unknown> = {
       token,
       siteKey: env.RECAPTCHA_SITE_KEY,
@@ -177,7 +152,6 @@ export async function verifyRecaptchaToken(
 
     const res = await fetch(apiUrl, init);
 
-    // Explicit HTTP error logging
     if (!res.ok) {
       const body = await res.text().catch(() => '');
       console.error('❌ reCAPTCHA HTTP error', res.status, body);

@@ -22,7 +22,6 @@ type Props = Readonly<{
   onRemove: (id: number) => Promise<void>;
 }>;
 
-/** Capture pointer/mouse on a wrapper element to block DnD start without adding onMouseDown props. */
 function StopDragGroup(props: Readonly<{
   label: string;
   className?: string;
@@ -124,7 +123,6 @@ function CommentItem(props: Readonly<{
   const [edit, setEdit] = React.useState(false);
   const [text, setText] = React.useState(c.content);
 
-  // No nested ternaries
   let displayAuthor = 'Someone';
   if (c.authorName) {
     displayAuthor = c.authorName;
@@ -162,7 +160,11 @@ function CommentItem(props: Readonly<{
               onClick={async () => {
                 setEdit(false);
                 if (text.trim()) {
-                  try { await props.update(c.id, text.trim()); } catch { /* ignore */ }
+                  try { await props.update(c.id, text.trim());
+
+                  } catch {
+
+                  }
                 }
               }}
             >
@@ -185,7 +187,11 @@ function CommentItem(props: Readonly<{
           <button
             className="text-xs underline cursor-pointer"
             onClick={async () => {
-              try { await props.remove(c.id); } catch { /* ignore */ }
+              try { await props.remove(c.id);
+
+              } catch {
+
+              }
             }}
           >
             Delete

@@ -11,7 +11,7 @@ function emitFallback(patch: AdminFiltersPatch): void {
   try {
     window.dispatchEvent(new CustomEvent(FALLBACK_EVT, { detail: patch }));
   } catch {
-    // noop — best-effort fallback
+
   }
 }
 
@@ -19,14 +19,12 @@ export default function AdminFiltersLogic(): React.ReactElement {
   const ui = useAdminUiStore();
   const { socket, joinGroup, leaveGroup } = useSocketStore();
 
-  // Join once per numeric groupId; safe default 1
   useEffect(() => {
     const gid = typeof ui.groupId === 'number' ? ui.groupId : 1;
     try { joinGroup(gid); } catch {}
     return () => { try { leaveGroup(gid); } catch {} };
   }, [ui.groupId]);
 
-  // Re-join on socket reconnect (idempotent)
   useEffect(() => {
     if (!socket) return;
     const onConnect = () => {
@@ -37,7 +35,6 @@ export default function AdminFiltersLogic(): React.ReactElement {
     return () => { try { socket.off?.('connect', onConnect); } catch {} };
   }, [socket, ui.groupId, joinGroup]);
 
-  // ---- search box (debounced) ----
   const [qInput, setQInput] = useState(ui.q ?? '');
   const debounceRef = useRef<number | null>(null);
 
@@ -72,9 +69,8 @@ export default function AdminFiltersLogic(): React.ReactElement {
         debounceRef.current = null;
       }
     };
-  }, [qInput, ui]); // intentionally exclude socket to keep timer stable
+  }, [qInput, ui]);
 
-  // ---- actions passed to view ----
   function clearSearch(): void {
     setQInput('');
     const patch: AdminFiltersPatch = { q: '', page: 1 };

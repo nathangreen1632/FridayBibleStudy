@@ -10,15 +10,17 @@ export default function ModalLogic({
                                      children,
                                      footer,
                                    }: ModalProps): React.ReactElement | null {
-  // Lock body scroll when open (consistent with other modals)
   useScrollLock(open);
 
-  // ESC to request close (parent decides)
   useEffect(() => {
     if (!open) return;
     const onKey = (e: KeyboardEvent) => {
       if (e.key === 'Escape') {
-        try { onRequestClose?.(); } catch { /* graceful, no-throw */ }
+        try { onRequestClose?.();
+
+        } catch {
+
+        }
       }
     };
     document.addEventListener('keydown', onKey);

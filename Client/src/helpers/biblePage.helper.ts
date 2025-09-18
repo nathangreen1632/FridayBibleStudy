@@ -1,4 +1,3 @@
-// Client/src/helpers/biblePage.util.ts
 import type { BibleMeta, PassageItem } from '../types/domain/bible.types.ts';
 
 export const LS_KEY = 'biblePageState:v1';
@@ -8,7 +7,7 @@ export function saveState(partial: Record<string, unknown>): void {
     const prev = JSON.parse(localStorage.getItem(LS_KEY) || '{}');
     localStorage.setItem(LS_KEY, JSON.stringify({ ...prev, ...partial }));
   } catch {
-    // ignore
+
   }
 }
 

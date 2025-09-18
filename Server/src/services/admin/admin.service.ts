@@ -14,7 +14,6 @@ import {
   bestEffortNotify,
 } from '../../helpers/commentsController.helper.js';
 
-// add near the top of the file, after the imports
 type PlainPrayerRow = {
   id: number;
   groupId: number;
@@ -29,7 +28,6 @@ type PlainPrayerRow = {
   updatedAt: Date | string;
   lastActivity?: Date | string | null;
 };
-
 
 export type ListPrayersParams = {
   q?: string;
@@ -62,7 +60,6 @@ export async function findPrayersForAdmin(params: ListPrayersParams) {
     const { rows, count } = await Prayer.findAndCountAll({
       where,
       attributes: {
-        // COALESCE("Prayer"."lastCommentAt","Prayer"."updatedAt") AS "lastActivity"
         include: [[fn('COALESCE', col('Prayer.lastCommentAt'), col('Prayer.updatedAt')), 'lastActivity']],
       },
       include: [
@@ -96,12 +93,11 @@ export async function findPrayersForAdmin(params: ListPrayersParams) {
 
     return { items, total: count, page, pageSize };
   } catch {
-    // graceful fallback
+
     return { items: [], total: 0, page, pageSize };
   }
 }
 
-/** Root-level comments for an admin thread view (no deleted, newest first). */
 export async function getPrayerComments(prayerId: number) {
   try {
     return await Comment.findAll({
@@ -114,7 +110,6 @@ export async function getPrayerComments(prayerId: number) {
   }
 }
 
-/** Post an admin-authored root comment with full side-effects. */
 export async function insertAdminComment(
   prayerId: number,
   adminId: number,
@@ -127,7 +122,6 @@ export async function insertAdminComment(
     const prayer = await getOpenPrayer(prayerId);
     if (!prayer) return { ok: false, error: 'Prayer not found or comments closed' };
 
-    // admin adds a ROOT update (depth 0)
     const { depth, threadRootId, parentResolvedId } = await resolveThreadInfo(null);
 
     const inserted = await insertComment({
@@ -145,7 +139,6 @@ export async function insertAdminComment(
     const authorMap = await buildAuthorMapFor(adminId);
     const payloadComment = mapComment(inserted, authorMap);
 
-    // emit to group: comment:created + prayer:commentCount
     emitCreationEvents({
       groupId: (prayer as any).groupId,
       pid: prayerId,
@@ -154,20 +147,17 @@ export async function insertAdminComment(
       latestAt: latestAt ?? new Date(),
     });
 
-    // bump card & emit UpdateCreated / PrayerUpdated
     await bumpCardIfRoot(prayer, inserted);
 
-    // best-effort email notify original author + admins
     await bestEffortNotify(prayer, content);
 
     return { ok: true, comment: payloadComment, newCount, lastCommentAt: latestAt ?? null };
   } catch {
-    // graceful fallback
+
     return { ok: false, error: 'Unable to create comment' };
   }
 }
 
-/** Update prayer status (active/praise/archived) with graceful checks. */
 export async function updatePrayerStatus(prayerId: number, status: Status) {
   try {
     const p = await Prayer.findByPk(prayerId);
@@ -186,7 +176,6 @@ export async function findPrayerByIdForAdmin(id: number) {
   try {
     return await Prayer.findByPk(id, {
       attributes: {
-        // expose a stable "lastActivity" like the list does
         include: [[fn('COALESCE', col('Prayer.lastCommentAt'), col('Prayer.updatedAt')), 'lastActivity']],
       },
       include: [
@@ -195,6 +184,6 @@ export async function findPrayerByIdForAdmin(id: number) {
       ],
     });
   } catch {
-    return null; // graceful fallback; controller returns 500 on unexpected errors
+    return null;
   }
 }

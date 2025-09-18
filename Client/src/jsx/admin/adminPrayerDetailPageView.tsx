@@ -1,4 +1,3 @@
-// Client/src/jsx/admin/adminPrayerDetailPageView.tsx
 import React from 'react';
 import { Trash2 } from 'lucide-react';
 import ConfirmBar from '../../common/ConfirmBar';
@@ -34,15 +33,14 @@ export default function AdminPrayerDetailPageView({
   const handleStatusChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
     const v = e.target.value;
     if (isStatus(v)) {
-      onChangeStatus(v);            // fully typed as Status
+      onChangeStatus(v);
     } else {
-      onChangeStatus(localStatus);  // graceful fallback: keep current
+      onChangeStatus(localStatus);
     }
   };
 
   return (
     <div className="space-y-4">
-      {/* Back button row */}
       <div>
         <button
           type="button"
@@ -55,7 +53,6 @@ export default function AdminPrayerDetailPageView({
         </button>
       </div>
 
-      {/* Status + destructive controls */}
       <div className="bg-[var(--theme-surface)] border border-[var(--theme-border)] rounded-xl p-3">
         <div className="flex flex-col sm:flex-row gap-3 sm:items-end">
           <div>
@@ -111,7 +108,6 @@ export default function AdminPrayerDetailPageView({
         )}
       </div>
 
-      {/* Add Admin Update */}
       <div className="bg-[var(--theme-surface)] border border-[var(--theme-border)] rounded-xl p-3">
         <h3 className="font-semibold mb-2">Add Admin Update</h3>
 
@@ -138,7 +134,6 @@ export default function AdminPrayerDetailPageView({
         </div>
       </div>
 
-      {/* Updates list with ADMIN-ONLY delete per update */}
       <div className="bg-[var(--theme-surface)] border border-[var(--theme-border)] rounded-xl">
         <div className="p-3 font-semibold">Updates</div>
         <ul className="divide-y divide-[var(--theme-border)]">

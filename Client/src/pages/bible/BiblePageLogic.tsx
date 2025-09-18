@@ -1,4 +1,3 @@
-// Client/src/pages/BiblePageLogic.tsx
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import toast from 'react-hot-toast';
 import {
@@ -23,7 +22,6 @@ export default function BiblePage(): React.ReactElement {
   const [bibles, setBibles] = useState<BibleMeta[]>([]);
   const [loading, setLoading] = useState(false);
 
-  // Restore persisted state (lazy init)
   const initial =
     readState<{ bibleId?: string; bookId?: string; chapterId?: string; reference?: string }>() || {};
 
@@ -32,25 +30,20 @@ export default function BiblePage(): React.ReactElement {
   const [html, setHtml] = useState<string>('');
   const [refText, setRefText] = useState<string>('');
 
-  // chapter mode state
   const [chapterId, setChapterId] = useState<string>(initial.chapterId ?? '');
   const [prevId, setPrevId] = useState<string | undefined>();
   const [nextId, setNextId] = useState<string | undefined>();
 
-  // books dropdown state
   const [books, setBooks] = useState<BookMeta[]>([]);
   const [bookId, setBookId] = useState<string>(initial.bookId ?? '');
 
-  // track previous bibleId so we only clear book when version actually changes
   const prevBibleId = useRef<string>(bibleId);
 
-  // Persist selections
   useEffect(() => { saveState({ bibleId }); }, [bibleId]);
   useEffect(() => { saveState({ bookId }); }, [bookId]);
   useEffect(() => { saveState({ chapterId }); }, [chapterId]);
   useEffect(() => { saveState({ reference }); }, [reference]);
 
-  // Load versions once
   useEffect(() => {
     let cancelled = false;
     (async () => {
@@ -77,10 +70,8 @@ export default function BiblePage(): React.ReactElement {
     return () => {
       cancelled = true;
     };
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  // Clear everything if the version is cleared
   useEffect(() => {
     if (bibleId) return;
     setBooks([]);
@@ -92,7 +83,6 @@ export default function BiblePage(): React.ReactElement {
     setNextId(undefined);
   }, [bibleId]);
 
-  /* ================== loadChapter ================== */
   const loadChapter = useCallback(
     async (targetId?: string) => {
       if (!targetId || !bibleId) return;
@@ -127,7 +117,6 @@ export default function BiblePage(): React.ReactElement {
     [bibleId, reference]
   );
 
-  /* ================== Helpers that depend on loadChapter ================== */
   const applyChapterPayload = useCallback(
     (
       item:
@@ -183,13 +172,12 @@ export default function BiblePage(): React.ReactElement {
         toast.error('No chapters in selected book');
         return;
       }
-      // loadChapter manages loading state for direct chapter loads
+
       await loadChapter(first);
     },
     [loadChapter]
   );
 
-  // When the book selection changes:
   useEffect(() => {
     if (!bibleId || reference.trim()) return;
 
@@ -216,7 +204,6 @@ export default function BiblePage(): React.ReactElement {
     };
   }, [bookId, bibleId, reference, loadVersionFirstChapter, jumpToFirstChapterOfBook]);
 
-  // Load books for the selected version (don’t clear bookId here)
   useEffect(() => {
     let cancelled = false;
 
@@ -227,7 +214,6 @@ export default function BiblePage(): React.ReactElement {
       }
       if (reference.trim()) return;
 
-      // If version actually changed, clear previously selected book
       if (prevBibleId.current !== bibleId) {
         setBookId('');
         prevBibleId.current = bibleId;
@@ -237,7 +223,7 @@ export default function BiblePage(): React.ReactElement {
       if (!result.ok) {
         if (!cancelled) {
           toast.error(result.error ?? `Books request failed (${result.status})`);
-          setBooks([]); // reset dropdown clearly on failure
+          setBooks([]);
         }
         return;
       }
@@ -245,7 +231,6 @@ export default function BiblePage(): React.ReactElement {
       const arr: BookMeta[] = Array.isArray(result.data) ? result.data : [];
       if (!cancelled) setBooks(arr);
 
-      // Validate restored selection; if not in list, clear
       if (bookId && !arr.some((b) => b.id === bookId)) setBookId('');
     }
 
@@ -255,7 +240,7 @@ export default function BiblePage(): React.ReactElement {
     return () => {
       cancelled = true;
     };
-    // eslint-disable-next-line react-hooks/exhaustive-deps
+
   }, [bibleId, reference]);
 
   async function onSearch(e: React.FormEvent) {
@@ -301,7 +286,6 @@ export default function BiblePage(): React.ReactElement {
     [bibles]
   );
 
-  // ---- placeholders (no ternaries in the view) ----
   let versionPlaceholder = 'Loading versions…';
   if (bibles.length > 0) versionPlaceholder = 'Choose a version…';
 

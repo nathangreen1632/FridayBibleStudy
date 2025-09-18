@@ -1,20 +1,13 @@
 import React from 'react';
 
 type Props = {
-  // search
   qInput: string;
   setQInput: (v: string) => void;
   clearSearch: () => void;
-
-  // selects (controlled by parent)
-  categoryValue: string; // '' | category
-  statusValue: string;   // '' | status
-
-  // handlers
+  categoryValue: string;
+  statusValue: string;
   onCategoryChange: (raw: string) => void;
   onStatusChange: (raw: string) => void;
-
-  // options
   CATEGORY_OPTIONS: readonly string[];
   STATUS_OPTIONS: readonly string[];
 };

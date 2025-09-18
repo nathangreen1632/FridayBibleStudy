@@ -1,4 +1,3 @@
-// Client/src/pages/contact/ContactPageWrapper.tsx
 import React from 'react';
 import { useLocation } from 'react-router-dom';
 import ContactFormLogic from './ContactFormLogic.tsx';

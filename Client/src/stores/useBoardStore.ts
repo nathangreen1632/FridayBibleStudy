@@ -1,4 +1,3 @@
-// Client/src/stores/useBoardStore.ts
 import { create } from 'zustand';
 import { api } from '../helpers/http.helper';
 import { apiWithRecaptcha } from '../helpers/secure-api.helper';
@@ -58,8 +57,6 @@ type BoardState = {
   bumpToTop: (id: number) => void;
   setSort: (s: BoardState['sort']) => void;
   setQuery: (q: string) => void;
-
-  // NEW: local remove for socket delete events
   removePrayer: (id: number) => void;
 };
 
@@ -159,7 +156,6 @@ export const useBoardStore = create<BoardState>((set, get) => ({
     }
   },
 
-  // ---- Socket-driven optimistic patches (LOCAL ONLY) ----
   upsertPrayer: (p) => {
     try {
       set((state) => {
@@ -168,7 +164,6 @@ export const useBoardStore = create<BoardState>((set, get) => ({
         const merged: Item = { ...(prev ?? ({} as Item)), ...p };
         byId.set(p.id, merged);
 
-        // If it’s praise, remove from both board columns
         if (merged.status === 'praise') {
           const active = state.order.active.filter((x) => x !== p.id);
           const archived = state.order.archived.filter((x) => x !== p.id);
@@ -180,19 +175,17 @@ export const useBoardStore = create<BoardState>((set, get) => ({
         if (merged.status === 'active') {
           order.archived = order.archived.filter((x) => x !== p.id);
           if (!order.active.includes(p.id)) order.active = [p.id, ...order.active];
-          // Always re-sort the affected column by numeric position (even when only position changed)
           order.active = rebuildColumn(byId, order.active, 'active');
         } else if (merged.status === 'archived') {
           order.active = order.active.filter((x) => x !== p.id);
           if (!order.archived.includes(p.id)) order.archived = [p.id, ...order.archived];
-          // Always re-sort the affected column by numeric position (even when only position changed)
           order.archived = rebuildColumn(byId, order.archived, 'archived');
         }
 
         return { byId, order, error: null };
       });
     } catch {
-      // Ignore socket patch errors to avoid UI crashes
+
     }
   },
 
@@ -216,8 +209,6 @@ export const useBoardStore = create<BoardState>((set, get) => ({
           archived = [id, ...archived];
           archived = rebuildColumn(byId, archived, 'archived');
         } else if (to === 'praise') {
-          // remove from both
-          // (this is defensive; your upsertPrayer handles praise too)
           active = active.filter((x) => x !== id);
           archived = archived.filter((x) => x !== id);
         }
@@ -225,11 +216,10 @@ export const useBoardStore = create<BoardState>((set, get) => ({
         return { byId, order: { active, archived }, error: null };
       });
     } catch {
-      // Ignore socket patch errors
+
     }
   },
 
-  // NEW: instant visual bump to the top of the card’s current board (no network)
   bumpToTop: (id) => {
     const { byId, order } = get();
     const item = byId.get(id);
@@ -244,14 +234,13 @@ export const useBoardStore = create<BoardState>((set, get) => ({
       const filtered = next.archived.filter((x) => x !== id);
       next.archived = [id, ...filtered];
     } else {
-      // status 'praise' is handled by the Praises store
+
       return;
     }
 
     set({ order: next });
   },
 
-  // NEW: local remove (used by socket delete event)
   removePrayer: (id) => {
     try {
       set((state) => {
@@ -262,7 +251,7 @@ export const useBoardStore = create<BoardState>((set, get) => ({
         return { byId, order: { active, archived } };
       });
     } catch {
-      // best-effort; never crash
+
     }
   },
 }));

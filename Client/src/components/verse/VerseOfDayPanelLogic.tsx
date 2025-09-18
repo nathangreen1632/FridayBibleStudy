@@ -17,8 +17,6 @@ export default function VerseOfDayPanelLogic(): React.ReactElement {
       try {
         const res = await fetchVerseOfDay(user?.preferredBibleId ?? undefined);
 
-        // Support both: helper returns Response OR already-parsed JSON
-        // @ts-ignore runtime guard only
         const body = typeof res?.json === 'function' ? await res.json() : res;
 
         const picked = pickPassage(body);
@@ -39,7 +37,6 @@ export default function VerseOfDayPanelLogic(): React.ReactElement {
       }
     }
 
-    // ✅ Avoid “uncaught promise” / no-floating-promises
     void load();
 
     return () => { cancelled = true; };

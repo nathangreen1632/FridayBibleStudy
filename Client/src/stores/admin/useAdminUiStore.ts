@@ -1,4 +1,3 @@
-// Client/src/stores/admin/useAdminUiStore.ts
 import { create } from 'zustand';
 
 type AdminUiState = {

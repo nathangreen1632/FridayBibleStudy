@@ -1,4 +1,3 @@
-// Server/src/services/resend.service.ts
 import { env } from '../config/env.config.js';
 import {
   type Category as PrayerCategory,
@@ -20,8 +19,6 @@ type SendEmailArgs = {
 
 type SendResult = { ok: true } | { ok: false; error: string };
 
-// ---- address helpers (graceful fallbacks) ----
-
 const ADDR = {
   defaultFrom: 'no-reply@fridaybiblestudy.org',
   fromPrayers: 'prayers@fridaybiblestudy.org',
@@ -36,16 +33,13 @@ const GROUP_EMAIL = env.GROUP_EMAIL || ADDR.group;
 const ADMIN_EMAIL = env.ADMIN_EMAIL || ADDR.admin;
 const AUDIT_CC = env.AUDIT_CC || ADDR.auditCc;
 
-// choose a category-specific FROM
 function fromForCategory(cat: PrayerCategory): string {
   if (cat === 'praise' || cat === 'birth') return ADDR.fromPraises;
   return ADDR.fromPrayers; // prayer | long-term | salvation | pregnancy
 }
 
-// ---- low-level sender (no templates here) ----
 export async function sendEmailViaResend(args: SendEmailArgs): Promise<SendResult> {
   try {
-    // Flatten nested ternaries for clarity
     let cc: string[] | undefined;
     if (args.cc) {
       cc = Array.isArray(args.cc) ? args.cc : [args.cc];
@@ -89,10 +83,6 @@ export async function sendEmailViaResend(args: SendEmailArgs): Promise<SendResul
   }
 }
 
-
-// ---- high-level helpers (compose addresses + call templates) ----
-
-/** Notify the group when a category item is created (CC audit). */
 export async function notifyGroupOnCategoryCreate(opts: {
   category: PrayerCategory;
   title: string;
@@ -113,7 +103,6 @@ export async function notifyGroupOnCategoryCreate(opts: {
   });
 }
 
-/** Notify the admin when any category item is created (CC audit). */
 export async function notifyAdminOnCategoryCreate(opts: {
   category: PrayerCategory;
   title: string;
@@ -132,7 +121,6 @@ export async function notifyAdminOnCategoryCreate(opts: {
   });
 }
 
-/** Contact form → admin, reply-to end user, CC audit. */
 export async function notifyAdminOnContact(opts: {
   name: string;
   email: string;

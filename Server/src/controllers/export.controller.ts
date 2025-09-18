@@ -1,11 +1,9 @@
-// Server/src/controllers/export.controller.ts
 import type { Request, Response } from 'express';
 import { Prayer, Attachment, Group, User } from '../models/index.js';
 import { buildPrayersPdf } from '../services/pdf.service.js';
 import { sendEmail } from '../services/email.service.js';
 
 export async function exportFilteredToGroup(req: Request, res: Response): Promise<void> {
-  // Use same filters as list
   const status = req.query.status as string | undefined;
   const category = req.query.category as string | undefined;
 

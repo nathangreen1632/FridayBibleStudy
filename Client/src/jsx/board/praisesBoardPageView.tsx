@@ -1,4 +1,3 @@
-// Client/src/jsx/praisesBoardPageView.tsx
 import React, { useCallback } from 'react';
 import SingleBoard from '../../components/board/containers/SingleColumnBoard.tsx';
 import PrayerCardWithComments from '../../components/board/cards/PrayerCardWithCommentsLogic.tsx';
@@ -18,7 +17,6 @@ type PraiseCardProps = {
   groupId: number | null;
 };
 
-/** Small wrapper: safe place to call item-scoped hooks */
 function PraiseCardFromStore({
                                id,
                                groupId,
@@ -41,8 +39,6 @@ function PraiseCardFromStore({
         try {
           await moveToStatus(prayerId, to); // persist; sockets reconcile
         } catch {
-          // keep UI resilient; notify user
-          // eslint-disable-next-line no-console
           console.error('Failed to move prayer to status', to);
           toast.error('Failed to move prayer to status');
         }
@@ -81,19 +77,20 @@ export default function PraisesBoardPageView({
         onMoveWithin={async (id, toIndex) => {
           try {
             await onMoveWithin(id, toIndex);
+
           } catch {
-            // swallow; upstream guards
+
           }
         }}
         onDockDrop={async (dock, id) => {
           try {
             await onDockDrop(dock, id);
+
           } catch {
-            // swallow; upstream guards
+
           }
         }}
       />
-      {/* Dock is rendered inside SingleBoard's DndContext */}
     </main>
   );
 }

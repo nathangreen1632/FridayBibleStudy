@@ -1,4 +1,3 @@
-// Client/src/pages/LoginPageLogic.tsx
 import React, { useEffect, useMemo, useState } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import { toast } from 'react-hot-toast';
@@ -9,7 +8,6 @@ import type { FromState } from '../../types/api/auth.types.ts';
 
 const SITE_KEY = import.meta.env.VITE_RECAPTCHA_SITE_KEY as string | undefined;
 
-// centralize landing decision
 function landingPathForRole(role?: string): string {
   if (role === 'admin') return '/admin';
   return '/portal';
@@ -77,7 +75,6 @@ export default function LoginPageLogic(): React.ReactElement {
       const role = useAuthStore.getState().user?.role;
       const defaultDest = landingPathForRole(role);
 
-      // normalize "from" state
       const state = loc.state as FromState;
       const rawFrom = state?.from;
       let fromPath = '/';

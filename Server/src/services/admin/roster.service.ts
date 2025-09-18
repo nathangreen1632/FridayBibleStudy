@@ -1,4 +1,3 @@
-// Client/src/services/admin/roster.service.ts
 import { Op } from 'sequelize';
 import { User } from '../../models/index.js';
 
@@ -12,8 +11,6 @@ export type RosterRow = {
   addressState: string | null;
   addressZip: string | null;
   spouseName: string | null;
-
-  /** NEW: soft-unsubscribe flag */
   emailPaused: boolean;
 };
 
@@ -69,7 +66,6 @@ export async function listRoster(opts: {
         'addressState',
         'addressZip',
         'spouseName',
-        /** NEW */
         'emailPaused',
       ],
       order: [[sortCol, sortDir]],
@@ -87,7 +83,6 @@ export async function listRoster(opts: {
       addressState: r.addressState ?? null,
       addressZip: r.addressZip ?? null,
       spouseName: r.spouseName ?? null,
-      /** NEW: read via Sequelize getter; no assertion needed */
       emailPaused: Boolean(r.get('emailPaused')),
     }));
 
@@ -112,7 +107,6 @@ type RosterUpdate = Partial<
   >
 >;
 
-/** PATCH user fields (admin) with trimming/nulling and simple email uniqueness check */
 export async function updateRosterUser(
   userId: number,
   payload: RosterUpdate
@@ -121,7 +115,6 @@ export async function updateRosterUser(
     const user = await User.findByPk(userId);
     if (!user) return { ok: false, error: 'User not found.' };
 
-    // safer normalizer: no object stringification
     function norm(v: unknown): string | null {
       if (v == null) return null;
       if (typeof v === 'string') {
@@ -129,7 +122,7 @@ export async function updateRosterUser(
         return s === '' ? null : s;
       }
       if (typeof v === 'number' && Number.isFinite(v)) return String(v);
-      return null; // don't stringify objects/booleans
+      return null;
     }
 
     const next: Record<string, unknown> = {};
@@ -168,7 +161,6 @@ export async function updateRosterUser(
       addressState: user.addressState ?? null,
       addressZip: user.addressZip ?? null,
       spouseName: user.spouseName ?? null,
-      // use getter here too
       emailPaused: Boolean(user.get('emailPaused')),
     };
     return { ok: true, row };
@@ -177,7 +169,6 @@ export async function updateRosterUser(
   }
 }
 
-/** DELETE user (admin). If FK constraints prevent it, return a friendly error. */
 export async function deleteRosterUser(userId: number): Promise<{ ok: boolean; error?: string }> {
   try {
     const n = await User.destroy({ where: { id: userId } });

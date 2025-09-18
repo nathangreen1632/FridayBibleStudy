@@ -1,4 +1,3 @@
-// Client/src/jsx/prayersBoardPageView.tsx
 import React from 'react';
 import SingleBoard from '../../components/board/containers/SingleColumnBoard.tsx';
 import VerseOfDayPanel from '../../components/verse/VerseOfDayPanelLogic.tsx';
@@ -34,7 +33,6 @@ export default function PrayersBoardPageView({
       data-active-count={activeIds.length}
       data-loading={loading || undefined}
     >
-      {/* Left rail (fixed ≥1440px) */}
       <VerseOfDayPanel />
 
       {loading && <div className="text-sm opacity-70 mb-3">Loading…</div>}
@@ -50,19 +48,20 @@ export default function PrayersBoardPageView({
         onMoveWithin={async (id, toIndex) => {
           try {
             await onMoveWithin(id, toIndex);
+
           } catch {
-            // keep UI resilient; upstream handlers guard
+
           }
         }}
         onDockDrop={async (dock, id) => {
           try {
             await onDockDrop(dock, id);
+
           } catch {
-            // keep UI resilient; upstream handlers guard
+
           }
         }}
       />
-      {/* Dock remains inside SingleBoard's DndContext */}
     </main>
   );
 }
