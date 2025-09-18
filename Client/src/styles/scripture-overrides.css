@@ -1,30 +1,24 @@
-/* Override base text color */
 .scripture-styles {
-    color: var(--theme-text-white); /* matches your index.css palette */
+    color: var(--theme-text-white);
 }
 
-/* Optional: fine-tune special cases */
 .scripture-styles .wj {
-    color: var(--theme-warning); /* words of Jesus → your warm sand/tan */
+    color: var(--theme-warning);
 }
 
 .scripture-styles .nd {
-    color: var(--theme-accent); /* small-caps LORD → your accent */
+    color: var(--theme-accent);
 }
 
-/* Client/src/styles/scripture-overrides.css */
-
-/* Verse number superscripts */
 .scripture-styles .v,
 .scripture-styles .vp,
 .scripture-styles sup[class^="v"] {
-    color: var(--theme-moveto);  /* pick your token */
-    font-size: 0.75em;               /* optional */
-    vertical-align: super;           /* optional */
-    opacity: 0.85;                   /* optional */
+    color: var(--theme-moveto);
+    font-size: 0.75em;
+    vertical-align: super;
+    opacity: 0.85;
 }
 
-/* (Optional) footnote markers */
 .scripture-styles .fv,
 .scripture-styles .notelink,
 .scripture-styles .notelink sup {

@@ -12,7 +12,6 @@ import AdminDigestPageView from '../../jsx/admin/adminDigestPageView';
 export default function AdminDigestPageLogic(): React.ReactElement {
   const auth = useAuthStore();
 
-  // Single group only: derive once from user or fallback to 1
   const groupId = useMemo(() => {
     const val = auth.user?.groupId;
     return typeof val === 'number' && val > 0 ? val : 1;
@@ -24,10 +23,8 @@ export default function AdminDigestPageLogic(): React.ReactElement {
   const [subject, setSubject] = useState('');
   const [isLoading, setIsLoading] = useState(false);
 
-  // Fetch preview whenever group or window changes
   useEffect(() => {
     void loadPreview();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [groupId, days]);
 
   async function loadPreview() {
@@ -42,10 +39,10 @@ export default function AdminDigestPageLogic(): React.ReactElement {
         setUpdates(rows);
         setSelected({});
       } else {
-        // graceful no-op on failure
+        console.error('Error loading preview:', res);
       }
     } catch {
-      // graceful no-op on error
+      console.error('Error loading preview.');
     } finally {
       setIsLoading(false);
     }

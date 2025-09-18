@@ -1,4 +1,3 @@
-// Client/src/types/admin.types.ts
 export type AdminPrayerRow = {
   id: number;
   groupId: number;
@@ -12,8 +11,6 @@ export type AdminPrayerRow = {
   lastCommentAt: string | null;
   updatedAt: string;
 };
-
-// …existing exports…
 
 export type AdminUiSnapshot = {
   q: string;
@@ -34,7 +31,6 @@ export type AdminRosterRow = {
   addressState: string | null;
   addressZip: string | null;
   spouseName: string | null;
-  // NEW:
   emailPaused: boolean;
 };
 
@@ -67,13 +63,12 @@ export function isStatus(v: string): v is Status {
   return (STATUS_OPTIONS as readonly string[]).includes(v);
 }
 
-// Add this near other admin UI types
 export type AdminPrayerSummaryData = {
   title: string;
   authorName: string;
   groupName: string;
-  category: string;          // uses your canonical literals elsewhere
-  statusDisplay: string;     // "Prayer" / "Praise" / "Archived"
+  category: string;
+  statusDisplay: string;
   updatedAt?: Date;
   lastCommentAt?: Date;
   commentCount: number;

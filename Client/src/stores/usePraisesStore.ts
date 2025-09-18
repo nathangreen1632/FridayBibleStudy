@@ -1,4 +1,3 @@
-// Client/src/stores/praises.store.ts
 import { create } from 'zustand';
 import { useShallow } from 'zustand/react/shallow';
 import { api } from '../helpers/http.helper';
@@ -13,7 +12,6 @@ import {
   rollbackPosition,
   shouldNormalizeSoon,
   parsePrayerSafely,
-  // NEW:
   computeSequentialUpdates,
   applyOptimisticPositions,
   mergeSavedIntoById,
@@ -25,24 +23,15 @@ type PraisesState = {
   order: number[]; // ordered ids (position asc)
   loading: boolean;
   error?: string | null;
-
-  // data
   fetchInitial: () => Promise<void>;
-
-  // local updates + server persistence
   upsert: (p: Prayer) => void;
   remove: (id: number) => void;
   moveWithin: (id: number, toIndex: number) => Promise<boolean>;
   movePrayer: (id: number, to: Exclude<Status, 'praise'>) => Promise<void>;
-
-  // occasional maintenance
   normalizePositions: (step?: number) => Promise<void>;
-
-  // NEW: instant visual bump to top (no network)
   bumpToTop: (id: number) => void;
 };
 
-// ---- helpers ----
 function sortIdsByPosition(items: Prayer[]): number[] {
   return [...items]
     .sort((a, b) => (a.position ?? 0) - (b.position ?? 0))
@@ -58,12 +47,11 @@ function mergeIn(by: Map<number, Prayer>, p: Prayer): Map<number, Prayer> {
     return next;
   }
 
-  // Preserve nested fields that are sometimes omitted in socket patches
   const merged: Prayer = {
     ...prev,
     ...p,
-    author: p.author ?? prev.author,            // <-- keep existing author if missing
-    attachments: p.attachments ?? prev.attachments, // (optional) same idea for attachments
+    author: p.author ?? prev.author,
+    attachments: p.attachments ?? prev.attachments,
   };
 
   next.set(p.id, merged);
@@ -89,7 +77,6 @@ function minGap(positions: number[]): number {
 
 const STEP_DEFAULT = 1024;
 
-// ---- store ----
 export const usePraisesStore = create<PraisesState>((set, get) => ({
   byId: new Map<number, Prayer>(),
   order: [],
@@ -109,18 +96,16 @@ export const usePraisesStore = create<PraisesState>((set, get) => ({
       const order = sortIdsByPosition(items);
       set({ byId, order, loading: false, error: null });
 
-      // After load, check if normalization would help
       const positions = order
         .map((id) => byId.get(id)?.position)
         .filter((p): p is number => typeof p === 'number');
       const cramped = minGap(positions) < 1e-6 || !isStrictlyIncreasing(positions);
       if (cramped) {
-        // Schedule so initial paint isn’t blocked
         setTimeout(async () => {
           try {
             await get().normalizePositions(STEP_DEFAULT);
           } catch {
-            // ignore
+
           }
         }, 200);
       }
@@ -134,7 +119,6 @@ export const usePraisesStore = create<PraisesState>((set, get) => ({
   },
 
   upsert(p) {
-    // Only track items that are currently in 'praise'
     if (p.status !== 'praise') {
       const s = get();
       if (s.byId.has(p.id)) {
@@ -149,11 +133,9 @@ export const usePraisesStore = create<PraisesState>((set, get) => ({
     const s = get();
     const nextBy = mergeIn(s.byId, p);
 
-    // If new, insert; if existing, just re-sort
     const exists = s.order.includes(p.id);
     const ids = exists ? s.order : [...s.order, p.id];
 
-    // Rebuild a minimal array of affected items to sort by 'position'
     const items: Prayer[] = ids
       .map((id) => nextBy.get(id))
       .filter(Boolean) as Prayer[];
@@ -176,16 +158,13 @@ export const usePraisesStore = create<PraisesState>((set, get) => ({
     const { ok, fromIndex } = validateMove(s0.order, id, toIndex);
     if (!ok) return false;
 
-    // 1) Local reorder (optimistic)
     const { prevOrder, nextOrder } = makeReordered(s0.order, fromIndex, toIndex);
     set({ order: nextOrder });
 
-    // 2) Compute target position between neighbors
     const s1 = get();
     const { prevPos, nextPos } = neighborPositions(nextOrder, s1.byId, toIndex);
     const newPos = chooseNewPosition(prevPos, nextPos, STEP_DEFAULT);
 
-    // 3) Optimistic position on the target item
     const { before, merged } = withOptimisticPosition(s1.byId, id, newPos);
     if (merged !== s1.byId) set({ byId: merged });
 
@@ -196,14 +175,12 @@ export const usePraisesStore = create<PraisesState>((set, get) => ({
       });
 
       if (!r.ok) {
-        // rollback order + position
         set({ order: prevOrder });
         const cur = get();
         set({ byId: rollbackPosition(cur.byId, id, before) });
         return false;
       }
 
-      // 4) Merge saved (if any)
       const saved = await parsePrayerSafely(r);
       if (saved) {
         const cur = get();
@@ -213,20 +190,18 @@ export const usePraisesStore = create<PraisesState>((set, get) => ({
         set({ byId: nextBy });
       }
 
-      // 5) Schedule normalization if spacing collapsed
       if (shouldNormalizeSoon(prevPos, nextPos, newPos)) {
         setTimeout(async () => {
           try {
             await get().normalizePositions(STEP_DEFAULT);
           } catch {
-            // ignore
+
           }
         }, 200);
       }
 
       return true;
     } catch {
-      // rollback order + position
       set({ order: prevOrder });
       const cur = get();
       set({ byId: rollbackPosition(cur.byId, id, before) });
@@ -239,7 +214,6 @@ export const usePraisesStore = create<PraisesState>((set, get) => ({
     const s = get();
     const existed = s.byId.get(id);
 
-    // optimistic removal from Praises
     if (existed) {
       const nextBy = new Map(s.byId);
       nextBy.delete(id);
@@ -258,7 +232,6 @@ export const usePraisesStore = create<PraisesState>((set, get) => ({
       );
 
       if (!r.ok) {
-        // rollback if we had it before
         if (existed) {
           const s2 = get();
           const backBy = new Map(s2.byId);
@@ -272,11 +245,9 @@ export const usePraisesStore = create<PraisesState>((set, get) => ({
         return;
       }
 
-      // Best-effort to merge saved payload, if provided
       try {
         const saved = (await r.json()) as Prayer | undefined;
         if (saved?.status === 'praise') {
-          // if server still says praise, reinsert in correct order
           const cur = get();
           const mergedBy = new Map(cur.byId);
           mergedBy.set(saved.id, saved);
@@ -287,10 +258,10 @@ export const usePraisesStore = create<PraisesState>((set, get) => ({
           set({ byId: mergedBy, order: sortIdsByPosition(items) });
         }
       } catch {
-        // ignore body parse
+
       }
     } catch {
-      // Roll back if we had it before
+
       if (existed) {
         const s2 = get();
         const backBy = new Map(s2.byId);
@@ -309,11 +280,9 @@ export const usePraisesStore = create<PraisesState>((set, get) => ({
     const { order, byId } = s;
     if (order.length === 0) return;
 
-    // 1) Build updates and apply optimistic local positions
     const updates = computeSequentialUpdates(order, step);
     set({ byId: applyOptimisticPositions(byId, updates) });
 
-    // 2) Persist sequentially (best-effort)
     for (const u of updates) {
       try {
         const r = await apiWithRecaptcha(
@@ -333,13 +302,11 @@ export const usePraisesStore = create<PraisesState>((set, get) => ({
           }
         }
       } catch {
-        // ignore; local order remains usable even if one PATCH fails
+
       }
     }
   },
 
-
-  // NEW: local-only visual bump to top of Praises list
   bumpToTop(id) {
     const s = get();
     if (!s.byId.has(id)) return;
@@ -349,7 +316,6 @@ export const usePraisesStore = create<PraisesState>((set, get) => ({
   },
 }));
 
-// ---- Memoized selectors (stable renders) ----
 export function usePraisesIds(): number[] {
   return usePraisesStore(useShallow((s) => s.order));
 }
@@ -358,12 +324,11 @@ export function usePraiseById(id: number) {
   return usePraisesStore((s) => s.byId.get(id));
 }
 
-// ---- Socket-side helpers (used by socket.store.ts) ----
 export function praisesOnSocketUpsert(p: Prayer) {
   try {
     usePraisesStore.getState().upsert(p);
   } catch {
-    // ignore
+
   }
 }
 
@@ -371,6 +336,6 @@ export function praisesOnSocketRemove(id: number) {
   try {
     usePraisesStore.getState().remove(id);
   } catch {
-    // ignore
+
   }
 }

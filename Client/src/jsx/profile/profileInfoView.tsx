@@ -18,7 +18,6 @@ export default function ProfileInfoView({
                                         }: Props): React.ReactElement {
   return (
     <form id="profile-form" onSubmit={onSubmit} className="space-y-4">
-      {/* Name */}
       <label className="block text-xs sm:text-sm font-medium">
         <span className="text-sm sm:text-base mb-1 block">Name</span>
         <input
@@ -30,7 +29,6 @@ export default function ProfileInfoView({
         />
       </label>
 
-      {/* Phone (strict format) */}
       <label className="block text-xs sm:text-sm font-medium">
         <span className="text-sm sm:text-base mb-1 block">Phone</span>
         <input
@@ -41,7 +39,6 @@ export default function ProfileInfoView({
           placeholder="555-123-4567"
           value={form.phone}
           onChange={(e) => onPhoneChange(e.currentTarget.value)}
-          // keep pattern for layer of validation, but logic does the real check
           pattern="^\d{3}-\d{3}-\d{4}$"
           title="Format: 555-123-4567"
           className="block w-full rounded-xl border border-[var(--theme-border)] bg-[var(--theme-textbox)] px-3 py-2 text-sm sm:text-base
@@ -49,7 +46,6 @@ export default function ProfileInfoView({
         />
       </label>
 
-      {/* Street */}
       <label className="block text-xs sm:text-sm font-medium">
         <span className="text-sm sm:text-base mb-1 block">Street Address</span>
         <input
@@ -61,7 +57,6 @@ export default function ProfileInfoView({
         />
       </label>
 
-      {/* City / State / ZIP */}
       <div className="grid gap-3 sm:grid-cols-3">
         <label className="block text-xs sm:text-sm font-medium">
           <span className="text-sm sm:text-base mb-1 block">City</span>
@@ -97,7 +92,6 @@ export default function ProfileInfoView({
         </label>
       </div>
 
-      {/* Spouse */}
       <label className="block text-xs sm:text-sm font-medium">
         <span className="text-sm sm:text-base mb-1 block">Spouse Name (optional)</span>
         <input

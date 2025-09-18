@@ -11,7 +11,7 @@ export type FormValues = {
 };
 
 export type ProfileFormProps = {
-  open?: boolean; // modal open state
+  open?: boolean;
   user: User;
   savedMsg?: string | null;
   onSave: (values: FormValues) => Promise<void>;

@@ -1,4 +1,3 @@
-// Client/src/jsx/photosPageView.tsx
 import React from 'react';
 import { Trash } from 'lucide-react';
 import LightboxModal from '../../modals/LightboxModalLogic.tsx';
@@ -11,24 +10,18 @@ type Props = {
   pageSize: number;
   total: number;
   loading: boolean;
-
   pendingFiles: File[];
   noteText: string;
-
   lightboxSrc: string | null;
   lightboxAlt: string;
   lightboxNote: string;
-
   fileRef: React.Ref<HTMLInputElement>;
-
-  // handlers
   onFilesSelected: (e: React.ChangeEvent<HTMLInputElement>) => void;
   onPick: () => void;
   onUpload: () => void;
   onDelete: (id: number) => void;
   openLightbox: (src: string, alt?: string, note?: string | null) => void;
   closeLightbox: () => void;
-
   setNoteText: (t: string) => void;
   renderFooterNote: FooterNoteFn;
   totalPages: TotalPagesFn;
@@ -60,7 +53,6 @@ export default function PhotosPageView({
                                        }: Readonly<Props>): React.ReactElement {
   return (
     <div className="max-w-7xl mx-auto px-3 py-4">
-      {/* Header / Actions */}
       <div className="mb-4 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
         <h1 className="text-2xl font-extrabold text-[var(--theme-accent)]">Photos</h1>
 
@@ -118,7 +110,6 @@ export default function PhotosPageView({
         </div>
       )}
 
-      {/* Grid */}
       <div className="grid gap-3 grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-4">
         {items.map((p) => (
           <article
@@ -161,7 +152,6 @@ export default function PhotosPageView({
         ))}
       </div>
 
-      {/* Footer */}
       <div className="mt-6 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between text-sm">
         <div className="opacity-70">{renderFooterNote()}</div>
 

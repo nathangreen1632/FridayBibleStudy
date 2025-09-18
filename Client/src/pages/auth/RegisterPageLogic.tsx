@@ -1,4 +1,3 @@
-// Client/src/pages/RegisterPageLogic.tsx
 import React, { useEffect, useMemo, useState } from 'react';
 import { toast } from 'react-hot-toast';
 import { useAuthStore } from '../../stores/useAuthStore.ts';
@@ -22,7 +21,6 @@ export default function Register(): React.ReactElement {
   const [ready, setReady] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  // --- phone helpers (strict 555-123-4567) ---
   const phoneRE = /^\d{3}-\d{3}-\d{4}$/;
   function formatPhone(value: string): string {
     const d = value.replace(/\D/g, '').slice(0, 10);
@@ -30,7 +28,6 @@ export default function Register(): React.ReactElement {
     if (d.length <= 6) return `${d.slice(0, 3)}-${d.slice(3)}`;
     return `${d.slice(0, 3)}-${d.slice(3, 6)}-${d.slice(6)}`;
   }
-  // -------------------------------------------
 
   const passwordsMatch = useMemo(
     () => form.password.length > 0 && form.password === form.confirmPassword,
@@ -79,7 +76,6 @@ export default function Register(): React.ReactElement {
     e.preventDefault();
     setError(null);
 
-    // phone is required here; must match 555-123-4567
     if (!form.phone || !phoneRE.test(form.phone)) {
       const msg = 'Please enter your phone as 555-123-4567';
       setError(msg);

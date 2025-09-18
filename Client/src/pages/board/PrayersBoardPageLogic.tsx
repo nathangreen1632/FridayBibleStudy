@@ -1,4 +1,3 @@
-// Client/src/pages/board/PrayersBoardPageLogic.tsx
 import React from 'react';
 import PrayersBoardPageView from '../../jsx/board/prayersBoardPageView.tsx';
 import { useBoardStore } from '../../stores/useBoardStore';
@@ -19,7 +18,6 @@ import type {
 } from '../../types/pages/board.types.ts';
 
 export default function ActiveBoard(): React.ReactElement {
-  // board data/actions
   const fetchInitial = useBoardStore((s) => s.fetchInitial);
   const move = useBoardStore((s) => s.move);
   const byId = useBoardStore((s) => s.byId);
@@ -27,18 +25,14 @@ export default function ActiveBoard(): React.ReactElement {
   const loading = useBoardStore((s) => s.loading);
   const error = useBoardStore((s) => s.error);
 
-  // auth
   const user = useAuthStore((s) => s.user);
 
-  // socket
   const joinGroup = useSocketStore((s) => s.joinGroup);
   const groupId = user?.groupId ?? 1;
 
-  // bootstrap & join
   useBoardBootstrap(fetchInitial);
   useJoinGroup(joinGroup, groupId);
 
-  // helpers
   const moveToPraise = useMoveToPraise();
   const onMove = useOnMove(
     move as (id: number, to: BoardColumnKey, idx: number) => Promise<boolean>
@@ -48,14 +42,13 @@ export default function ActiveBoard(): React.ReactElement {
     groupId
   );
 
-  // active-only (single column)
   const activeIds = order.active;
 
   const onMoveWithin: MoveWithinHandler = async (id, toIndex) => {
     try {
       await onMove(id, 'active', toIndex);
     } catch {
-      // no-throw policy
+
     }
   };
 
@@ -68,7 +61,7 @@ export default function ActiveBoard(): React.ReactElement {
         await moveToPraise(id);
       }
     } catch {
-      // no-throw policy
+
     }
   };
 

@@ -10,7 +10,6 @@ export type AdminRosterRow = {
   addressState: string | null;
   addressZip: string | null;
   spouseName: string | null;
-  /** UI needs to know if email is paused */
   emailPaused: boolean;
 };
 

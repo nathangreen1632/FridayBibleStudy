@@ -16,7 +16,6 @@ export default function RequestResetPage(): React.ReactElement {
   }, [email]);
 
   useEffect(() => {
-    // secure-api.helper initializes reCAPTCHA as needed
     setReady(true);
   }, []);
 

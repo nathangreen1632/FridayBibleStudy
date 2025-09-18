@@ -15,13 +15,12 @@ export default function GravatarModalView({
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm px-4">
       <div className="bg-[var(--theme-surface)] text-[var(--theme-text)] p-6 rounded-xl max-w-sm w-full shadow-[0_0_25px_2px_var(--theme-shadow)] relative">
-        {/* Close button */}
         <button
           onClick={() => {
             try {
               onClose();
             } catch {
-              /* graceful no-throw */
+
             }
           }}
           className="absolute top-3 right-4 text-[var(--theme-error)] cursor-pointer text-xl font-bold hover:opacity-80 focus:outline-none"
@@ -40,7 +39,6 @@ export default function GravatarModalView({
           the email linked to your account.
         </p>
 
-        {/* Primary action */}
         <a
           href={gravatarRegisterLink}
           target="_blank"

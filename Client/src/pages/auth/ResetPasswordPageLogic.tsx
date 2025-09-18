@@ -1,4 +1,3 @@
-// Client/src/pages/ResetPasswordPageLogic.tsx
 import React, { useEffect, useMemo, useState } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import { toast } from 'react-hot-toast';
@@ -23,7 +22,6 @@ export default function ResetPasswordPage(): React.ReactElement {
   const [showNew, setShowNew] = useState(false);
   const [showConfirm, setShowConfirm] = useState(false);
 
-  // seed email from route state or query
   useEffect(() => {
     const stateEmail =
       (loc.state && typeof loc.state === 'object' && 'email' in (loc.state))
@@ -42,7 +40,6 @@ export default function ResetPasswordPage(): React.ReactElement {
     return form.newPassword === form.confirmPassword;
   }, [form.newPassword, form.confirmPassword]);
 
-  // format xxx-xxx while keeping digits only in state
   function formatOtp(raw: string): string {
     const digits = raw.replace(/\D/g, '').slice(0, 6);
     if (digits.length <= 3) return digits;
@@ -61,7 +58,6 @@ export default function ResetPasswordPage(): React.ReactElement {
   );
 
   useEffect(() => {
-    // secure-api.helper handles reCAPTCHA init internally; we just gate UI to avoid double submits
     setReady(true);
   }, []);
 

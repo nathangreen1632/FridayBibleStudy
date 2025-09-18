@@ -1,4 +1,3 @@
-// Client/src/stores/admin/useAdminStore.ts
 import { create } from 'zustand';
 import {
   fetchAdminPrayers,
@@ -16,7 +15,6 @@ import type { Prayer } from '../../types/domain/domain.types.ts';
 import type { Comment } from '../../types/domain/comment.types.ts';
 import {toast} from "react-hot-toast";
 
-/** Roster row shape (admin roster table) */
 type RosterRow = {
   id: number;
   name: string;
@@ -27,12 +25,9 @@ type RosterRow = {
   addressState: string | null;
   addressZip: string | null;
   spouseName: string | null;
-
-  /** NEW: pause email updates without deleting their account/content */
   emailPaused: boolean;
 };
 
-/** NEW: allowed sort fields for roster */
 export type RosterSortField =
   | 'name'
   | 'email'
@@ -43,7 +38,6 @@ export type RosterSortField =
   | 'addressZip'
   | 'spouseName';
 
-/** NEW: loadRoster options including sorting */
 type LoadRosterOpts = {
   q?: string;
   page?: number;
@@ -58,22 +52,16 @@ type State = {
   page: number;
   pageSize: number;
   loading: boolean;
-
   detailPrayers: Record<number, Prayer | undefined>;
   detailRows: Record<number, AdminPrayerRow | undefined>;
   detailComments: Record<number, Comment[]>;
-
-  // Roster state (admin-only)
   roster: RosterRow[];
   rosterTotal: number;
-  rosterPage: number;       // 1-based
-  rosterPageSize: number;   // fixed to 15
-  lastRosterQuery?: string; // remember last q for next/prev
-
-  /** NEW: remember last sort so pagination keeps it */
+  rosterPage: number;
+  rosterPageSize: number;
+  lastRosterQuery?: string;
   lastRosterSortBy?: RosterSortField;
   lastRosterSortDir?: 'asc' | 'desc';
-
   loadList: (opts: {
     q?: string;
     groupId?: number;
@@ -92,33 +80,25 @@ type State = {
 
   deletePrayer: (prayerId: number) => Promise<{ ok: boolean; message?: string }>;
 
-  // Roster loader
   loadRoster: (opts: LoadRosterOpts) => Promise<{ ok: boolean; message?: string }>;
 
-  // Roster update/delete
   updateRosterRow: (
     id: number,
     patch: Partial<{
       name: string; email: string; phone: string | null;
       addressStreet: string | null; addressCity: string | null; addressState: string | null; addressZip: string | null;
       spouseName: string | null;
-      /** NEW: allow updating via generic patch */
       emailPaused: boolean;
     }>
   ) => Promise<{ ok: boolean; message?: string }>;
   deleteRosterRow: (id: number) => Promise<{ ok: boolean; message?: string }>;
-
-  /** NEW: convenience action for the pause button */
   toggleRosterEmailPaused: (id: number, next: boolean) => Promise<{ ok: boolean; message?: string }>;
-
-  // Pagination helpers (1-based page in UI)
   setRosterPage: (page: number) => Promise<void>;
   nextRosterPage: () => Promise<void>;
   prevRosterPage: () => Promise<void>;
 };
 
-// --- date helpers (place above safeIso) ---
-const EPOCH_MS_THRESHOLD = 1e12; // < 1e12 => seconds, else milliseconds
+const EPOCH_MS_THRESHOLD = 1e12;
 const ONLY_DIGITS = /^\d+$/;
 
 function isFiniteNum(v: unknown): v is number {
@@ -142,11 +122,9 @@ function coerceToDate(v: unknown): Date | null {
   if (v instanceof Date) return v;
   if (isFiniteNum(v)) return fromEpoch(v);
   if (typeof v === 'string') return parseDateFromString(v);
-  // Do not stringify objects to avoid "[object Object]"
   return null;
 }
 
-// --- simplified, low-CC safeIso ---
 function safeIso(input: unknown): string | null {
   const d = coerceToDate(input);
   if (!d) return null;
@@ -161,8 +139,6 @@ function safeIso(input: unknown): string | null {
   }
 }
 
-
-// --- helpers used by normalizeThreadPayload ---
 function asRecord(v: unknown): Record<string, unknown> | null {
   return v && typeof v === 'object' ? (v as Record<string, unknown>) : null;
 }
@@ -171,13 +147,11 @@ function pickPrayerFrom(obj: Record<string, unknown> | null): Prayer | undefined
   if (!obj) return undefined;
   const directKeys = ['prayer', 'root', 'item'] as const;
 
-  // direct keys on the object
   for (const k of directKeys) {
     const cand = obj[k] as Prayer | undefined;
     if (cand && typeof cand === 'object') return cand;
   }
 
-  // nested thread.{prayer|root}
   const thread = asRecord(obj.thread);
   if (thread) {
     for (const k of ['prayer', 'root'] as const) {
@@ -188,7 +162,6 @@ function pickPrayerFrom(obj: Record<string, unknown> | null): Prayer | undefined
   return undefined;
 }
 
-// helpers (keep near the other helpers like asRecord)
 function pushArraysFrom(
   source: Record<string, unknown> | null,
   keys: ReadonlyArray<'comments' | 'replies' | 'items' | 'rows'>,
@@ -205,49 +178,37 @@ function collectCommentCandidates(obj: Record<string, unknown> | null): unknown[
   if (!obj) return [];
 
   const out: unknown[] = [];
-  // top-level
   pushArraysFrom(obj, ['comments', 'replies', 'items', 'rows'], out);
 
-  // thread level
   const thread = asRecord((obj as any).thread);
   pushArraysFrom(thread, ['comments', 'replies', 'items', 'rows'], out);
 
-  // thread.comments level
   const threadComments = asRecord(thread?.comments);
   pushArraysFrom(threadComments, ['items', 'rows'], out);
 
   return out;
 }
 
-// ----------------------------------------------
-
-/** Accepts common server shapes and normalizes to { prayer, comments } */
 function normalizeThreadPayload(raw: unknown): { prayer?: Prayer; comments: Comment[] } {
   const empty: { prayer?: Prayer; comments: Comment[] } = { prayer: undefined, comments: [] };
   const top = asRecord(raw);
   if (!top) return empty;
 
-  // Some endpoints wrap the data; others return it top-level.
   const data = asRecord(top.data) ?? top;
 
-  // 1) Prayer (if present)
   const prayer = pickPrayerFrom(data);
 
-  // 2) Comment candidates (flatten known containers)
   const candidates = collectCommentCandidates(data);
 
-  // 3) Normalize each comment
   const comments: Comment[] = [];
   for (const anyC of candidates) {
     const rec = asRecord(anyC);
     if (!rec) continue;
 
-    // id
     const idVal = rec.id;
     const id = typeof idVal === 'number' ? idVal : Number(idVal);
     if (!Number.isFinite(id)) continue;
 
-    // createdAt (prefer created*, then updated*)
     const createdRaw =
       (rec.createdAt as string | undefined) ??
       (rec.created_at as string | undefined) ??
@@ -256,7 +217,6 @@ function normalizeThreadPayload(raw: unknown): { prayer?: Prayer; comments: Comm
 
     const createdAt = safeIso(createdRaw) ?? new Date().toISOString();
 
-    // content/message/body
     const content =
       (rec.content as string | undefined) ??
       (rec.message as string | undefined) ??
@@ -347,7 +307,6 @@ function mergeDetailRow(
   };
 }
 
-// --- helpers (place above export const useAdminStore) ---
 async function getThreadPayload(
   prayerId: number
 ): Promise<{ ok: boolean; message?: string; prayer?: Prayer; comments: Comment[] }> {
@@ -361,7 +320,7 @@ async function getThreadPayload(
     const { prayer, comments } = normalizeThreadPayload(parsed);
     return { ok: true, prayer, comments };
   } catch {
-    // network/parse failure
+
     return { ok: false, message: 'Failed to load thread.', comments: [] };
   }
 }
@@ -414,8 +373,6 @@ function applyThreadToState(
     set((s: State) => ({ detailRows: { ...s.detailRows, [prayerId]: merged } }));
   }
 }
-// --- end helpers ---
-
 
 export const useAdminStore = create<State>((set, get) => ({
   list: [],
@@ -423,19 +380,14 @@ export const useAdminStore = create<State>((set, get) => ({
   page: 1,
   pageSize: 20,
   loading: false,
-
   detailPrayers: {},
   detailRows: {},
   detailComments: {},
-
-  // Roster defaults
   roster: [],
   rosterTotal: 0,
-  rosterPage: 1,          // keep 1-based
-  rosterPageSize: 15,     // fixed client-side
+  rosterPage: 1,
+  rosterPageSize: 15,
   lastRosterQuery: '',
-
-  // NEW: remember last sort
   lastRosterSortBy: undefined,
   lastRosterSortDir: undefined,
 
@@ -478,7 +430,6 @@ export const useAdminStore = create<State>((set, get) => ({
     }
   },
 
-  // ✅ Hydrate full prayer content if the thread response doesn't include it
   loadThread: async (prayerId) => {
     if (!prayerId || Number.isNaN(prayerId)) {
       return { ok: false, message: 'Invalid prayer id.' };
@@ -581,14 +532,12 @@ export const useAdminStore = create<State>((set, get) => ({
     }
   },
 
-  // --- Roster loader (fixed 15/page) ---
   loadRoster: async (opts) => {
     try {
       const q = opts?.q ?? get().lastRosterQuery ?? '';
       const page = typeof opts?.page === 'number' ? opts.page : get().rosterPage || 1;
-      const pageSize = 15; // fixed client-side
+      const pageSize = 15;
 
-      // NEW: preserve last-used sort when not provided
       const sortBy = (opts?.sortBy ?? get().lastRosterSortBy);
       const sortDir = (opts?.sortDir ?? get().lastRosterSortDir);
 
@@ -615,7 +564,6 @@ export const useAdminStore = create<State>((set, get) => ({
     }
   },
 
-  // --- Roster update/delete ---
   updateRosterRow: async (id, patch) => {
     try {
       const res = await patchAdminRosterUser(id, patch);
@@ -652,7 +600,6 @@ export const useAdminStore = create<State>((set, get) => ({
     }
   },
 
-  /** NEW: pause/unpause emails for a roster member */
   toggleRosterEmailPaused: async (id, next) => {
     try {
       const res = await patchAdminRosterUser(id, { emailPaused: next });
@@ -671,7 +618,6 @@ export const useAdminStore = create<State>((set, get) => ({
     }
   },
 
-  // --- pagination helpers (1-based) ---
   setRosterPage: async (page) => {
     const p = Number.isFinite(page) && page > 0 ? page : 1;
     const { rosterPageSize, lastRosterQuery, lastRosterSortBy, lastRosterSortDir } = get();

@@ -1,5 +1,3 @@
-// Client/src/types/bible.types.ts
-
 export type BibleMeta = {
   id: string;
   name: string;

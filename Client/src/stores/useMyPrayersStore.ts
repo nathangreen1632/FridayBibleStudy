@@ -12,31 +12,22 @@ type MyPrayersState = {
   ids: number[];
   loading: boolean;
   error?: string | null;
-
-  // UI filters
   q: string;
   status: FilterStatus;
   category: '' | Prayer['category'];
   sort: SortKey;
   dir: 'asc' | 'desc';
-
-  // actions
   setQuery: (q: string) => void;
   setStatus: (s: FilterStatus) => void;
   setCategory: (c: '' | Prayer['category']) => void;
   setSort: (k: SortKey) => void;
   setDir: (d: 'asc' | 'desc') => void;
-
   fetchInitial: () => Promise<void>;
   refresh: () => Promise<void>;
-
-  // write ops (re-use existing endpoints)
   save: (id: number, patch: Partial<Pick<Prayer, 'title' | 'content' | 'category'>>) => Promise<boolean>;
   moveTo: (id: number, to: Status) => Promise<boolean>;
   remove: (id: number) => Promise<boolean>;
   addUpdate: (id: number, content: string) => Promise<boolean>;
-
-  // socket sync (called by socket store)
   onSocketUpsert: (p: Prayer) => void;
   onSocketRemove: (id: number) => void;
 };
@@ -103,7 +94,6 @@ export const useMyPrayersStore = create<MyPrayersState>((set, get) => ({
     await get().fetchInitial();
   },
 
-  // save: PATCH /api/prayers/:id
   async save(id, patch) {
     try {
       const r = await apiWithRecaptcha(
@@ -123,8 +113,6 @@ export const useMyPrayersStore = create<MyPrayersState>((set, get) => ({
     }
   },
 
-
-  // moveTo: PATCH /api/prayers/:id  (status move only)
   async moveTo(id, to) {
     try {
       const r = await apiWithRecaptcha(
@@ -144,8 +132,6 @@ export const useMyPrayersStore = create<MyPrayersState>((set, get) => ({
     }
   },
 
-
-  // remove: DELETE /api/prayers/:id
   async remove(id) {
     try {
       const r = await apiWithRecaptcha(
@@ -161,8 +147,6 @@ export const useMyPrayersStore = create<MyPrayersState>((set, get) => ({
     }
   },
 
-
-  // addUpdate: POST /api/prayers/:id/updates
   async addUpdate(id, content) {
     try {
       const r = await apiWithRecaptcha(
@@ -179,10 +163,9 @@ export const useMyPrayersStore = create<MyPrayersState>((set, get) => ({
     }
   },
 
-
   onSocketUpsert(p) {
     const me = useAuthStore.getState().user?.id;
-    if (!me || p.authorUserId !== me) return; // only track user's own
+    if (!me || p.authorUserId !== me) return;
 
     const cur = get();
     const byId = new Map(cur.byId);
@@ -206,7 +189,6 @@ export const useMyPrayersStore = create<MyPrayersState>((set, get) => ({
   },
 }));
 
-// Small helpers (mirroring your Praises pattern)
 export function myPrayersOnSocketUpsert(p: Prayer): void {
   try { useMyPrayersStore.getState().onSocketUpsert(p); } catch {}
 }

@@ -1,4 +1,3 @@
-// Client/src/pages/PhotosPageLogic.tsx
 import React, { useCallback, useEffect, useRef, useState } from 'react';
 import toast from 'react-hot-toast';
 import { usePhotoStore } from '../../stores/usePhotoStore.ts';

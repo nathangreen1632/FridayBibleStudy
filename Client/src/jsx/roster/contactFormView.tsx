@@ -1,4 +1,3 @@
-// Client/src/components/contact/ContactForm.view.tsx
 import React from 'react';
 import {pressBtn} from "../../../ui/press.ts";
 

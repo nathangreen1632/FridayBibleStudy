@@ -1,4 +1,3 @@
-// Client/src/stores/useSocketStore.ts
 import { create } from 'zustand';
 import type { Socket } from 'socket.io-client';
 import { getSocket } from '../lib/socket.lib';
@@ -6,29 +5,18 @@ import { useBoardStore } from './useBoardStore.ts';
 import { useCommentsStore } from './useCommentsStore.ts';
 import type { Prayer, Status } from '../types/domain/domain.types.ts';
 import type { Comment } from '../types/domain/comment.types.ts';
-
-// Keep Praises in sync with socket events
 import { usePraisesStore, praisesOnSocketUpsert, praisesOnSocketRemove } from './usePraisesStore.ts';
-
-// ✅ Keep "My Prayers" (profile column) in sync too
 import { myPrayersOnSocketUpsert, myPrayersOnSocketRemove } from './useMyPrayersStore.ts';
-
-// ✅ Typed event constants + value type
 import { Events } from '../types/domain/socket.types.ts';
 import type { EventValue } from '../types/domain/socket.types.ts';
 
 type PrayerDTO = Prayer;
-
-// ---- PRAYER payloads ----
 type PrayerCreatedPayload = { prayer: PrayerDTO };
 type PrayerUpdatedPayload = { prayer: PrayerDTO };
 type PrayerMovedPayload   = { prayer: PrayerDTO; from: Status; to: Status };
 type PrayerDeletedPayload = { id: number };
-
-// Legacy—server may not emit this anymore; safe to keep as a no-op listener.
 type UpdateCreatedPayload = { id: number; prayerId: number };
 
-// ---- COMMENT (updates) payloads — must match the server exactly ----
 type CommentCreatedPayload = {
   prayerId: number;
   comment: Comment;
@@ -80,23 +68,18 @@ interface SocketState {
 }
 
 export const useSocketStore = create<SocketState>((set, get) => {
-  // Safe socket acquisition with graceful fallback
   let s: Socket | undefined;
   try {
     s = getSocket();
   } catch {
-    s = undefined; // rely on guards below; app keeps running without realtime
+    s = undefined;
   }
 
-  // --- replace your queue/flush section in useSocketStore.ts with this ---
-
-  // Local in-memory queue for socket-driven patches
   let queue: Patch[] = [];
 
-  // Drag-stall guards
   let dragDeferrals = 0;
-  const MAX_DEFERRALS = 8;       // ~8 * 120ms ≈ 1s
-  const MAX_DEFER_MS = 1500;     // hard stop after 1.5s
+  const MAX_DEFERRALS = 8;
+  const MAX_DEFER_MS = 1500;
   let firstDeferAt: number | null = null;
 
   const flush = () => {
@@ -107,11 +90,10 @@ export const useSocketStore = create<SocketState>((set, get) => {
       const { isDragging } = useBoardStore.getState();
       dragging = isDragging;
     } catch {
-      dragging = false; // if store unavailable, don't block
+      dragging = false;
     }
 
     if (dragging) {
-      // initialize the defer timer once
       firstDeferAt ??= Date.now();
 
       const elapsed = Date.now() - firstDeferAt;
@@ -125,10 +107,8 @@ export const useSocketStore = create<SocketState>((set, get) => {
         return;
       }
 
-      // fall through after too many/too long deferrals
     }
 
-    // reset drag guard on actual apply
     dragDeferrals = 0;
     firstDeferAt = null;
 
@@ -142,44 +122,38 @@ export const useSocketStore = create<SocketState>((set, get) => {
           if (item.type === 'upsert') board.upsertPrayer(item.p);
           if (item.type === 'move')   board.movePrayer(item.id, item.to);
         } catch {
-          // ignore per-item errors to keep the rest of the batch flowing
+
         }
       }
     } catch {
-      // if the board store is unavailable or errors, swallow to avoid breaking the socket loop
+
     }
   };
 
   const debouncedFlush = debounce(flush, 200);
 
-  // Safely attach listeners if available
   const hasOn = typeof s?.on === 'function';
   const hasEmit = typeof s?.emit === 'function';
 
-  // 🔒 Typed wrapper: only allows valid EventValue names
   const onE = <P,>(event: EventValue, handler: (payload: P) => void) => {
     try {
       s?.on(event, handler as unknown as (...args: unknown[]) => void);
     } catch {
-      // never crash wiring
+
     }
   };
 
-  // Unified handler that typed events will use
   function onPrayerUpdated(d: PrayerUpdatedPayload) {
     try { get().enqueue({ type: 'upsert', p: d.prayer }); } catch {}
     try { praisesOnSocketUpsert(d.prayer); } catch {}
     try { myPrayersOnSocketUpsert(d.prayer); } catch {}
-    // NOTE: no explicit rebuildColumn call needed; upsertPrayer re-sorts by `position`.
   }
 
   if (hasOn && s) {
     try {
-      // Socket.IO internal events (not part of our typed domain list)
       s.on('connect',    () => set({ connected: true }));
       s.on('disconnect', () => set({ connected: false }));
 
-      // ---- PRAYER events ----
       onE<PrayerCreatedPayload>(Events.PrayerCreated, (d) => {
         try { get().enqueue({ type: 'upsert', p: d.prayer }); } catch {}
         try { praisesOnSocketUpsert(d.prayer); } catch {}
@@ -196,20 +170,16 @@ export const useSocketStore = create<SocketState>((set, get) => {
       });
 
       onE<PrayerDeletedPayload>(Events.PrayerDeleted, (d) => {
-        // remove from the board immediately
         try { useBoardStore.getState().removePrayer(d.id); } catch {}
-        // keep mirrored lists in sync
         try { praisesOnSocketRemove(d.id); } catch {}
         try { myPrayersOnSocketRemove(d.id); } catch {}
       });
 
-      // Legacy "update created" → bump card visually; server also emits PrayerUpdated which will sync
       onE<UpdateCreatedPayload>(Events.UpdateCreated, (p) => {
         try { usePraisesStore.getState().bumpToTop(p.prayerId); } catch {}
         try { useBoardStore.getState().bumpToTop(p.prayerId); } catch {}
       });
 
-      // ---- COMMENT (updates) events ----
       onE<CommentCreatedPayload>(Events.CommentCreated, (p) => {
         try { useCommentsStore.getState().onCreated(p); } catch {}
       });
@@ -218,7 +188,6 @@ export const useSocketStore = create<SocketState>((set, get) => {
         try { useCommentsStore.getState().onUpdated(p); } catch {}
       });
 
-      // ✅ Robust delete handler: prefer store.onDeleted (updates counts + lastAt), else fallback
       onE<CommentDeletedPayload>(Events.CommentDeleted, (payload) => {
         try {
           const pid = Number((payload as any)?.prayerId || 0);
@@ -235,7 +204,7 @@ export const useSocketStore = create<SocketState>((set, get) => {
             cs.removeComment(pid, cid);
           }
         } catch {
-          // swallow
+
         }
       });
 
@@ -244,11 +213,9 @@ export const useSocketStore = create<SocketState>((set, get) => {
       });
 
       onE<CommentCountPayload>(Events.CommentCount, (p) => {
-        // This updates newCount + lastCommentAt → drives the red bell state
         try { useCommentsStore.getState().onCountChanged(p); } catch {}
       });
 
-      // ✅ Legacy back-compat: if anything still emits raw 'update:deleted'
       try {
         s.on('update:deleted', (payload: any) => {
           try {
@@ -267,15 +234,15 @@ export const useSocketStore = create<SocketState>((set, get) => {
               cs.removeComment(pid, cid);
             }
           } catch {
-            // swallow
+
           }
         });
       } catch {
-        // no-op
+
       }
 
     } catch {
-      // Listener wiring should never crash the app
+
     }
   }
 
@@ -286,16 +253,18 @@ export const useSocketStore = create<SocketState>((set, get) => {
     joinGroup: (groupId: number) => {
       try {
         if (hasEmit) get().socket?.emit('join:group', groupId);
+
       } catch {
-        // ignore
+
       }
     },
 
     leaveGroup: (groupId: number) => {
       try {
         if (hasEmit) get().socket?.emit('leave:group', groupId);
+
       } catch {
-        // ignore
+
       }
     },
 
@@ -303,8 +272,9 @@ export const useSocketStore = create<SocketState>((set, get) => {
       try {
         queue.push(patch);
         debouncedFlush();
+
       } catch {
-        // if queueing fails for any reason, drop gracefully
+
       }
     },
   };

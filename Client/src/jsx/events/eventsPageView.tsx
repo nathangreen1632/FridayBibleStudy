@@ -212,7 +212,6 @@ export default function EventsPageView({
                 );
               }
 
-              // view card
               const startD = ev.startsAt ? new Date(ev.startsAt) : null;
               const endD = ev.endsAt ? new Date(ev.endsAt) : null;
 

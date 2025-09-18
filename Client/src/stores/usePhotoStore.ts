@@ -1,4 +1,3 @@
-// Client/src/stores/usePhotoStore.ts
 import { create } from 'zustand';
 import toast from 'react-hot-toast';
 import type { Photo, PhotoListResponse } from '../types/domain/photo.types.ts';
@@ -11,20 +10,16 @@ type State = {
   page: number;
   pageSize: number;
   loading: boolean;
-
   load: (
     page?: number,
     pageSize?: number,
     recaptchaToken?: string
   ) => Promise<{ ok: boolean; message?: string }>;
-
-  // ✅ updated: allow an optional note to be attached to this batch
   upload: (
     files: File[],
     note?: string,
     recaptchaToken?: string
   ) => Promise<{ ok: boolean; message?: string }>;
-
   remove: (photoId: number, recaptchaToken?: string) => Promise<{ ok: boolean; message?: string }>;
 };
 
@@ -33,7 +28,6 @@ function summarizeError(res: Response | undefined): string {
   return `Error ${res.status}`;
 }
 
-// ✅ compress a batch before enforcing size limits
 async function compressBatch(files: File[]): Promise<File[]> {
   const out: File[] = [];
   for (const f of files) {
@@ -46,7 +40,7 @@ async function compressBatch(files: File[]): Promise<File[]> {
       });
       out.push(small);
     } catch {
-      out.push(f); // graceful fallback
+      out.push(f);
     }
   }
   return out;
@@ -86,7 +80,6 @@ export const usePhotoStore = create<State>((set, get) => ({
     }
   },
 
-  // ✅ updated signature: (files, note?, recaptchaToken?)
   async upload(files: File[], note?: string, recaptchaToken?: string) {
     const MAX_FILES = 4;
     const MAX_BYTES = 10 * 1024 * 1024;
@@ -101,7 +94,6 @@ export const usePhotoStore = create<State>((set, get) => ({
 
     set({ loading: true });
     try {
-      // ✅ compress first, then enforce total size on the compressed batch
       const compressed = await compressBatch(files);
       const totalBytes = compressed.reduce((acc, f) => acc + (f.size || 0), 0);
       if (totalBytes > MAX_BYTES) {
@@ -110,7 +102,6 @@ export const usePhotoStore = create<State>((set, get) => ({
         return { ok: false, message: 'Upload too large' };
       }
 
-      // ✅ pass note + recaptcha to helper as options (note is trimmed + optional)
       const opts: { note?: string; recaptchaToken?: string } = {};
       if (note && note.trim().length > 0) opts.note = note.trim();
       if (recaptchaToken) opts.recaptchaToken = recaptchaToken;

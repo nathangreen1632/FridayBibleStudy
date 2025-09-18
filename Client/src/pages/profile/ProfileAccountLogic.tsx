@@ -1,4 +1,3 @@
-// Client/src/pages/account/ProfileAccountLogic.tsx
 import React, { useEffect, useState, useCallback } from 'react';
 import { toast } from 'react-hot-toast';
 import { api } from '../../helpers/http.helper.ts';
@@ -18,7 +17,6 @@ export default function ProfileAccountLogic(): React.ReactElement {
   const [saving, setSaving] = useState(false);
   const [posting, setPosting] = useState(false);
 
-  // NEW: dirty flag from ProfileForm + "show confirm" flag
   const [formDirty, setFormDirty] = useState(false);
   const [confirmExit, setConfirmExit] = useState(false);
 
@@ -28,13 +26,13 @@ export default function ProfileAccountLogic(): React.ReactElement {
     category: '',
   });
 
-  // ensure user is loaded
   useEffect(() => {
     (async () => {
       try {
         await me();
       } catch {
-        // ignore or add logging if desired
+        console.error('Failed to load user profile.', user?.email);
+        toast.error('Failed to load user profile.');
       }
     })();
   }, [me]);
@@ -46,7 +44,7 @@ export default function ProfileAccountLogic(): React.ReactElement {
         setSavedMsg(null);
         const {success, message} = await updateProfile(values);
         if (success) {
-          await me(); // refresh store with latest DB user
+          await me();
           setSavedMsg('Profile saved');
           toast.success('Profile updated successfully!');
           setFormDirty(false);
@@ -79,7 +77,6 @@ export default function ProfileAccountLogic(): React.ReactElement {
     closeModal('profile');
   }, [closeModal, formDirty]);
 
-  // Confirm bar handlers
   const confirmExitWithoutSaving = useCallback(() => {
     setConfirmExit(false);
     setFormDirty(false);
@@ -94,7 +91,6 @@ export default function ProfileAccountLogic(): React.ReactElement {
     async (e: React.FormEvent) => {
       e.preventDefault();
 
-      // Extra-safe guard: ensure a real category was chosen
       if (prayer.category === '') {
         toast.error('Please select a prayer type.');
         return;
@@ -119,7 +115,7 @@ export default function ProfileAccountLogic(): React.ReactElement {
           method: 'POST',
           body: JSON.stringify({
             ...prayer,
-            category: prayer.category, // safe now — not ''
+            category: prayer.category,
             recaptchaToken,
           }),
         });
@@ -155,7 +151,7 @@ export default function ProfileAccountLogic(): React.ReactElement {
       cancelExit={cancelExit}
       onSaveProfile={onSaveProfile}
       postPrayer={postPrayer}
-      onDirtyChange={setFormDirty}   // ✅ NEW
+      onDirtyChange={setFormDirty}
     />
   );
 }

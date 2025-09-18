@@ -8,7 +8,6 @@ export type PrayerCardWithCommentsProps = Readonly<{
   category: Category;
   createdAt: string;
   groupId?: number | null;
-  /** Parent handles moving the card by id */
   onMove: (id: number, to: Status) => void;
 }>;
 
@@ -20,6 +19,5 @@ export type PrayerCardWithCommentsViewProps = Readonly<{
   category: Category;
   createdAt: string;
   groupId?: number | null;
-  /** Already bound to this card's id */
   onMove: (to: Status) => void;
 }>;

@@ -1,6 +1,3 @@
-// Client/src/types/auth.types.ts
-
-/** State we may get back from react-router location */
 export type FromState =
   | { from?: string | { pathname?: string | null } | null }
   | null

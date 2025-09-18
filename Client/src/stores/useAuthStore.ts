@@ -1,4 +1,3 @@
-// Client/src/stores/useAuthStore.ts
 import { create } from 'zustand';
 import { api } from '../helpers/http.helper';
 import { loadRecaptchaEnterprise, getRecaptchaToken } from '../lib/recaptcha.lib';
@@ -17,8 +16,6 @@ type User = {
   email: string;
   role: 'classic' | 'admin';
   groupId?: number | null;
-
-  // optional profile fields
   phone?: string | null;
   addressStreet?: string | null;
   addressCity?: string | null;
@@ -41,14 +38,11 @@ type AuthResult = { success: boolean; message?: string };
 type AuthState = {
   loading: boolean;
   user: User | null;
-
   register: (payload: RegisterPayload) => Promise<AuthResult>;
   me: () => Promise<void>;
   login: (email: string, password: string) => Promise<AuthResult>;
   logout: () => Promise<void>;
   updateProfile: (data: Partial<User>) => Promise<AuthResult>;
-
-  // NEW: Forgot password actions
   requestReset: (email: string) => Promise<AuthResult>;
   resetPassword: (email: string, otp: string, newPassword: string) => Promise<AuthResult>;
 };
@@ -67,7 +61,6 @@ export const useAuthStore = create<AuthState>((set, get) => ({
         { method: 'POST', body: JSON.stringify(payload) }
       );
 
-      // Try to load full profile; if that fails, use the minimal response.
       try {
         const full = await api<User>('/api/auth/me', { method: 'GET' });
         set((state) => ({
@@ -92,13 +85,12 @@ export const useAuthStore = create<AuthState>((set, get) => ({
     try {
       const full = await api<User>('/api/auth/me', { method: 'GET' });
       set((state) => ({
-        // merge so partial payloads never wipe existing fields (e.g., groupId)
         user: state.user
           ? ({ ...state.user, ...full } as User)
           : ({ ...full, groupId: full.groupId ?? null } as User),
       }));
     } catch {
-      // If we can’t fetch profile, ensure state is safe.
+
       set({ user: null });
     }
   },
@@ -106,29 +98,23 @@ export const useAuthStore = create<AuthState>((set, get) => ({
   login: async (email, password) => {
     set({ loading: true });
     try {
-      // 1) Site key required
       const siteKeyIssue = requireSiteKey(SITE_KEY);
       if (siteKeyIssue) return siteKeyIssue;
 
-      // 2) Load reCAPTCHA
       const loadIssue = await loadRecaptchaOrError(SITE_KEY as string);
       if (loadIssue) return loadIssue;
 
-      // 3) Get token
       const tokenResult = await getLoginTokenOrError(SITE_KEY as string);
       if (!tokenResult.ok) return { success: false, message: tokenResult.message };
       const recaptchaToken = tokenResult.token;
 
-      // 4) Call /login
       const res = await performLoginRequest(email, password, recaptchaToken);
 
-      // 5) If Response-like, check error payloads consistently
       if (res instanceof Response) {
         const msg = await responseErrorMessageIfAny(res);
         if (msg) return { success: false, message: msg };
       }
 
-      // 6) Best-effort /me merge (don’t break success if /me fails)
       const full = await fetchMeSafe<User>();
       if (full) {
         set((state) => ({
@@ -152,7 +138,7 @@ export const useAuthStore = create<AuthState>((set, get) => ({
     try {
       await api('/api/auth/logout', { method: 'POST' });
     } catch {
-      // Intentionally ignore; we still clear local user for a clean UI state.
+
     } finally {
       set({ user: null, loading: false });
     }
@@ -166,7 +152,6 @@ export const useAuthStore = create<AuthState>((set, get) => ({
         body: JSON.stringify(data),
       });
 
-      // Merge server's canonical user object into state without losing existing fields.
       const prev = get().user ?? {};
       const merged: User = { ...(prev as User), ...updated, groupId: updated.groupId ?? (prev as User).groupId ?? null };
       set({ user: merged });
@@ -180,19 +165,17 @@ export const useAuthStore = create<AuthState>((set, get) => ({
     }
   },
 
-  // NEW: Request password reset (send OTP to email)
   requestReset: async (email: string): Promise<AuthResult> => {
-    // For forgot-password we soft-bypass if reCAPTCHA cannot load; server also supports soft-bypass in dev.
     try {
       if (SITE_KEY) {
         try {
           await loadRecaptchaEnterprise(SITE_KEY);
         } catch {
-          // continue
+
         }
       }
     } catch {
-      // continue
+
     }
 
     let token = '';
@@ -201,7 +184,7 @@ export const useAuthStore = create<AuthState>((set, get) => ({
         token = await getRecaptchaToken(SITE_KEY, 'password_reset_request');
       }
     } catch {
-      // continue; header will simply omit token if empty
+
     }
 
     try {
@@ -227,19 +210,17 @@ export const useAuthStore = create<AuthState>((set, get) => ({
     }
   },
 
-  // NEW: Verify OTP and set the new password
   resetPassword: async (email: string, otp: string, newPassword: string): Promise<AuthResult> => {
-    // Soft-bypass reCAPTCHA issues here as well.
     try {
       if (SITE_KEY) {
         try {
           await loadRecaptchaEnterprise(SITE_KEY);
         } catch {
-          // continue
+
         }
       }
     } catch {
-      // continue
+
     }
 
     let token = '';
@@ -248,7 +229,7 @@ export const useAuthStore = create<AuthState>((set, get) => ({
         token = await getRecaptchaToken(SITE_KEY, 'password_reset');
       }
     } catch {
-      // continue
+
     }
 
     try {

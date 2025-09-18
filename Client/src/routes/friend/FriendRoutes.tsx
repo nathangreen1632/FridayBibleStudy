@@ -19,7 +19,6 @@ const friendRoutes: RouteObject[] = [
       </FriendGuard>
     ),
     children: [
-      // paths align with links in Navbar (non-admin)
       { path: 'portal', element: <PrayersPortalPage /> },
       { path: 'board/praises', element: <PraisesBoardPage /> },
       { path: 'board/archive', element: <ArchiveBoardPage /> },

@@ -1,4 +1,3 @@
-// Client/src/stores/useCommentsStore.ts
 import { create } from 'zustand';
 import { api } from '../helpers/http.helper';
 import { apiWithRecaptcha } from '../helpers/secure-api.helper';
@@ -28,29 +27,17 @@ type CommentsState = {
   closed: Map<number, boolean>;
   unseen: Map<number, string>;
   threadsByPrayer: Map<number, ThreadState>;
-
   setCounts: (prayerId: number, count: number, lastCommentAt?: string | null, isClosed?: boolean) => void;
-
-  // UPDATED: accept optional reset flag
   fetchRootPage: (prayerId: number, limit?: number, opts?: { reset?: boolean }) => Promise<void>;
-
-  // NEW: allow external refresh of a thread (clear cache + paging)
   refreshRoot: (prayerId: number) => void;
-
   create: (prayerId: number, content: string, opts?: { cid?: string }) => Promise<void>;
   update: (commentId: number, content: string) => Promise<void>;
   remove: (commentId: number) => Promise<void>;
-
-  // ✅ NEW: pure local reducer to drop a comment from a thread
   removeComment: (prayerId: number, commentId: number) => void;
-
   markSeen: (prayerId: number) => Promise<void>;
   setClosedLocal: (prayerId: number, isClosed: boolean) => void;
-
   onCreated: (payload: { prayerId: number; comment: Comment; newCount: number; lastCommentAt: string | null }) => void;
   onUpdated: (payload: { prayerId: number; comment: Comment }) => void;
-
-  // ✅ UPDATED: accept multiple payload shapes safely
   onDeleted: (payload: {
     prayerId: number;
     commentId?: number;
@@ -59,7 +46,6 @@ type CommentsState = {
     newCount?: number;
     lastCommentAt?: string | null;
   }) => void;
-
   onClosedChanged: (payload: { prayerId: number; isCommentsClosed: boolean }) => void;
   onCountChanged: (payload: { prayerId: number; newCount: number; lastCommentAt: string | null }) => void;
 };
@@ -83,7 +69,6 @@ function msg(e: unknown, fb: string) {
   return e && typeof e === 'object' && 'message' in e ? String((e as any).message || fb) : fb;
 }
 
-// Secure ID helpers (no Math.random)
 function secureHex(bytes = 16): string {
   const arr = new Uint8Array(bytes);
   globalThis.crypto.getRandomValues(arr);
@@ -96,13 +81,11 @@ function makeCid(): string {
   return `cid_${Date.now().toString(36)}`;
 }
 
-// Small numeric guard
 function toPosInt(v: unknown): number {
   const n = Number(v);
   return Number.isFinite(n) && n > 0 ? n : 0;
 }
 
-// Normalize deletion payload shapes into ids
 function getDeleteIds(p: unknown): { prayerId: number; commentId: number } {
   const obj = p as Record<string, unknown> | null | undefined;
 
@@ -139,7 +122,6 @@ export const useCommentsStore = create<CommentsState>((set, get) => ({
     } catch {}
   },
 
-  // NEW: clear a thread's cached items and paging so first page refetches fresh
   refreshRoot: (prayerId) => {
     try {
       const threads = new Map(get().threadsByPrayer);
@@ -165,45 +147,32 @@ export const useCommentsStore = create<CommentsState>((set, get) => ({
     }
   },
 
-  // Roots (latest-activity ordered) — replies removed
-  // UPDATED: now supports opts.reset to force a clean first page load
-  // Roots (latest-activity ordered) — replies removed
-  // Backward compatible: (prayerId, 10) or (prayerId, { limit: 10, reset: true })
-  // Backward compatible: (prayerId, 10) or (prayerId, { limit: 10, reset: true })
   fetchRootPage: async (prayerId, limitOrOpts, maybeOpts) => {
     try {
       const threads = new Map(get().threadsByPrayer);
       const t = ensureThread(threads, prayerId);
 
-      // 1) Resolve options + limit
       const { limit, opts } = resolveFetchOpts(limitOrOpts, maybeOpts);
 
-      // 2) Optional reset
       if (opts?.reset) applyReset(t);
 
-      // 3) Early exit if loading or no-more-data (but already have some)
       if (shouldSkipLoad(t)) {
         set({ threadsByPrayer: threads });
         return;
       }
 
-      // 4) Mark loading and persist
       markLoading(t, true);
       set({ threadsByPrayer: threads });
 
-      // 5) Fetch
       const qs = buildListQuery(prayerId, limit, t.rootPage.cursor ?? null);
       const data = await api<ListRootThreadsResponse>(`/api/comments/list?${qs}`);
 
-      // 6) Upsert roots + merge order
       upsertRootsIntoThread(t, data.items);
       const newRoots = data.items.map(i => i.root.id);
       t.rootOrder = mergeOrderNoDupes(t.rootOrder, newRoots);
 
-      // 7) Apply paging flags
       applyServerPaging(t, data);
 
-      // 8) Apply meta maps (counts / lastCommentAt / closed)
       const meta = applyMetaMaps(
         () => get().counts,
         () => get().lastCommentAt,
@@ -212,10 +181,8 @@ export const useCommentsStore = create<CommentsState>((set, get) => ({
         data
       );
 
-      // 9) Commit
       set({ threadsByPrayer: threads, ...meta });
     } catch (e) {
-      // graceful recovery (no throws)
       const threads = new Map(get().threadsByPrayer);
       const t = ensureThread(threads, prayerId);
       markLoading(t, false);
@@ -224,7 +191,6 @@ export const useCommentsStore = create<CommentsState>((set, get) => ({
     }
   },
 
-  // Create root-only update (no replies)
   create: async (prayerId, content, opts) => {
     const cid = opts?.cid ?? makeCid();
 
@@ -331,7 +297,6 @@ export const useCommentsStore = create<CommentsState>((set, get) => ({
       const threads = new Map(get().threadsByPrayer);
       for (const [, t] of threads) {
         if (t.byId.has(commentId)) {
-          // Hard-remove locally so UI updates instantly
           t.byId.delete(commentId);
           t.rootOrder = t.rootOrder.filter((x) => x !== commentId);
           set({ threadsByPrayer: threads });
@@ -341,7 +306,6 @@ export const useCommentsStore = create<CommentsState>((set, get) => ({
     } catch {}
   },
 
-  // ✅ NEW: local reducer for external callers (sockets/admin actions)
   removeComment: (prayerId, commentId) => {
     try {
       const threads = new Map(get().threadsByPrayer);
@@ -352,7 +316,7 @@ export const useCommentsStore = create<CommentsState>((set, get) => ({
         set({ threadsByPrayer: threads });
       }
     } catch {
-      // keep UI resilient
+
     }
   },
 
@@ -379,16 +343,13 @@ export const useCommentsStore = create<CommentsState>((set, get) => ({
     } catch {}
   },
 
-  // ---- Socket handlers (root-only) ----
   onCreated: (p) => {
     try {
-      // Only accept depth === 0 (root) as an update
       if ((p.comment.depth ?? 0) !== 0) return;
 
       const threads = new Map(get().threadsByPrayer);
       const t = ensureThread(threads, p.prayerId);
 
-      // remove a matching optimistic placeholder before inserting server copy
       for (const [k, v] of t.byId) {
         if ((typeof v?.id === 'number' && v.id < 0) && v.content === p.comment.content) {
           t.rootOrder = t.rootOrder.filter((x) => x !== k);
@@ -400,7 +361,6 @@ export const useCommentsStore = create<CommentsState>((set, get) => ({
       const prev = t.byId.get(p.comment.id);
       t.byId.set(p.comment.id, { ...prev, ...p.comment, authorName: p.comment.authorName ?? prev?.authorName ?? null });
 
-      // newest root first
       t.rootOrder = [p.comment.id, ...t.rootOrder.filter((x) => x !== p.comment.id)];
 
       const counts = new Map(get().counts);
@@ -425,7 +385,6 @@ export const useCommentsStore = create<CommentsState>((set, get) => ({
     } catch {}
   },
 
-  // ✅ UPDATED: tolerate {commentId}, {id}, or {comment:{id}}
   onDeleted: (p: DeletedPayload) => {
     try {
       const { prayerId, commentId } = getDeleteIds(p);
@@ -451,7 +410,7 @@ export const useCommentsStore = create<CommentsState>((set, get) => ({
 
       set({ threadsByPrayer: threads, counts, lastCommentAt: lastCA });
     } catch {
-      // swallow
+
     }
   },
 

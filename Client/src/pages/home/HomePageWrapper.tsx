@@ -1,4 +1,3 @@
-// Client/src/pages/HomePage.tsx
 import React from 'react';
 import HomePageView from '../../jsx/home/homePageView.tsx';
 

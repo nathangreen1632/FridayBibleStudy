@@ -22,14 +22,12 @@ export default function LightboxModalView({
       aria-label={alt || 'Photo lightbox'}
       className="fixed inset-0 z-[100] flex items-center justify-center"
     >
-      {/* Backdrop */}
       <button
         aria-label="Close"
         onClick={onClose}
         className="absolute inset-0 bg-black/70"
       />
 
-      {/* Shell */}
       <div className="relative max-w-[95vw] max-h-[90vh] p-2 rounded-2xl bg-[var(--theme-surface)] shadow-xl">
         <div className="flex flex-col items-center">
           <img
