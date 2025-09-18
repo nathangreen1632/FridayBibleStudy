@@ -39,7 +39,7 @@ A full-stack, real-time web app for small groups to share **prayer requests**, *
     - [Install Run](#install--run)
 - [Build Deploy - Render.com](#build-deploy-rendercom)
     - [Render Service Layout](#render-service-layout)
-    - [Persistent Disk Uploads](#persistent-disk--uploads)
+    - [Persistent Disk Uploads](#persistent-disk-uploads)
     - [Build Order](#build-order)
 - [Quality Conventions](#quality-conventions)
 - [Accessibility Performance](#accessibility-performance)
