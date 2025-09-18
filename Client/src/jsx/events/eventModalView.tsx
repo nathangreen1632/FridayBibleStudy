@@ -19,34 +19,27 @@ export default function EventModalView({
       aria-label={event?.title || 'Event details'}
       className="fixed inset-0 z-[100] flex items-center justify-center"
     >
-      {/* Backdrop behaves like your photo lightbox (click to close) */}
       <button
         aria-label="Close"
         onClick={onClose}
         className="absolute inset-0 bg-black/70"
       />
 
-      {/* Modal shell — mobile first */}
       <div
         className={[
-          // size (outer sets caps; inner inherits)
           'relative w-[90vw] max-h-[80dvh]',
           'sm:w-[88vw] sm:max-h-[85dvh]',
           'md:max-w-[70vw] md:max-h-[85vh]',
-          // visual chrome lives on the OUTER
           'rounded-2xl bg-[var(--theme-accent)] border border-[var(--theme-border)] shadow-xl',
-          // hide inner square edges from showing past the radius
           'overflow-hidden',
         ].join(' ')}
       >
-        {/* everything below scrolls INSIDE, keeping rounded corners */}
         <div
           className={[
             'h-full max-h-[inherit] overflow-auto custom-scrollbar scrollpad',
             'p-4 sm:p-5',
           ].join(' ')}
         >
-          {/* Header */}
           <div className="flex items-start justify-between gap-3 mb-3">
             <h2 className="text-2xl font-extrabold text-[var(--theme-text-white)]">
               {event?.title || 'Untitled Event'}
@@ -60,7 +53,6 @@ export default function EventModalView({
             </button>
           </div>
 
-          {/* Meta */}
           {hasTimes && startD ? (
             <div className="mb-1 text-base opacity-80 text-[var(--theme-text-white)]">
               <span className="font-semibold">Date:</span>{' '}
