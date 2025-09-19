@@ -23,13 +23,11 @@ const ADDR = {
   defaultFrom: 'no-reply@fridaybiblestudy.org',
   fromPrayers: 'prayers@fridaybiblestudy.org',
   fromPraises: 'praises@fridaybiblestudy.org',
-  group: 'group@fridaybiblestudy.org',
   admin: 'admin@fridaybiblestudy.org',
   auditCc: 'msbourne60@fridaybiblestudy.org',
 };
 
 const EMAIL_FROM_DEFAULT = env.EMAIL_FROM || ADDR.defaultFrom;
-const GROUP_EMAIL = env.GROUP_EMAIL || ADDR.group;
 const ADMIN_EMAIL = env.ADMIN_EMAIL || ADDR.admin;
 const AUDIT_CC = env.AUDIT_CC || ADDR.auditCc;
 
@@ -83,24 +81,37 @@ export async function sendEmailViaResend(args: SendEmailArgs): Promise<SendResul
   }
 }
 
-export async function notifyGroupOnCategoryCreate(opts: {
+/**
+ * Send a "new item for category" email to a provided list of recipients,
+ * placing EVERYONE on the "to:" line so reply-all works.
+ */
+export async function notifyMembersOnCategoryCreate(opts: {
   category: PrayerCategory;
   title: string;
   description: string;
   createdByName?: string;
   linkUrl?: string;
+  toEmails: string[];
 }): Promise<SendResult> {
-  const from = fromForCategory(opts.category);
-  const subject = subjectForCategory(opts.category);
-  const html = renderGroupCategoryHtml(opts);
+  try {
+    const list = Array.isArray(opts.toEmails) ? opts.toEmails : [];
+    if (!list.length) {
+      return { ok: false, error: 'No recipients' };
+    }
 
-  return sendEmailViaResend({
-    from,
-    to: GROUP_EMAIL,
-    subject,
-    html,
-    cc: AUDIT_CC,
-  });
+    const subject = subjectForCategory(opts.category);
+    const html = renderGroupCategoryHtml(opts);
+
+    return sendEmailViaResend({
+      from: fromForCategory(opts.category),
+      to: list, // everyone on "to:" (not bcc)
+      subject,
+      html,
+      cc: AUDIT_CC, // preserve audit CC
+    });
+  } catch {
+    return { ok: false, error: 'Failed to queue email' };
+  }
 }
 
 export async function notifyAdminOnCategoryCreate(opts: {
