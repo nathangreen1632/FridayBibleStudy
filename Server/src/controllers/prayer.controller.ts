@@ -1,18 +1,19 @@
 import type { Request, Response } from 'express';
-import type { Order, WhereOptions } from 'sequelize';
+import { type Order, type WhereOptions } from 'sequelize';
 import path from 'path';
 import { sequelize } from '../config/sequelize.config.js';
 import { env } from '../config/env.config.js';
 import { emitToGroup } from '../config/socket.config.js';
-import { Group, PrayerUpdate, User, Attachment, PrayerParticipant } from '../models/index.js';
+import { Group, GroupMember, PrayerUpdate, User, Attachment, PrayerParticipant } from '../models/index.js';
 import { Prayer, type Status } from '../models/prayer.model.js';
 import { Events } from '../types/socket.types.js';
 import { toPrayerDTO } from './dto/prayer.dto.js';
 import {
-  notifyGroupOnCategoryCreate,
   notifyAdminOnCategoryCreate,
-  sendEmailViaResend,
+  sendEmailViaResend, // still used in createUpdate()
 } from '../services/resend.service.js';
+import { sendEmail } from '../services/email.service.js';
+import { subjectForCategory, renderGroupCategoryHtml } from '../email/resend.templates.js';
 
 export async function findPrayerOr404(
   id: number | string,
@@ -228,15 +229,88 @@ export async function createPrayer(req: Request, res: Response): Promise<void> {
   }
 
   const linkUrl = `${env.PUBLIC_URL}/portal/prayers/${created.id}`;
+
+  // === Match Admin Digest recipient logic ===
   try {
-    await notifyGroupOnCategoryCreate({
-      category: created.category,
-      title: created.title,
-      description: created.content,
-      createdByName: undefined,
-      linkUrl,
-    });
-  } catch {}
+    // group address (from / reply-to)
+    const grp = await Group.findByPk(groupId);
+    const fallbackGroupAddress = 'group@fridaybiblestudy.org';
+    const groupAddressRaw = (grp as any)?.groupEmail;
+    const groupAddress =
+      typeof groupAddressRaw === 'string' && groupAddressRaw.includes('@')
+        ? groupAddressRaw
+        : fallbackGroupAddress;
+
+    // Try members first
+    let emails: string[] = [];
+    try {
+      const members = await GroupMember.findAll({
+        where: { groupId },
+        include: [
+          {
+            model: User,
+            as: 'user',
+            required: true,
+            where: { emailPaused: false },
+            attributes: ['email'],
+          },
+        ],
+        limit: 5000,
+      });
+
+      emails = members
+        .map((m: any) => m?.user?.email)
+        .filter((e: unknown): e is string => typeof e === 'string' && e.includes('@'));
+    } catch {
+
+    }
+
+    // Fallback to all users if member join returned nothing
+    if (!emails.length) {
+      try {
+        const users = await User.findAll({
+          where: { emailPaused: false },
+          attributes: ['email', 'emailPaused'],
+          limit: 5000,
+        });
+
+        emails = users
+          .filter((u: any) => !u?.emailPaused)
+          .map((u: any) => u?.email)
+          .filter((e: unknown): e is string => typeof e === 'string' && e.includes('@'));
+      } catch {
+        // if both lookups fail, skip email but still succeed HTTP
+      }
+    }
+
+    const dedup = Array.from(new Set(emails))
+      .filter((e) => e.toLowerCase() !== String(groupAddress).toLowerCase())
+      .slice(0, 95);
+
+    if (dedup.length) {
+      const subject = subjectForCategory(created.category);
+      const html = renderGroupCategoryHtml({
+        category: created.category,
+        title: created.title,
+        description: created.content,
+        createdByName: undefined,
+        linkUrl,
+      });
+
+      await sendEmail({
+        from: groupAddress,
+        to: dedup,              // EVERYONE on "to:" so reply-all works
+        cc: groupAddress,       // keep the group alias on the thread
+        replyTo: groupAddress,
+        subject,
+        html,
+      });
+    }
+  } catch {
+    // swallow email issues — prayer creation should still succeed
+  }
+
+  // Admin notice remains
   try {
     await notifyAdminOnCategoryCreate({
       category: created.category,
@@ -316,7 +390,7 @@ export async function updatePrayer(req: Request, res: Response): Promise<void> {
   res.json(prayer);
 }
 
-  export async function deletePrayer(req: Request, res: Response): Promise<void> {
+export async function deletePrayer(req: Request, res: Response): Promise<void> {
   const id = Number(req.params.id);
   const prayer = await findPrayerOr404(id, res);
   if (!prayer) return;
