@@ -77,7 +77,7 @@ export const useBoardStore = create<BoardState>((set, get) => ({
   fetchInitial: async () => {
     set({ loading: true, error: null });
     try {
-      const data = await api<ListPrayersResponse>('/api/prayers?page=1&pageSize=20');
+      const data = await api<ListPrayersResponse>('/api/prayers?page=1&pageSize=20&status=active');
 
       const items: Item[] = Array.isArray(data?.items) ? data.items : [];
       const byId = new Map<number, Item>();
