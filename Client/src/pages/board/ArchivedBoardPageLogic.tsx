@@ -1,10 +1,9 @@
-import React from 'react';
+import React, { useEffect } from 'react';
 import ArchivedBoardPageView from '../../jsx/board/archivedBoardPageView.tsx';
 import { useBoardStore } from '../../stores/useBoardStore';
 import { useSocketStore } from '../../stores/useSocketStore';
 import { useAuthStore } from '../../stores/useAuthStore';
 import {
-  useBoardBootstrap,
   useJoinGroup,
   useMoveToPraise,
   usePrayerCardRenderer,
@@ -17,8 +16,10 @@ import type {
   RenderCardFn,
 } from '../../types/pages/board.types.ts';
 
-export default function ArchiveBoard(): React.ReactElement {
-  const fetchInitial = useBoardStore((s) => s.fetchInitial);
+export default function ArchivedBoardPageLogic(): React.ReactElement {
+  // NEW: load archived directly
+  const fetchArchived = useBoardStore((s) => s.fetchArchived);
+
   const move = useBoardStore((s) => s.move);
   const byId = useBoardStore((s) => s.byId);
   const order = useBoardStore((s) => s.order);
@@ -26,11 +27,19 @@ export default function ArchiveBoard(): React.ReactElement {
   const error = useBoardStore((s) => s.error);
 
   const user = useAuthStore((s) => s.user);
-
   const joinGroup = useSocketStore((s) => s.joinGroup);
   const groupId = user?.groupId ?? 1;
 
-  useBoardBootstrap(fetchInitial);
+  // ⬇️ do NOT use useBoardBootstrap(fetchInitial) here — that loads "active".
+  useEffect(() => {
+    fetchArchived().catch((e: unknown) => {
+      if (process.env.NODE_ENV !== 'production') {
+        // eslint-disable-next-line no-console
+        console.warn('[archived] fetchArchived() failed', e);
+      }
+    });
+  }, [fetchArchived]);
+
   useJoinGroup(joinGroup, groupId);
 
   const moveToPraise = useMoveToPraise();
@@ -48,6 +57,7 @@ export default function ArchiveBoard(): React.ReactElement {
     try {
       await onMove(id, 'archived', toIndex);
     } catch {
+      // eslint-disable-next-line no-console
       console.error('Failed to move prayer to archived', id, toIndex);
     }
   };
@@ -56,13 +66,11 @@ export default function ArchiveBoard(): React.ReactElement {
     try {
       if (dock === 'dock-active') {
         await onMove(id, 'active', 0);
-      }
-      if (dock === 'dock-praise') {
+      } else if (dock === 'dock-praise') {
         await moveToPraise(id);
       }
-
     } catch {
-
+      // keep UI resilient; store/services already surface errors
     }
   };
 
