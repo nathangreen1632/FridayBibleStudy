@@ -51,6 +51,7 @@ type BoardState = {
   isDragging: boolean;
   setDragging: (v: boolean) => void;
   fetchInitial: () => Promise<void>;
+  fetchArchived: () => Promise<void>;
   move: (id: number, toStatus: ColumnKey, newIndex: number) => Promise<boolean>;
   upsertPrayer: (p: Item) => void;
   movePrayer: (id: number, to: Status) => void;
@@ -77,7 +78,7 @@ export const useBoardStore = create<BoardState>((set, get) => ({
   fetchInitial: async () => {
     set({ loading: true, error: null });
     try {
-      const data = await api<ListPrayersResponse>('/api/prayers?page=1&pageSize=20&status=active');
+      const data = await api<ListPrayersResponse>('/api/prayers?page=1&pageSize=100&status=active');
 
       const items: Item[] = Array.isArray(data?.items) ? data.items : [];
       const byId = new Map<number, Item>();
@@ -105,6 +106,31 @@ export const useBoardStore = create<BoardState>((set, get) => ({
       });
     } catch (err: unknown) {
       set({ loading: false, error: msgFrom(err, 'Failed to load prayers') });
+    }
+  },
+
+  fetchArchived: async () => {
+    set({ loading: true, error: null });
+    try {
+      const data = await api<ListPrayersResponse>('/api/prayers?page=1&pageSize=100&status=archived');
+      const items: Item[] = Array.isArray(data?.items) ? data.items : [];
+
+      set((state) => {
+        const byId = new Map(state.byId);
+        for (const p of items) {
+          if (p) byId.set(p.id, p);
+        }
+
+        const archivedIds = [...items].sort(sortByPosition).map((p) => p.id);
+
+        return {
+          byId,
+          order: { ...state.order, archived: archivedIds },
+          loading: false,
+        };
+      });
+    } catch (err: unknown) {
+      set({ loading: false, error: msgFrom(err, 'Failed to load archived prayers') });
     }
   },
 
@@ -234,7 +260,6 @@ export const useBoardStore = create<BoardState>((set, get) => ({
       const filtered = next.archived.filter((x) => x !== id);
       next.archived = [id, ...filtered];
     } else {
-
       return;
     }
 
